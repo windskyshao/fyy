@@ -22,7 +22,7 @@ def showImgur(fileName):
     #Upload file
     try:
         print("[log:INFO]Uploading image...")
-        imgur = client.upload_from_path(fileName+'.png', config=config, anon=False)['link']
+        imgurl = client.upload_from_path(fileName+'.png', config=config, anon=False)['link']
         #string to dict
         print("[log:INFO]Done upload. ")
     except:
