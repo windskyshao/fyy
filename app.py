@@ -32,7 +32,7 @@ def Usage(event):
                     \n\
                     \n☢本機器人可查詢油價及匯率☢\
                     \n\
-                    \n⑥ 油價通知 ➦➦➦ 輸入油價報你知\
+                    \n⑥ 油價通知 ➦➦➦ 輸入油價查詢\
                     \n⑥ 匯率通知 ➦➦➦ 輸入查詢匯率\
                     \n⑦ 匯率兌換 ➦➦➦ 換匯USD/TWD\
                     \n⑦ 自動推播 ➦➦➦ 自動推播")
@@ -262,8 +262,8 @@ def handle_message(event):
                                 uri='https://tw.stock.yahoo.com/news/'
                             ),
                             URIAction(
-                                label='粉絲團',
-                                uri='https://zh-tw.facebook.com/lccnet10/'
+                                label='內政部實價登錄',
+                                uri='https://liff.line.me/2006134063-JojNgek2'
                             )
                         ]
                     ),
