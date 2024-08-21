@@ -16,6 +16,44 @@ import mongodb
 import twder
 
 app = Flask(__name__)
+IMGUR_CLIENT_ID = '66e769b3bc72457'
+
+#這段主要在畫k線圖
+#pip3 install pyimgur
+import yfinance as yf
+import mplfinance as mpf
+import pyimgur
+
+def plot_stock_k_chart(IMGUR_CLIENT_ID, stock="0050", date_from='2020-01-01'):
+    """
+    進行個股k線繪製，回傳至於雲端圖床的連結。將顯示包含5MA、20MA及量價關系，起始預設自2020-01-01起迄昨日收盤價。
+    :stock "個股代碼(字串)，預設0050。
+    :date_from :起始日(字串)，格式為YYYY-MM-DD，預設自2020-01-01起。
+    """
+    stock = str(stock) + ".TW"
+    try:
+        #使用yfinance萬取數據
+        print(f"正在獲取股票數據:{stock}")
+        df = yf.download(stock, start=date_from)
+
+        if df is None or df.empty:
+            print(f"未能獲取到股票數據，可能是因為股票代碼不正確或數據來源問題。")
+            return None
+        
+        print("股尉數據獲取成功，盰始繪製 k 線圖...")
+        mpf.plot(df, type='candle', mav=(5, 20), volume=True, ylabel=stock.upper() + ' Price',savefig='testsave.png')
+
+        #上傳圖片到Imgur
+        PATH = "testsave.png"
+        im = pyimgur.Imgur(IMGUR_CLIENT_ID)
+        uploaded_image = im.upload_image(PATH, title=stock + " candlestick chart")
+        print(f"圖片上傳成功: {uploaded_image.link}")
+        return uploaded_image.link
+    
+    except Exception as e:
+        print(f"錯誤: {e}")
+        return None
+
 
 # 抓使用者設定它關心的匯率
 def cache_users_currency():
@@ -240,7 +278,14 @@ def handle_message(event):
         content = mongodb.delete_my_allstock( user_name, uid)
         line_bot_api.push_message(uid, TextSendMessage(content))
         return 0
-    
+    if event.message.text[:2].upper() == "@K": #這段主要在畫k連圖
+        input_word = event.message.text.replace(" ","")
+        stock_name = input_word[2:6]
+        start_date = input_word[6:]
+        content = plot_stock_k_chart(IMGUR_CLIENT_ID,stock_name,start_date)
+        message = ImageSendMessage(original_content_url= content,preview_image_url=content)
+        line_bot_api.reply_message(event.reply_token, message)
+
     
     ################################ 目錄區 ##########################################
     if event.message.text == "開始玩":
