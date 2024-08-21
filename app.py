@@ -32,7 +32,7 @@ def Usage(event):
                     \n\
                     \n☢本機器人可查詢油價及匯率☢\
                     \n\
-                    \n⑥ 油價通知 ➦➦➦ 輸入油價查詢\
+                    \n⑥ 油價通知 ➦➦➦ 輸入油價報你知\
                     \n⑥ 匯率通知 ➦➦➦ 輸入查詢匯率\
                     \n⑦ 匯率兌換 ➦➦➦ 換匯USD/TWD\
                     \n⑦ 自動推播 ➦➦➦ 自動推播")
@@ -56,7 +56,7 @@ def cache_users_stock():
         users.append(cel)
     return users
 
-# 油價查詢
+# 油價報你知
 def oil_price():
     target_url = 'https://gas.goodlife.tw/'
     rs = requests.session()
@@ -168,7 +168,7 @@ def handle_message(event):
             #content = EXRate.getExchangeRate(msg)
             line_bot_api.push_message(uid, TextSendMessage(content))
         return 0
-    ######################## 使用說明 選單 油價查詢################################
+    ######################## 使用說明 選單 油價報你知################################
     if event.message.text == "油價報你知":
         content = oil_price()
         line_bot_api.reply_message(
@@ -277,8 +277,8 @@ def handle_message(event):
                                 text='imgur bot'
                             ),
                             MessageAction(
-                                label='油價查詢',
-                                text='油價查詢'
+                                label='油價報你知',
+                                text='油價報你知'
                             ),
                             URIAction(
                                 label='奇摩股市',
