@@ -27,6 +27,33 @@ def stock_reply_rate():
                                    ]           
                                 ))
     return text_message
+def stock_reply_rate():
+    content_text = "分析趨勢"
+    text_message = TextSendMessage(
+                                 text = content_text ,
+                               quick_reply=QuickReply(
+                                   items=[
+                                       QuickReplyButton(
+                                                action=MessageAction(
+                                                    label="💜即時股價💜", 
+                                                    text="股價查詢->#2330",
+                                                )
+                                       ),
+                                       QuickReplyButton(
+                                                action=MessageAction(
+                                                    label="💜匯率圖💜", 
+                                                    text="CT幣別->CTUSD",
+                                                )
+                                       ),
+                                       QuickReplyButton(
+                                                action=MessageAction(
+                                                    label="💜股價k線圖💜", 
+                                                    text="@k股票代號日期區期->@23302024-01-01",
+                                                )
+                                       ),
+                                   ]           
+                                ))
+    return text_message
 # #測試的BUTTON
 # def test_Button():
 #     flex_message = FlexSendMessage(
