@@ -474,3 +474,4 @@ def quick_reply_weather(mat):
             ]
         )
     )
+    return text_message
