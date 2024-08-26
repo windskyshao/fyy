@@ -17,12 +17,14 @@ import twder
 import json
 import time
 import requests
+import place
+
 
 
 app = Flask(__name__)
 IMGUR_CLIENT_ID = '66e769b3bc72457'
 access_token = 'tgQqCqIxEiMiA2KuMIUF/AgRvhFW1x/ncypXaVt1S5BMEeDFSpfqxGAJ3o13ywqsBaOLBcXr0EwFIplg7RUuxnpphqdm2XqOw9zOrK1tTLwaX7nQ272+jsvuRRXuNVJgkPe6ehImSXAXNlf30aiq2QdB04t89/1O/w1cDnyilFU='
-
+mat_d={} 
 
 #這段主要在畫k線圖
 #pip3 install pyimgur
@@ -66,12 +68,12 @@ def reply_image(msg, rk, token):
     body = {
     'replyToken':rk,
     'messages':[{
-            'type': 'image',
-            'originalContentUrl': msg,
-            'previewImageUrl': msg
+          'type': 'image',
+          'originalContentUrl': msg,
+          'previewImageUrl': msg
         }]
     }
-    req = requests.request('POST', 'https://api.line.me/v2/bot/message/reply', headers=headers, data=json.dumps(body).encode('utf-8'))
+    req = requests.request('POST','https://api.line.me/v2/bot/message/reply',headers=headers,data=json.dumps(body).encode('utf-8'))
     print(req.text)
 
 # 抓使用者設定它關心的匯率
@@ -155,24 +157,22 @@ def callback():
     # handle webhook body
     try:
         handler.handle(body, signature)
-        #轉換內容為 json 格式
+        # 轉換內容為json格式
         json_data = json.loads(body)
-        #取得回傳訊息的 Token ( rely message 使用)
+        # 取得回傳訊息的Token (reply mseeage 使用)
         reply_token = json_data['events'][0]['replyToken']
-        #取得使用者 ID (push message 使用)
+        # 取得使用者 ID (push message 使用)
         user_id = json_data['events'][0]['source']['userId']
         print(json_data)
-        #如果傳送的是 message
         if 'message' in json_data['events'][0]:
-            #如果 message 的類型是文字 text
             if json_data['events'][0]['message']['type'] == 'text':
-                #取出文字
+                # 取出文字
                 text = json_data['events'][0]['message']['text']
-                #如果是雷達回波圖相關的文字
+                # 如果是雷達回波圖相關的文字
                 if text == '雷達回波圖' or text == '雷達回波':
-                    #傳送雷達回波圖 (加上時間戳記)
-                    reply_image(f'https://cwbopendata.s3.ap-northeast-1.amazonaws.com/MSC/O-A0058-003.png?{time.time_ns()}',reply_token, access_token)
-    except:
+                    #傳送雷達回波圖
+                    reply_image(f'https://cwbopendata.s3.ap-northeast-1.amazonaws.com/MSC/O-A0058-003.png?{time.time_ns()}',reply_token,access_token)
+    except :
         print('error')
     return 'OK'
 
@@ -513,6 +513,21 @@ def handle_message(event):
         while True: 
             schedule.run_pending()
             time.sleep(1)
+
+    #＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊weather＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+    #圖文選單
+    #第一層-最新氣象->4格圖片Flex Message
+    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather',msg):
+        content=place.img_Carousel() #呼叫4格圖片Flex Message
+        line_bot_api.reply_message(event.reply_token,content)
+        return 0
+    ##############################1.即時天氣##############################
+    # 1.第二層-即時天氣->呼叫quick_reply
+    if re.match('即時天氣|即時氣象',msg):
+        mat_d[uid]='即時天氣'
+        content=place.quick_reply_weather(mat_d[uid]) #呼叫quick_reply
+        line_bot_api.reply_message(event.reply_token,content)
+        return 0
 
 
 import os
