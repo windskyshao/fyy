@@ -60,7 +60,7 @@ def plot_stock_k_chart(IMGUR_CLIENT_ID, stock="0050", date_from='2020-01-01'):
         print(f"錯誤: {e}")
         return None
 
-#Line 回傳圖片式
+#Line 回傳圖片函式
 def reply_image(msg, rk, token):
     headers = {'Authorization':f'Bearer {token}','Content-Type':'application/json'}
     body = {
@@ -71,9 +71,9 @@ def reply_image(msg, rk, token):
             'previewImageUrl': msg
         }]
     }
-    req = requests.requests('POST', 'https://api.line.me/v2/bot/message/reply', headers=headers, date=json.dumps(body).encode('utf-8'))
+    req = requests.request('POST', 'https://api.line.me/v2/bot/message/reply', headers=headers, date=json.dumps(body).encode('utf-8'))
     print(req.text)
-    
+
 # 抓使用者設定它關心的匯率
 def cache_users_currency():
     db=mongodb.constructor_currency()
