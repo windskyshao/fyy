@@ -14,9 +14,15 @@ import Msg_Template
 import EXRate
 import mongodb
 import twder
+import json
+import time
+import requests
+
 
 app = Flask(__name__)
 IMGUR_CLIENT_ID = '66e769b3bc72457'
+access_token = 'tgQqCqIxEiMiA2KuMIUF/AgRvhFW1x/ncypXaVt1S5BMEeDFSpfqxGAJ3o13ywqsBaOLBcXr0EwFIplg7RUuxnpphqdm2XqOw9zOrK1tTLwaX7nQ272+jsvuRRXuNVJgkPe6ehImSXAXNlf30aiq2QdB04t89/1O/w1cDnyilFU='
+
 
 #這段主要在畫k線圖
 #pip3 install pyimgur
@@ -54,7 +60,20 @@ def plot_stock_k_chart(IMGUR_CLIENT_ID, stock="0050", date_from='2020-01-01'):
         print(f"錯誤: {e}")
         return None
 
-
+#Line 回傳圖片式
+def reply_image(msg, rk, token):
+    headers = {'Authorization':f'Bearer {token}','Content-Type':'application/json'}
+    body = {
+    'replyToken':rk,
+    'messages':[{
+            'type': 'image',
+            'originalContentUrl': msg,
+            'previewImageUrl': msg
+        }]
+    }
+    req = requests.requests('POST', 'https://api.line.me/v2/bot/message/reply', headers=headers, date=json.dumps(body).encode('utf-8'))
+    print(req.text)
+    
 # 抓使用者設定它關心的匯率
 def cache_users_currency():
     db=mongodb.constructor_currency()
@@ -124,6 +143,41 @@ def callback():
         abort(400)
 
     return 'OK'
+
+def callback():
+    # get X-Line-Signature header value
+    signature = request.headers['X-Line-Signature']
+
+    #get request body as Text
+    body = request.get_data(as_text=True)
+    app.logger.info("Request body: body: " + body)
+
+    # handle webhook body
+    try:
+        handler.handle(body, signature)
+        #轉換內容為 json 格式
+        json_data = json.loads(body)
+        #取得回傳訊息的 Token ( rely message 使用)
+        reply_token = json_data['events'][0]['replyToken']
+        #取得使用者 ID (push message 使用)
+        user_id = json_data['events'][0]['source']['userId']
+        print(json_data)
+        #如果傳送的是 message
+        if 'message' in json_data['events'][0]:
+            #如果 message 的類型是文字 text
+            if json_data['events'][0]['message']['type'] == 'text':
+                #取出文字
+                text = json_data['events'][0]['message']['text']
+                #如果是雷達回波圖相關的文字
+                if text == '雷達回波圖' or text == '雷達回波':
+                    #傳送雷達回波圖 (加上時間戳記)
+                    reply_image(f'https://cwbopendata.s3.ap-northeast-1.amazonaws.com/MSC/O-A0058-003.png?{time.time_ns()}',reply_token, access_token)
+    except:
+        print('error')
+    return 'OK'
+
+
+
 # 處理訊息
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
