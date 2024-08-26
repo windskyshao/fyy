@@ -71,7 +71,7 @@ def reply_image(msg, rk, token):
             'previewImageUrl': msg
         }]
     }
-    req = requests.request('POST', 'https://api.line.me/v2/bot/message/reply', headers=headers, date=json.dumps(body).encode('utf-8'))
+    req = requests.request('POST', 'https://api.line.me/v2/bot/message/reply', headers=headers, data=json.dumps(body).encode('utf-8'))
     print(req.text)
 
 # 抓使用者設定它關心的匯率
