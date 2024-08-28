@@ -18,13 +18,41 @@ import json
 import time
 import requests
 import place
+import io
+import numpy as np
+from tensorflow.keras.models import load_model
+from PIL import Image
 
-
+#=================這裡是呼叫的內容=====================
 
 app = Flask(__name__)
 IMGUR_CLIENT_ID = '66e769b3bc72457'
 access_token = 'tgQqCqIxEiMiA2KuMIUF/AgRvhFW1x/ncypXaVt1S5BMEeDFSpfqxGAJ3o13ywqsBaOLBcXr0EwFIplg7RUuxnpphqdm2XqOw9zOrK1tTLwaX7nQ272+jsvuRRXuNVJgkPe6ehImSXAXNlf30aiq2QdB04t89/1O/w1cDnyilFU='
 mat_d={} 
+
+#＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ＣＮＮ＊＊＊＊＊＊＊＊＊＊＊＊＊
+#加載已訓練的CNN模型
+model = load_model('mnist_cnn_model.h5')
+
+#初始化Line Bot API (假設你已經設置了Channel Access Token)
+line_bot_api = LineBotApi('tgQqCqIxEiMiA2KuMIUF/AgRvhFW1x/ncypXaVt1S5BMEeDFSpfqxGAJ3o13ywqsBaOLBcXr0EwFIplg7RUuxnpphqdm2XqOw9zOrK1tTLwaX7nQ272+jsvuRRXuNVJgkPe6ehImSXAXNlf30aiq2QdB04t89/1O/w1cDnyilFU=')
+
+
+def preprocess_image(image):
+    """
+    預處理上傳的圖像，使其符合CNN模型的輸入要求。
+    """
+    image = image.convert('L') # 轉換為灰度圖
+    image = image.resize((28, 28)) #調整尺寸為28x28像素
+    image = np.array(image)
+    image = image / 255.0 # 歸一化
+    image = np.expand_dims(image, axis=0) # 增加批次維度
+    image = np.expand_dims(image, axis=-1) # 增加通道維度
+    return image
+
+
+
+
 
 #這段主要在畫k線圖
 #pip3 install pyimgur
@@ -152,28 +180,29 @@ def callback():
 
     #get request body as Text
     body = request.get_data(as_text=True)
-    app.logger.info("Request body: body: " + body)
+    app.logger.info(f"Request body: body: {body}")
 
     # handle webhook body
     try:
         handler.handle(body, signature)
         # 轉換內容為json格式
-        json_data = json.loads(body)
-        # 取得回傳訊息的Token (reply mseeage 使用)
-        reply_token = json_data['events'][0]['replyToken']
-        # 取得使用者 ID (push message 使用)
-        user_id = json_data['events'][0]['source']['userId']
-        print(json_data)
-        if 'message' in json_data['events'][0]:
-            if json_data['events'][0]['message']['type'] == 'text':
-                # 取出文字
-                text = json_data['events'][0]['message']['text']
-                # 如果是雷達回波圖相關的文字
-                if text == '雷達回波圖' or text == '雷達回波':
-                    #傳送雷達回波圖
-                    reply_image(f'https://cwbopendata.s3.ap-northeast-1.amazonaws.com/MSC/O-A0058-003.png?{time.time_ns()}',reply_token,access_token)
-    except :
-        print('error')
+        # json_data = json.loads(body)
+        # # 取得回傳訊息的Token (reply mseeage 使用)
+        # reply_token = json_data['events'][0]['replyToken']
+        # # 取得使用者 ID (push message 使用)
+        # user_id = json_data['events'][0]['source']['userId']
+        # print(json_data)
+        # if 'message' in json_data['events'][0]:
+        #     if json_data['events'][0]['message']['type'] == 'text':
+        #         # 取出文字
+        #         text = json_data['events'][0]['message']['text']
+        #         # 如果是雷達回波圖相關的文字
+        #         if text == '雷達回波圖' or text == '雷達回波':
+        #             #傳送雷達回波圖
+        #             reply_image(f'https://cwbopendata.s3.ap-northeast-1.amazonaws.com/MSC/O-A0058-003.png?{time.time_ns()}',reply_token,access_token)
+    except InvalidSignatureError:    
+        abort(400)
+        # print('error')
     return 'OK'
 
 
@@ -529,8 +558,47 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token,content)
         return 0
 
+    ##############################CNN############################ 
+        
+    msg = event.message.text # 獲萬消息文本內容
 
-import os
+    # 如果消息文本為"圖像辨識"，甲導用戶上傳圖片
+    if re.match('圖像辨識', msg):
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text='請上傳一張圖片進行圖像辨識。')
+        )
+    ##############################CNN############################
+
+    ##############################weather quake############################         
+    if re.match('雷達回家', msg):
+        url = 'http://www.cwa.gov.tw/Data/radar/CV1_3600.png'
+        radar_img = ImageSendMessage(
+            original_content_url=url,
+            preview_image_url=url
+        )
+        line_bot_api.reply_message(event.reply_token, radar_img)
+
+@handler.add(MessageEvent, message=ImageMessage)
+def handle_image_message(event):
+    #獲取圖片內容
+    message_content =line_bot_api.get_message_content(event.message.id)
+    image = Image.open(io.BytesIO(message_content.content))
+
+    #預處理圖片
+    image = preprocess_image(image)
+
+    # 執行CNN模型進行預淵
+    prediction = model.predict(image)
+    digit = np.argmax(prediction)
+
+    #回傳預測結果
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=f'預測的數字是：{digit}')
+    )
+
+
 if __name__ == "__main__":
     app.run()
 
