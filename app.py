@@ -572,7 +572,7 @@ def handle_message(event):
 
     ##############################weather quake############################         
     if re.match('雷達回波', msg):
-        url = 'http://www.cwa.gov.tw/Data/radar/CV1_3600.png'
+        url = 'https://www.cwa.gov.tw/Data/radar/CV1_3600.png'
         radar_img = ImageSendMessage(
             original_content_url=url,
             preview_image_url=url
