@@ -16,39 +16,13 @@ import mongodb
 import twder
 import json
 import time
-import requests
 import place
-import io
-import numpy as np
-from tensorflow.keras.models import load_model
-from PIL import Image
-
 #=================這裡是呼叫的內容=====================
 
 app = Flask(__name__)
 IMGUR_CLIENT_ID = '66e769b3bc72457'
 access_token = 'tgQqCqIxEiMiA2KuMIUF/AgRvhFW1x/ncypXaVt1S5BMEeDFSpfqxGAJ3o13ywqsBaOLBcXr0EwFIplg7RUuxnpphqdm2XqOw9zOrK1tTLwaX7nQ272+jsvuRRXuNVJgkPe6ehImSXAXNlf30aiq2QdB04t89/1O/w1cDnyilFU='
-mat_d={} 
-
-#＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊ＣＮＮ＊＊＊＊＊＊＊＊＊＊＊＊＊
-#加載已訓練的CNN模型
-model = load_model('mnist_cnn_model.h5')
-
-#初始化Line Bot API (假設你已經設置了Channel Access Token)
-line_bot_api = LineBotApi('tgQqCqIxEiMiA2KuMIUF/AgRvhFW1x/ncypXaVt1S5BMEeDFSpfqxGAJ3o13ywqsBaOLBcXr0EwFIplg7RUuxnpphqdm2XqOw9zOrK1tTLwaX7nQ272+jsvuRRXuNVJgkPe6ehImSXAXNlf30aiq2QdB04t89/1O/w1cDnyilFU=')
-
-
-def preprocess_image(image):
-    """
-    預處理上傳的圖像，使其符合CNN模型的輸入要求。
-    """
-    image = image.convert('L') # 轉換為灰度圖
-    image = image.resize((28, 28)) #調整尺寸為28x28像素
-    image = np.array(image)
-    image = image / 255.0 # 歸一化
-    image = np.expand_dims(image, axis=0) # 增加批次維度
-    image = np.expand_dims(image, axis=-1) # 增加通道維度
-    return image
+mat_d={}
 
 
 
@@ -523,17 +497,6 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token,content)
         return 0
 
-    ##############################CNN############################ 
-        
-    msg = event.message.text # 獲萬消息文本內容
-
-    # 如果消息文本為"圖像辨識"，甲導用戶上傳圖片
-    if re.match('圖像辨識', msg):
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text='請上傳一張圖片進行圖像辨識。')
-        )
-    ##############################CNN############################
 
     ##############################weather quake############################         
     if re.match('雷達回波', msg):
@@ -543,26 +506,6 @@ def handle_message(event):
             preview_image_url=url
         )
         line_bot_api.reply_message(event.reply_token, radar_img)
-
-@handler.add(MessageEvent, message=ImageMessage)
-def handle_image_message(event):
-    #獲取圖片內容
-    message_content =line_bot_api.get_message_content(event.message.id)
-    image = Image.open(io.BytesIO(message_content.content))
-
-    #預處理圖片
-    image = preprocess_image(image)
-
-    # 執行CNN模型進行預淵
-    prediction = model.predict(image)
-    digit = np.argmax(prediction)
-
-    #回傳預測結果
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=f'預測的數字是：{digit}')
-    )
-
 
 if __name__ == "__main__":
     app.run()

@@ -17,5 +17,3 @@ imgurpython
 pyimgur
 yfinance
 mplfinance
-tensorflow
-pillow
