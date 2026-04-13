@@ -9,6 +9,11 @@ import requests
 from line_bot import *
 from bs4 import BeautifulSoup 
 import twstock
+try:
+    twstock.__update_codes()
+    print("[INFO] twstock 股票代碼資料庫已更新")
+except Exception as e:
+    print(f"[WARN] twstock 更新失敗: {e}")
 import datetime
 import Msg_Template
 import EXRate
