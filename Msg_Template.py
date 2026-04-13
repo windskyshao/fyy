@@ -27,7 +27,7 @@ def stock_reply_rate():
                                    ]           
                                 ))
     return text_message
-def stock_reply_rate():
+def stock_reply_trend():
     content_text = "分析趨勢"
     text_message = TextSendMessage(
                                  text = content_text ,
@@ -923,3 +923,32 @@ def youtube_channel():
             }
         )
     return flex_message
+
+def realtime_currency_other(currency):
+    content_text = f"還想查詢 {currency} 的其他資訊嗎？"
+    text_message = TextSendMessage(
+        text=content_text,
+        quick_reply=QuickReply(
+            items=[
+                QuickReplyButton(
+                    action=MessageAction(
+                        label="查詢即時匯率",
+                        text=f"外幣{currency}",
+                    )
+                ),
+                QuickReplyButton(
+                    action=MessageAction(
+                        label="查看匯率走勢圖",
+                        text=f"CT{currency}",
+                    )
+                ),
+                QuickReplyButton(
+                    action=MessageAction(
+                        label="加入外幣關注",
+                        text=f"新增外幣{currency}",
+                    )
+                ),
+            ]
+        )
+    )
+    return text_message

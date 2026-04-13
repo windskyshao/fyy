@@ -224,7 +224,7 @@ def handle_message(event):
         btn_msg = Msg_Template.stock_reply_rate()
         line_bot_api.push_message(uid, btn_msg)
         return 0
-    if re.match("換匯[A-Z]{3}/[A-Z{3}]", msg):
+    if re.match("換匯[A-Z]{3}/[A-Z]{3}", msg):
         line_bot_api.push_message(uid,TextSendMessage("將為您做外匯計算....."))
         content = EXRate.getExchangeRate(msg)
         line_bot_api.push_message(uid, TextSendMessage(content))
@@ -304,8 +304,8 @@ def handle_message(event):
         line_bot_api.push_message(uid, content)
         return 0
     if re.match('分析趨勢',msg):
-        message = Msg_Template.stock_reply_other()
-        line_bot_api.reply.message(event.reply_token,message)
+        message = Msg_Template.stock_reply_trend()
+        line_bot_api.reply_message(event.reply_token,message)
     ############################### 股票區 ################################
     
     if re.match('關注[0-9]{4}[<>][0-9]' ,msg):
@@ -441,107 +441,72 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token, message)
     
     if re.match("股價提醒", msg):
-        import schedule
-        import time
-        # 查看當前股價
-        def look_stock_price(stock, condition, price, userID):
-            print(userID)
-            url = 'https://tw.stock.yahoo.com/q/q?s=' + stock
-            list_req = requests.get(url)
-            soup = BeautifulSoup(list_req.content, "html.parser")
-            getstock = soup.find('span', class_='Fz(32px)').string
-            content = stock + "當前股市價格為: " +  getstock
-            if condition == '<':
-                content += "\n篩選條件為: < "+ price
-                if float(getstock) < float(price):
-                    content += "\n符合" + getstock + " < " + price + "的篩選條件"
-                    line_bot_api.push_message(userID, TextSendMessage(text=content))
-            elif condition == '>':
-                content += "\n篩選條件為: > "+ price
-                if float(getstock) > float(price):
-                    content += "\n符合" + getstock + " > " + price + "的篩選條件"
-                    line_bot_api.push_message(userID, TextSendMessage(text=content))
-            elif condition == "=":
-                content += "\n篩選條件為: = "+ price
-                if float(getstock) == float(price):
-                    content += "\n符合" + getstock + " = " + price + "的篩選條件"
-                    line_bot_api.push_message(userID, TextSendMessage(text=content))
-        # look_stock_price(stock='2002', condition='>', price=31)
-        def job():
-            print('HH')
+        try:
             dataList = cache_users_stock()
-            # print(dataList)
-            for i in range(len(dataList)):
-                for k in range(len(dataList[i])):
-                    # print(dataList[i][k])
-                    look_stock_price(dataList[i][k]['favorite_stock'], dataList[i][k]['condition'], dataList[i][k]['price'], dataList[i][k]['userID'])
-                    # look_stock_price(stock='2002', condition='>', price=31)
-        schedule.every(30).seconds.do(job).tag('daily-tasks-stock'+uid,'second') #每10秒執行一次
-        #schedule.every().hour.do(job) #每小時執行一次
-        #schedule.every().day.at("17:19").do(job) #每天9點30執行一次
-        #schedule.every().monday.do(job) #每週一執行一次
-        #schedule.every().wednesday.at("14:45").do(job) #每週三14點45執行一次
-        # 無窮迴圈
-        while True: 
-            schedule.run_pending()
-            time.sleep(1)
+            result = ""
+            for user_stocks in dataList:
+                for stock_data in user_stocks:
+                    stock_code = stock_data['favorite_stock']
+                    condition = stock_data['condition']
+                    price = stock_data['price']
+                    try:
+                        url = 'https://tw.stock.yahoo.com/q/q?s=' + stock_code
+                        list_req = requests.get(url)
+                        soup = BeautifulSoup(list_req.content, "html.parser")
+                        getstock = soup.find('span', class_='Fz(32px)')
+                        if getstock:
+                            current_price = getstock.string
+                            result += f"{stock_code} 現價: {current_price}"
+                            if condition == '<' and float(current_price) < float(price):
+                                result += f" ✅ 符合 < {price}"
+                            elif condition == '>' and float(current_price) > float(price):
+                                result += f" ✅ 符合 > {price}"
+                            else:
+                                result += f" (條件: {condition}{price})"
+                            result += "\n"
+                    except Exception as e:
+                        result += f"{stock_code} 查詢失敗\n"
+            if result:
+                line_bot_api.push_message(uid, TextSendMessage(text=result.strip()))
+            else:
+                line_bot_api.push_message(uid, TextSendMessage(text="您的股票清單為空，請先透過「關注」指令新增股票"))
+        except Exception as e:
+            line_bot_api.push_message(uid, TextSendMessage(text=f"股價查詢發生錯誤: {str(e)}"))
+        return 0
     ################################################匯率推播#######################################
     if re.match("匯率推播", msg):
-        import schedule
-        import time
-        
-        def look_currency_price(currency, condition, price, userID):
-            print(userID)
-            try:
-                realtime_currency = (twder.now(currency))[4]
-                currency_name = mongodb.currency_list[currency]
-                content = currency_name + "當前即期賣出價格為: " + str(realtime_currency)
-                if condition == '<':
-                    content += "\n篩選條件為: < "+ price
-                    if float(realtime_currency) < float(price):
-                        content += "\n符合" + realtime_currency + " < " + price + "的篩選條件"
-                        # line_bot_api.push_message(userID, TextSendMessage(text=content))
-                elif condition == '>':
-                    content += "\n篩選條件為: > "+ price
-                    if float(realtime_currency) > float(price):
-                        content += "\n符合" + realtime_currency + " > " + price + "的篩選條件"
-                        # line_bot_api.push_message(userID, TextSendMessage(text=content))
-                elif condition == "=":
-                    content += "\n篩選條件為: = "+ price
-                elif condition == "未設定":
-                    content += "\n尚未設置篩選條件, 請設定您想要的目標價格條件,如: 新增外幣"+currency+">10"
-                
-                else:
-                    content += "\n無法判定此外幣設定的篩選條件"
-                line_bot_api.push_message(userID, TextSendMessage(text=content))
-                print(content)  # 打印内容用于调试
-            except Exception as e:
-                print(f"Error checking currency: {e}")
-        print(cache_users_currency())
-        # def job_currency():
-        #     print('HH')
-        #     dataList = cache_users_currency()
-        #     print(dataList)
-        #     for i in range(len(dataList)):
-        #         for k in range(len(dataList[i])):
-        #             look_currency_price(dataList[i][k]['favorite_currency'], dataList[i][k]['condition'], dataList[i][k]['price'], dataList[i][k]['userID'])
-        def job_currency():
-            print('Running currency check job')
+        try:
             dataList = cache_users_currency()
-            print(f"Data list: {dataList}")
-            for user_data in dataList:
-                for entry in user_data:
-                    look_currency_price(entry['favorite_currency'], entry['condition'], entry['price'], entry['userID'])           
-        schedule.every(30).seconds.do(job_currency) #每10秒執行一次
-        #schedule.every(30).seconds.do(job_currency) #每10秒執行一次
-        #schedule.every().hour.do(job) #每小時執行一次
-        #schedule.every().day.at("20:00").do(job) #每天9點30執行一次
-        #schedule.every().monday.do(job) #每週一執行一次
-        #schedule.every().wednesday.at("14:45").do(job) #每週三14點45執行一次
-        # 無窮迴圈
-        while True: 
-            schedule.run_pending()
-            time.sleep(1)
+            result = ""
+            for user_currencies in dataList:
+                for entry in user_currencies:
+                    if entry['userID'] != uid:
+                        continue
+                    currency = entry['favorite_currency']
+                    condition = entry['condition']
+                    price = entry['price']
+                    try:
+                        realtime_currency = (twder.now(currency))[4]
+                        currency_name = mongodb.currency_list.get(currency, currency)
+                        result += f"{currency_name} 即期賣出: {realtime_currency}"
+                        if condition == "未設定":
+                            result += " (未設定條件)"
+                        elif condition == '<' and float(realtime_currency) < float(price):
+                            result += f" ✅ 符合 < {price}"
+                        elif condition == '>' and float(realtime_currency) > float(price):
+                            result += f" ✅ 符合 > {price}"
+                        else:
+                            result += f" (條件: {condition}{price})"
+                        result += "\n"
+                    except Exception as e:
+                        result += f"{currency} 查詢失敗\n"
+            if result:
+                line_bot_api.push_message(uid, TextSendMessage(text=result.strip()))
+            else:
+                line_bot_api.push_message(uid, TextSendMessage(text="您的外幣清單為空，請先透過「新增外幣」指令新增"))
+        except Exception as e:
+            line_bot_api.push_message(uid, TextSendMessage(text=f"匯率查詢發生錯誤: {str(e)}"))
+        return 0
 
     #＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊weather＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
     #圖文選單

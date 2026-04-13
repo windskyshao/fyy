@@ -2,9 +2,10 @@ import twder
 import pandas as pd
 import requests
 import json
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib
 import Imgur
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -90,7 +91,6 @@ def cash_exrate_sixMonth(code1) -> "USA":
     plt.legend(prop=chinese_font) # 支援中文字
     plt.title(currency_name + " 現金匯率",  fontsize=20, fontproperties=chinese_font)
     plt.savefig(f"{code1}.png")
-    plt.show()
     plt.close()
     return Imgur.showImgur(code1)
 
@@ -112,6 +112,5 @@ def spot_exrate_sixMonth(code2):
     plt.legend(prop=chinese_font) # 支援中文字
     plt.title(f"{currency_name} 即期匯率",  fontsize=20, fontproperties=chinese_font)
     plt.savefig(f"{code2}.png")
-    plt.show()
     plt.close()
     return Imgur.showImgur(code2)
