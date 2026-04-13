@@ -507,8 +507,151 @@ def handle_message(event):
         )
         line_bot_api.reply_message(event.reply_token, radar_img)
 
+@handler.add(FollowEvent)
+def handle_follow(event):
+    welcome_flex = FlexSendMessage(
+        alt_text="歡迎加入阿生生！",
+        contents={
+            "type": "bubble",
+            "size": "mega",
+            "header": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "阿生生 財經小幫手",
+                        "weight": "bold",
+                        "size": "xl",
+                        "color": "#1DB446",
+                        "align": "center"
+                    },
+                    {
+                        "type": "text",
+                        "text": "歡迎您的加入！以下是我的功能介紹",
+                        "size": "sm",
+                        "color": "#888888",
+                        "align": "center",
+                        "margin": "md"
+                    }
+                ],
+                "paddingAll": "20px"
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {"type": "text", "text": "📈", "flex": 0, "size": "lg"},
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "contents": [
+                                    {"type": "text", "text": "股票查詢", "weight": "bold", "size": "md"},
+                                    {"type": "text", "text": "輸入 #股票代號 查即時股價\n例如：#2330", "size": "xs", "color": "#888888", "wrap": True}
+                                ],
+                                "margin": "lg"
+                            }
+                        ],
+                        "margin": "lg"
+                    },
+                    {"type": "separator", "margin": "lg"},
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {"type": "text", "text": "💱", "flex": 0, "size": "lg"},
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "contents": [
+                                    {"type": "text", "text": "匯率查詢", "weight": "bold", "size": "md"},
+                                    {"type": "text", "text": "輸入 外幣USD 查匯率\n輸入 換匯USD/TWD/100 換算", "size": "xs", "color": "#888888", "wrap": True}
+                                ],
+                                "margin": "lg"
+                            }
+                        ],
+                        "margin": "lg"
+                    },
+                    {"type": "separator", "margin": "lg"},
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {"type": "text", "text": "⛽", "flex": 0, "size": "lg"},
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "contents": [
+                                    {"type": "text", "text": "油價查詢", "weight": "bold", "size": "md"},
+                                    {"type": "text", "text": "輸入 油價查詢 查看最新油價", "size": "xs", "color": "#888888", "wrap": True}
+                                ],
+                                "margin": "lg"
+                            }
+                        ],
+                        "margin": "lg"
+                    },
+                    {"type": "separator", "margin": "lg"},
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {"type": "text", "text": "🌤", "flex": 0, "size": "lg"},
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "contents": [
+                                    {"type": "text", "text": "天氣查詢", "weight": "bold", "size": "md"},
+                                    {"type": "text", "text": "輸入 最新氣象 或 雷達回波", "size": "xs", "color": "#888888", "wrap": True}
+                                ],
+                                "margin": "lg"
+                            }
+                        ],
+                        "margin": "lg"
+                    }
+                ],
+                "paddingAll": "20px",
+                "spacing": "sm"
+            },
+            "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "color": "#1DB446",
+                        "action": {
+                            "type": "message",
+                            "label": "開始使用",
+                            "text": "開始玩"
+                        },
+                        "height": "sm"
+                    },
+                    {
+                        "type": "button",
+                        "style": "link",
+                        "action": {
+                            "type": "message",
+                            "label": "查看更多功能",
+                            "text": "使用說明"
+                        },
+                        "height": "sm"
+                    }
+                ],
+                "paddingAll": "15px",
+                "spacing": "sm"
+            }
+        }
+    )
+    line_bot_api.reply_message(event.reply_token, welcome_flex)
+
+@handler.add(UnfollowEvent)
+def handle_unfollow(event):
+    print(f"User unfollowed: {event.source.user_id}")
+
 if __name__ == "__main__":
     app.run()
-
-#https://opendata.cwb.gov.tw/index
-#CWA-C07BDC7E-7138-4068-BCEC-13C15865812A
