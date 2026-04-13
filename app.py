@@ -424,20 +424,20 @@ def handle_message(event):
                     condition = stock_data['condition']
                     price = stock_data['price']
                     try:
-                        url = 'https://tw.stock.yahoo.com/q/q?s=' + stock_code
-                        list_req = requests.get(url)
-                        soup = BeautifulSoup(list_req.content, "html.parser")
-                        getstock = soup.find('span', class_='Fz(32px)')
-                        if getstock:
-                            current_price = getstock.string
+                        ticker = yf.Ticker(f"{stock_code}.TW")
+                        hist = ticker.history(period="1d")
+                        if not hist.empty:
+                            current_price = f"{hist.iloc[-1]['Close']:.2f}"
                             result += f"{stock_code} 現價: {current_price}"
                             if condition == '<' and float(current_price) < float(price):
-                                result += f" ✅ 符合 < {price}"
+                                result += f" >>> 符合 < {price}"
                             elif condition == '>' and float(current_price) > float(price):
-                                result += f" ✅ 符合 > {price}"
+                                result += f" >>> 符合 > {price}"
                             else:
                                 result += f" (條件: {condition}{price})"
                             result += "\n"
+                        else:
+                            result += f"{stock_code} 查無資料\n"
                     except Exception as e:
                         result += f"{stock_code} 查詢失敗\n"
             if result:
