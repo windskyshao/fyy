@@ -296,37 +296,45 @@ def handle_message(event):
     if event.message.text == "股價查詢":
         line_bot_api.push_message(uid,TextSendMessage("請輸入#股票代號....."))
     if(msg.startswith('#')):
-            text = msg[1:]
+        text = msg[1:]
+        try:
             content = ''
-
             stock_rt = twstock.realtime.get(text)
-            my_datetime = datetime.datetime.fromtimestamp(stock_rt['timestamp']+8*60*60)
-            my_time = my_datetime.strftime('%H:%M:%S')
+            if stock_rt and stock_rt.get('success'):
+                my_datetime = datetime.datetime.fromtimestamp(stock_rt['timestamp']+8*60*60)
+                my_time = my_datetime.strftime('%H:%M:%S')
+                content += '%s (%s) %s\n' %(
+                    stock_rt['info']['name'],
+                    stock_rt['info']['code'],
+                    my_time)
+                content += '現價: %s / 開盤: %s\n'%(
+                    stock_rt['realtime']['latest_trade_price'],
+                    stock_rt['realtime']['open'])
+                content += '最高: %s / 最低: %s\n' %(
+                    stock_rt['realtime']['high'],
+                    stock_rt['realtime']['low'])
+                content += '量: %s\n' %(stock_rt['realtime']['accumulate_trade_volume'])
+            else:
+                content += f'股票 {text} 即時報價查詢失敗\n'
 
-            content += '%s (%s) %s\n' %(
-                stock_rt['info']['name'],
-                stock_rt['info']['code'],
-                my_time)
-            content += '現價: %s / 開盤: %s\n'%(
-                stock_rt['realtime']['latest_trade_price'],
-                stock_rt['realtime']['open'])
-            content += '最高: %s / 最低: %s\n' %(
-                stock_rt['realtime']['high'],
-                stock_rt['realtime']['low'])
-            content += '量: %s\n' %(stock_rt['realtime']['accumulate_trade_volume'])
+            try:
+                stock = twstock.Stock(text)
+                content += '-----\n'
+                content += '最近五日價格: \n'
+                price5 = stock.price[-5:][::-1]
+                date5 = stock.date[-5:][::-1]
+                for i in range(len(price5)):
+                    content += '[%s] %s\n' %(date5[i].strftime("%Y-%m-%d"), price5[i])
+            except Exception as e:
+                content += f'-----\n歷史價格查詢失敗: {str(e)}\n'
 
-            stock = twstock.Stock(text)#twstock.Stock('2330')
-            content += '-----\n'
-            content += '最近五日價格: \n'
-            price5 = stock.price[-5:][::-1]
-            date5 = stock.date[-5:][::-1]
-            for i in range(len(price5)):
-                #content += '[%s] %s\n' %(date5[i].strftime("%Y-%m-%d %H:%M:%S"), price5[i])
-                content += '[%s] %s\n' %(date5[i].strftime("%Y-%m-%d"), price5[i])
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=content)
+                TextSendMessage(text=content.strip())
             )
+        except Exception as e:
+            line_bot_api.push_message(uid, TextSendMessage(text=f'股票查詢發生錯誤: {str(e)}'))
+        return 0
     # 刪除存在資料庫裡面的股票
     if re.match('刪除[0-9]{4}',msg): 
         content = mongodb.delete_my_stock(user_name, msg[2:])
