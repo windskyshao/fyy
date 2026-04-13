@@ -9,11 +9,7 @@ import requests
 from line_bot import *
 from bs4 import BeautifulSoup 
 import twstock
-try:
-    twstock.__update_codes()
-    print("[INFO] twstock 股票代碼資料庫已更新")
-except Exception as e:
-    print(f"[WARN] twstock 更新失敗: {e}")
+import yfinance as yf
 import datetime
 import Msg_Template
 import EXRate
@@ -303,35 +299,26 @@ def handle_message(event):
     if(msg.startswith('#')):
         text = msg[1:]
         try:
-            content = ''
-            stock_rt = twstock.realtime.get(text)
-            if stock_rt and stock_rt.get('success'):
-                my_datetime = datetime.datetime.fromtimestamp(stock_rt['timestamp']+8*60*60)
-                my_time = my_datetime.strftime('%H:%M:%S')
-                content += '%s (%s) %s\n' %(
-                    stock_rt['info']['name'],
-                    stock_rt['info']['code'],
-                    my_time)
-                content += '現價: %s / 開盤: %s\n'%(
-                    stock_rt['realtime']['latest_trade_price'],
-                    stock_rt['realtime']['open'])
-                content += '最高: %s / 最低: %s\n' %(
-                    stock_rt['realtime']['high'],
-                    stock_rt['realtime']['low'])
-                content += '量: %s\n' %(stock_rt['realtime']['accumulate_trade_volume'])
-            else:
-                content += f'股票 {text} 即時報價查詢失敗\n'
+            ticker = yf.Ticker(f"{text}.TW")
+            info = ticker.fast_info
+            hist = ticker.history(period="7d")
 
-            try:
-                stock = twstock.Stock(text)
-                content += '-----\n'
-                content += '最近五日價格: \n'
-                price5 = stock.price[-5:][::-1]
-                date5 = stock.date[-5:][::-1]
-                for i in range(len(price5)):
-                    content += '[%s] %s\n' %(date5[i].strftime("%Y-%m-%d"), price5[i])
-            except Exception as e:
-                content += f'-----\n歷史價格查詢失敗: {str(e)}\n'
+            if hist.empty:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=f'股票 {text} 查無資料，請確認代號是否正確')
+                )
+                return 0
+
+            latest = hist.iloc[-1]
+            content = f'{text}\n'
+            content += f'現價: {latest["Close"]:.2f} / 開盤: {latest["Open"]:.2f}\n'
+            content += f'最高: {latest["High"]:.2f} / 最低: {latest["Low"]:.2f}\n'
+            content += f'量: {int(latest["Volume"])}\n'
+            content += '-----\n'
+            content += '最近交易日價格:\n'
+            for date, row in hist.iloc[::-1].iterrows():
+                content += f'[{date.strftime("%Y-%m-%d")}] {row["Close"]:.2f}\n'
 
             line_bot_api.reply_message(
                 event.reply_token,
