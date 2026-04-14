@@ -434,17 +434,20 @@ def handle_message(event):
         if EXRate.getCurrencyName(currency) == "無可支援的外幣":
             line_bot_api.push_message(uid, TextSendMessage('無可支援的外幣'))
             return 0
-        line_bot_api.push_message(uid, TextSendMessage('稍等一下, 將會給您匯率走勢圖'))
-        cash_imgurl = EXRate.cash_exrate_sixMonth(currency)            
+        currency_name = EXRate.getCurrencyName(currency)
+        line_bot_api.push_message(uid, TextSendMessage(f'稍等一下, 正在產生 {currency_name} 匯率走勢圖...'))
+        cash_imgurl = EXRate.cash_exrate_sixMonth(currency)
         if cash_imgurl == "現金匯率無資料可分析":
             line_bot_api.push_message(uid, TextSendMessage('現金匯率無資料可分析'))
         else:
+            line_bot_api.push_message(uid, TextSendMessage(f'📊 {currency_name} 現金匯率走勢（近6個月）'))
             line_bot_api.push_message(uid, ImageSendMessage(original_content_url=cash_imgurl, preview_image_url=cash_imgurl))
-        
+
         spot_imgurl = EXRate.spot_exrate_sixMonth(currency)
         if spot_imgurl == "即期匯率無資料可分析":
             line_bot_api.push_message(uid, TextSendMessage('即期匯率無資料可分析'))
         else:
+            line_bot_api.push_message(uid, TextSendMessage(f'📊 {currency_name} 即期匯率走勢（近6個月）'))
             line_bot_api.push_message(uid, ImageSendMessage(original_content_url=spot_imgurl, preview_image_url=spot_imgurl))
         btn_msg = Msg_Template.realtime_currency_other(currency)
         line_bot_api.push_message(uid, btn_msg)
