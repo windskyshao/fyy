@@ -1,3 +1,4 @@
+import os
 from linebot import (
     LineBotApi, WebhookHandler
 )
@@ -8,7 +9,7 @@ from linebot.models import (
     MessageEvent,TextMessage, TextSendMessage, StickerSendMessage, FollowEvent,
      TemplateSendMessage, CarouselTemplate, CarouselColumn, URIAction)
 
-#Channel access token
-line_bot_api = LineBotApi('tgQqCqIxEiMiA2KuMIUF/AgRvhFW1x/ncypXaVt1S5BMEeDFSpfqxGAJ3o13ywqsBaOLBcXr0EwFIplg7RUuxnpphqdm2XqOw9zOrK1tTLwaX7nQ272+jsvuRRXuNVJgkPe6ehImSXAXNlf30aiq2QdB04t89/1O/w1cDnyilFU=')
+#Channel access token (從環境變數讀取)
+line_bot_api = LineBotApi(os.environ.get('CHANNEL_ACCESS_TOKEN', ''))
 #Channel secret
-handler = WebhookHandler('473cddb51f8ae4d839bddd98e028937e')
+handler = WebhookHandler(os.environ.get('CHANNEL_SECRET', ''))

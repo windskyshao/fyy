@@ -58,8 +58,8 @@ from flask import send_from_directory
 #=================這裡是呼叫的內容=====================
 
 app = Flask(__name__)
-IMGUR_CLIENT_ID = '66e769b3bc72457'
-access_token = 'tgQqCqIxEiMiA2KuMIUF/AgRvhFW1x/ncypXaVt1S5BMEeDFSpfqxGAJ3o13ywqsBaOLBcXr0EwFIplg7RUuxnpphqdm2XqOw9zOrK1tTLwaX7nQ272+jsvuRRXuNVJgkPe6ehImSXAXNlf30aiq2QdB04t89/1O/w1cDnyilFU='
+IMGUR_CLIENT_ID = os.environ.get('IMGUR_CLIENT_ID', '')
+access_token = os.environ.get('CHANNEL_ACCESS_TOKEN', '')
 mat_d={}
 
 # 圖片暫存資料夾
