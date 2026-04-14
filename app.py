@@ -855,7 +855,63 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"油價查詢失敗: {str(e)}"))
         return 0
     if event.message.text == "使用說明":
-        Usage(event)
+        usage_flex = FlexSendMessage(
+            alt_text="使用說明",
+            contents={
+                "type": "bubble", "size": "mega",
+                "header": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        {"type": "text", "text": "🌟 阿生生使用說明", "weight": "bold", "size": "lg", "color": "#1DB446", "align": "center"}
+                    ], "paddingAll": "15px"
+                },
+                "body": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        {"type": "text", "text": "📈 股票功能", "weight": "bold", "size": "sm", "color": "#1DB446"},
+                        {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "股價查詢", "text": "股價查詢"}},
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "關注的股票", "text": "股票清單"}},
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "股價提醒", "text": "股價提醒"}}
+                        ], "spacing": "sm"},
+                        {"type": "separator", "margin": "lg"},
+                        {"type": "text", "text": "💱 匯率功能", "weight": "bold", "size": "sm", "color": "#2196F3", "margin": "lg"},
+                        {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "匯率查詢", "text": "匯率查詢"}},
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "幣別種類", "text": "幣別種類"}},
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "我的外幣", "text": "我的外幣"}}
+                        ], "spacing": "sm"},
+                        {"type": "separator", "margin": "lg"},
+                        {"type": "text", "text": "⛽ 生活資訊", "weight": "bold", "size": "sm", "color": "#FF6600", "margin": "lg"},
+                        {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "油價查詢", "text": "油價查詢"}},
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "最新氣象", "text": "最新氣象"}},
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "雷達回波", "text": "雷達回波"}}
+                        ], "spacing": "sm"},
+                        {"type": "separator", "margin": "lg"},
+                        {"type": "text", "text": "💡 小提示", "weight": "bold", "size": "sm", "color": "#888888", "margin": "lg"},
+                        {"type": "text", "text": "• 直接輸入股票代號（如 2330）查股價\n• 輸入公司名稱（如 台積電）搜尋\n• 輸入幣別名稱（如 美元）查匯率", "size": "xs", "color": "#888888", "wrap": True, "margin": "sm"}
+                    ], "paddingAll": "15px", "spacing": "sm"
+                },
+                "footer": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        {"type": "button", "style": "primary", "color": "#1DB446", "height": "sm",
+                         "action": {"type": "message", "label": "開始玩", "text": "開始玩"}}
+                    ], "paddingAll": "10px"
+                }
+            }
+        )
+        line_bot_api.reply_message(event.reply_token, usage_flex)
         return 0
     if re.match("理財YOUTUBER推薦", msg):
         content = Msg_Template.youtube_channel()
