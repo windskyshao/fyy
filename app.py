@@ -299,7 +299,7 @@ def handle_message(event):
         msg = '#' + msg
 
     ######################## 匯率區 ##############################################
-    if re.match("匯率大小事", msg):
+    if re.match("匯率大小事|匯率查詢", msg):
         btn_msg = Msg_Template.stock_reply_rate()
         line_bot_api.push_message(uid, btn_msg)
         return 0
