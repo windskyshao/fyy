@@ -10,6 +10,7 @@ from line_bot import *
 from bs4 import BeautifulSoup 
 import twstock
 import yfinance as yf
+import pandas as pd
 import datetime
 import Msg_Template
 import EXRate
@@ -59,6 +60,10 @@ def plot_stock_k_chart(IMGUR_CLIENT_ID, stock="0050", date_from='2020-01-01'):
         if df is None or df.empty:
             print(f"未能獲取到股票數據")
             return None
+
+        # 新版 yfinance 回傳多層欄位，需要攤平
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
 
         # 產生唯一檔名
         filename = f"kchart_{stock}_{uuid.uuid4().hex[:8]}.png"
