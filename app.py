@@ -918,8 +918,8 @@ def handle_message(event):
         line_bot_api.push_message(uid, content)
         return 0
     if re.match('分析趨勢',msg):
-        message = Msg_Template.stock_reply_trend()
-        line_bot_api.reply_message(event.reply_token,message)
+        line_bot_api.reply_message(event.reply_token,
+            TextSendMessage(text="此功能暫待推出，敬請見諒～～"))
         return 0
     ############################### 股票區 ################################
     
