@@ -1181,33 +1181,83 @@ def handle_message(event):
     if re.match("匯率推播", msg):
         try:
             dataList = cache_users_currency()
-            result = ""
+            rows = []
             for user_currencies in dataList:
                 for entry in user_currencies:
                     if entry['userID'] != uid:
                         continue
                     currency = entry['favorite_currency']
-                    condition = entry['condition']
-                    price = entry['price']
+                    condition = entry.get('condition', '未設定')
+                    price = entry.get('price', '未設定')
+                    currency_name = mongodb.currency_list.get(currency, currency)
                     try:
                         realtime_currency = (twder.now(currency))[4]
-                        currency_name = mongodb.currency_list.get(currency, currency)
-                        result += f"{currency_name} 即期賣出: {realtime_currency}"
-                        if condition == "未設定":
-                            result += " (未設定條件)"
-                        elif condition == '<' and float(realtime_currency) < float(price):
-                            result += f" ✅ 符合 < {price}"
-                        elif condition == '>' and float(realtime_currency) > float(price):
-                            result += f" ✅ 符合 > {price}"
-                        else:
-                            result += f" (條件: {condition}{price})"
-                        result += "\n"
-                    except Exception as e:
-                        result += f"{currency} 查詢失敗\n"
-            if result:
-                line_bot_api.push_message(uid, TextSendMessage(text=result.strip()))
+                        rate = float(realtime_currency) if realtime_currency != '-' else 0
+                        rate_text = str(rate) if rate else '無資料'
+                    except:
+                        rate_text = '查詢失敗'
+                        rate = 0
+                    # 判斷狀態
+                    if condition == '未設定':
+                        status_text = "未設定條件"
+                        status_color = "#888888"
+                    elif condition == '<' and rate and rate < float(price):
+                        status_text = f"✅ 已低於 {price}"
+                        status_color = "#1DB446"
+                    elif condition == '>' and rate and rate > float(price):
+                        status_text = f"✅ 已高於 {price}"
+                        status_color = "#1DB446"
+                    else:
+                        status_text = f"條件：{condition}{price}（未達）"
+                        status_color = "#FF9800"
+                    # 主行
+                    rows.append({
+                        "type": "box", "layout": "horizontal", "margin": "lg",
+                        "contents": [
+                            {"type": "text", "text": f"{currency_name}", "size": "sm", "color": "#333333", "flex": 2},
+                            {"type": "text", "text": rate_text, "size": "sm", "weight": "bold", "align": "end", "flex": 2, "color": "#2196F3"},
+                        ]
+                    })
+                    # 狀態行 + 設定按鈕
+                    status_contents = [
+                        {"type": "text", "text": status_text, "size": "xxs", "color": status_color, "flex": 4}
+                    ]
+                    if condition == '未設定':
+                        status_contents.append({
+                            "type": "box", "layout": "vertical", "flex": 0, "width": "60px", "height": "22px",
+                            "contents": [{"type": "text", "text": "設定條件", "size": "xxs", "color": "#FFFFFF", "align": "center", "gravity": "center"}],
+                            "backgroundColor": "#2196F3", "cornerRadius": "11px", "justifyContent": "center",
+                            "action": {"type": "message", "label": "設定", "text": f"關注外幣{currency}"}
+                        })
+                    rows.append({
+                        "type": "box", "layout": "horizontal", "margin": "sm",
+                        "contents": status_contents
+                    })
+                    rows.append({"type": "separator", "margin": "md"})
+            if rows:
+                if rows[-1].get('type') == 'separator':
+                    rows.pop()
+                flex = FlexSendMessage(
+                    alt_text="匯率推播結果",
+                    contents={
+                        "type": "bubble",
+                        "header": {
+                            "type": "box", "layout": "vertical",
+                            "contents": [
+                                {"type": "text", "text": "📢 匯率推播", "weight": "bold", "size": "lg", "color": "#2196F3"},
+                                {"type": "text", "text": "即期賣出匯率 vs 您的通知條件", "size": "xs", "color": "#888888", "margin": "sm"}
+                            ], "paddingAll": "15px"
+                        },
+                        "body": {
+                            "type": "box", "layout": "vertical",
+                            "contents": rows,
+                            "paddingAll": "15px"
+                        }
+                    }
+                )
+                line_bot_api.push_message(uid, flex)
             else:
-                line_bot_api.push_message(uid, TextSendMessage(text="您的外幣清單為空，請先透過「新增外幣」指令新增"))
+                line_bot_api.push_message(uid, TextSendMessage(text="您的外幣清單為空，請先透過外幣查詢頁面加入關注"))
         except Exception as e:
             line_bot_api.push_message(uid, TextSendMessage(text=f"匯率查詢發生錯誤: {str(e)}"))
         return 0
