@@ -106,16 +106,7 @@ def plot_stock_k_chart(IMGUR_CLIENT_ID, stock="0050", date_from='2020-01-01'):
         mpf.plot(df, type='candle', mav=(5, 20), volume=True,
                  ylabel=ticker_symbol.upper() + ' Price', savefig=filepath)
 
-        # 優先嘗試 Imgur
-        try:
-            im = pyimgur.Imgur(IMGUR_CLIENT_ID)
-            uploaded_image = im.upload_image(filepath, title=stock + " K chart")
-            print(f"Imgur 上傳成功: {uploaded_image.link}")
-            return uploaded_image.link
-        except Exception as e:
-            print(f"Imgur 上傳失敗: {e}，改用本地路由")
-
-        # Imgur 失敗，用本地路由
+        # 優先使用本地路由（穩定）
         local_url = f"{RENDER_URL}/charts/{filename}"
         print(f"使用本地圖片: {local_url}")
         return local_url
