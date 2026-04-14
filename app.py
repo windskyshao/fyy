@@ -541,11 +541,21 @@ def handle_message(event):
                         "spacing": "sm"
                     },
                     "footer": {
-                        "type": "box", "layout": "horizontal",
+                        "type": "box", "layout": "vertical",
                         "contents": [
+                            {"type": "text", "text": "K線圖", "size": "xs", "color": "#888888", "align": "center", "weight": "bold"},
                             {
-                                "type": "button", "style": "primary", "color": "#1DB446", "height": "sm",
-                                "action": {"type": "message", "label": "K線圖", "text": f"@K{text}2024-01-01"}
+                                "type": "box", "layout": "horizontal",
+                                "contents": [
+                                    {"type": "button", "style": "primary", "color": "#1DB446", "height": "sm", "flex": 1,
+                                     "action": {"type": "message", "label": "3個月", "text": f"@K{text} 3m"}},
+                                    {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm", "flex": 1,
+                                     "action": {"type": "message", "label": "半年", "text": f"@K{text} 6m"}},
+                                    {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
+                                     "action": {"type": "message", "label": "1年", "text": f"@K{text} 1y"}},
+                                    {"type": "button", "style": "primary", "color": "#9C27B0", "height": "sm", "flex": 1,
+                                     "action": {"type": "message", "label": "3年", "text": f"@K{text} 3y"}}
+                                ], "spacing": "sm"
                             },
                             {
                                 "type": "button", "style": "secondary", "height": "sm",
@@ -571,9 +581,27 @@ def handle_message(event):
         line_bot_api.push_message(uid, TextSendMessage(content))
         return 0
     if event.message.text[:2].upper() == "@K": #這段主要在畫k線圖
-        input_word = event.message.text.replace(" ","")
-        stock_name = input_word[2:6]
-        start_date = input_word[6:] if len(input_word) > 6 else '2024-01-01'
+        input_word = event.message.text.strip()
+        parts = input_word[2:].strip().split()
+        stock_name = parts[0] if parts else ''
+        period_str = parts[1] if len(parts) > 1 else '1y'
+
+        # 支援期間簡寫：3m=3個月, 6m=半年, 1y=1年, 3y=3年
+        from dateutil.relativedelta import relativedelta
+        period_map = {
+            '3m': relativedelta(months=3),
+            '6m': relativedelta(months=6),
+            '1y': relativedelta(years=1),
+            '2y': relativedelta(years=2),
+            '3y': relativedelta(years=3),
+            '5y': relativedelta(years=5),
+        }
+        if period_str in period_map:
+            start_date = (datetime.datetime.now() - period_map[period_str]).strftime('%Y-%m-%d')
+        elif re.match(r'\d{4}-\d{2}-\d{2}', period_str):
+            start_date = period_str
+        else:
+            start_date = (datetime.datetime.now() - relativedelta(years=1)).strftime('%Y-%m-%d')
         try:
             k_stock_name = get_stock_name(stock_name)
             line_bot_api.push_message(uid, TextSendMessage(text=f"正在繪製 {k_stock_name}({stock_name}) K線圖，請稍候..."))

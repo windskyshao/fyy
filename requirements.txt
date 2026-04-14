@@ -17,3 +17,4 @@ imgurpython
 pyimgur
 yfinance
 mplfinance
+python-dateutil
