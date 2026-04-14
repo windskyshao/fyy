@@ -294,6 +294,16 @@ def handle_message(event):
         line_bot_api.push_message(uid, TextSendMessage(content))
         return 0
 
+    # 用戶輸入數字 → 接續自訂換匯（優先於股票查詢）
+    if uid in mat_d and mat_d[uid].startswith('換匯') and re.match(r'^[\d,.]+$', msg):
+        amount_str = msg.replace(',', '')
+        try:
+            float(amount_str)
+            msg = f"{mat_d[uid]}/{amount_str}".upper()
+            del mat_d[uid]
+        except ValueError:
+            del mat_d[uid]
+
     # 指令容錯：純4位數字 → 當作股票查詢
     if re.match('^[0-9]{4,6}$', msg):
         msg = '#' + msg
@@ -311,17 +321,6 @@ def handle_message(event):
             TextSendMessage(text=f"請輸入要兌換的 {parts[0]} 金額（數字）：")
         )
         return 0
-    # 用戶輸入數字 → 接續自訂換匯
-    if uid in mat_d and mat_d[uid].startswith('換匯') and re.match(r'^[\d,.]+$', msg):
-        amount_str = msg.replace(',', '')
-        try:
-            amount = float(amount_str)
-            cmd = f"{mat_d[uid]}/{amount_str}"
-            del mat_d[uid]
-            # 重新組合 msg 讓下面的換匯 handler 處理
-            msg = cmd.upper()
-        except ValueError:
-            del mat_d[uid]
     if re.match("匯率兌換", msg):
         pairs = [
             ("美元→台幣", "換匯USD/TWD"), ("日圓→台幣", "換匯JPY/TWD"),
