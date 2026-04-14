@@ -735,7 +735,7 @@ def handle_message(event):
                             ),
                             URIAction(
                                 label='理財YouTube(柴鼠兄弟)',
-                                uri='https://www.youtube.com/@ZRBros'
+                                uri='https://www.youtube.com/channel/UC45i13dEfEVac2IEJT_Nr5Q'
                             )
                         ]
                     ),
