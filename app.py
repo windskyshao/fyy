@@ -18,12 +18,24 @@ import twder
 import json
 import time
 import place
+import os
+import uuid
+from flask import send_from_directory
 #=================這裡是呼叫的內容=====================
 
 app = Flask(__name__)
 IMGUR_CLIENT_ID = '66e769b3bc72457'
 access_token = 'tgQqCqIxEiMiA2KuMIUF/AgRvhFW1x/ncypXaVt1S5BMEeDFSpfqxGAJ3o13ywqsBaOLBcXr0EwFIplg7RUuxnpphqdm2XqOw9zOrK1tTLwaX7nQ272+jsvuRRXuNVJgkPe6ehImSXAXNlf30aiq2QdB04t89/1O/w1cDnyilFU='
 mat_d={}
+
+# 圖片暫存資料夾
+CHART_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'charts')
+os.makedirs(CHART_DIR, exist_ok=True)
+RENDER_URL = 'https://fyy-l8a3.onrender.com'
+
+@app.route('/charts/<filename>')
+def serve_chart(filename):
+    return send_from_directory(CHART_DIR, filename)
 
 
 
@@ -37,32 +49,41 @@ import pyimgur
 
 def plot_stock_k_chart(IMGUR_CLIENT_ID, stock="0050", date_from='2020-01-01'):
     """
-    進行個股k線繪製，回傳至於雲端圖床的連結。將顯示包含5MA、20MA及量價關系，起始預設自2020-01-01起迄昨日收盤價。
-    :stock "個股代碼(字串)，預設0050。
-    :date_from :起始日(字串)，格式為YYYY-MM-DD，預設自2020-01-01起。
+    進行個股k線繪製。優先上傳 Imgur，失敗時改用本地圖片路由。
     """
-    stock = str(stock) + ".TW"
+    ticker_symbol = str(stock) + ".TW"
     try:
-        #使用yfinance萬取數據
-        print(f"正在獲取股票數據:{stock}")
-        df = yf.download(stock, start=date_from)
+        print(f"正在獲取股票數據: {ticker_symbol}")
+        df = yf.download(ticker_symbol, start=date_from)
 
         if df is None or df.empty:
-            print(f"未能獲取到股票數據，可能是因為股票代碼不正確或數據來源問題。")
+            print(f"未能獲取到股票數據")
             return None
-        
-        print("股尉數據獲取成功，盰始繪製 k 線圖...")
-        mpf.plot(df, type='candle', mav=(5, 20), volume=True, ylabel=stock.upper() + ' Price',savefig='testsave.png')
 
-        #上傳圖片到Imgur
-        PATH = "testsave.png"
-        im = pyimgur.Imgur(IMGUR_CLIENT_ID)
-        uploaded_image = im.upload_image(PATH, title=stock + " candlestick chart")
-        print(f"圖片上傳成功: {uploaded_image.link}")
-        return uploaded_image.link
-    
+        # 產生唯一檔名
+        filename = f"kchart_{stock}_{uuid.uuid4().hex[:8]}.png"
+        filepath = os.path.join(CHART_DIR, filename)
+
+        print("繪製 K 線圖...")
+        mpf.plot(df, type='candle', mav=(5, 20), volume=True,
+                 ylabel=ticker_symbol.upper() + ' Price', savefig=filepath)
+
+        # 優先嘗試 Imgur
+        try:
+            im = pyimgur.Imgur(IMGUR_CLIENT_ID)
+            uploaded_image = im.upload_image(filepath, title=stock + " K chart")
+            print(f"Imgur 上傳成功: {uploaded_image.link}")
+            return uploaded_image.link
+        except Exception as e:
+            print(f"Imgur 上傳失敗: {e}，改用本地路由")
+
+        # Imgur 失敗，用本地路由
+        local_url = f"{RENDER_URL}/charts/{filename}"
+        print(f"使用本地圖片: {local_url}")
+        return local_url
+
     except Exception as e:
-        print(f"錯誤: {e}")
+        print(f"K線圖錯誤: {e}")
         return None
 
 #Line 回傳圖片函式
@@ -458,13 +479,20 @@ def handle_message(event):
         content = mongodb.delete_my_allstock( user_name, uid)
         line_bot_api.push_message(uid, TextSendMessage(content))
         return 0
-    if event.message.text[:2].upper() == "@K": #這段主要在畫k連圖
+    if event.message.text[:2].upper() == "@K": #這段主要在畫k線圖
         input_word = event.message.text.replace(" ","")
         stock_name = input_word[2:6]
-        start_date = input_word[6:]
-        content = plot_stock_k_chart(IMGUR_CLIENT_ID,stock_name,start_date)
-        message = ImageSendMessage(original_content_url= content,preview_image_url=content)
-        line_bot_api.reply_message(event.reply_token, message)
+        start_date = input_word[6:] if len(input_word) > 6 else '2024-01-01'
+        try:
+            line_bot_api.push_message(uid, TextSendMessage(text=f"正在繪製 {stock_name} K線圖，請稍候..."))
+            img_url = plot_stock_k_chart(IMGUR_CLIENT_ID, stock_name, start_date)
+            if img_url:
+                message = ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
+                line_bot_api.push_message(uid, message)
+            else:
+                line_bot_api.push_message(uid, TextSendMessage(text=f"股票 {stock_name} K線圖繪製失敗，請確認代號是否正確"))
+        except Exception as e:
+            line_bot_api.push_message(uid, TextSendMessage(text=f"K線圖發生錯誤: {str(e)}"))
         return 0
 
     ################################ 目錄區 ##########################################
