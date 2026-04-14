@@ -855,6 +855,11 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"油價查詢失敗: {str(e)}"))
         return 0
     if event.message.text == "使用說明":
+        def make_row(cmd, desc):
+            return {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
+                {"type": "text", "text": cmd, "size": "sm", "color": "#1DB446", "flex": 3, "weight": "bold"},
+                {"type": "text", "text": desc, "size": "sm", "color": "#555555", "flex": 4, "wrap": True}
+            ]}
         usage_flex = FlexSendMessage(
             alt_text="使用說明",
             contents={
@@ -862,52 +867,38 @@ def handle_message(event):
                 "header": {
                     "type": "box", "layout": "vertical",
                     "contents": [
-                        {"type": "text", "text": "🌟 阿生生使用說明", "weight": "bold", "size": "lg", "color": "#1DB446", "align": "center"}
+                        {"type": "text", "text": "🌟 阿生生 使用說明", "weight": "bold", "size": "lg", "color": "#1DB446", "align": "center"},
+                        {"type": "text", "text": "以下是各功能的操作方式", "size": "xs", "color": "#888888", "align": "center", "margin": "sm"}
                     ], "paddingAll": "15px"
                 },
                 "body": {
                     "type": "box", "layout": "vertical",
                     "contents": [
-                        {"type": "text", "text": "📈 股票功能", "weight": "bold", "size": "sm", "color": "#1DB446"},
-                        {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
-                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
-                             "action": {"type": "message", "label": "股價查詢", "text": "股價查詢"}},
-                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
-                             "action": {"type": "message", "label": "關注的股票", "text": "股票清單"}},
-                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
-                             "action": {"type": "message", "label": "股價提醒", "text": "股價提醒"}}
-                        ], "spacing": "sm"},
+                        {"type": "text", "text": "📈 股票", "weight": "bold", "size": "sm", "color": "#1DB446"},
+                        make_row("#2330", "輸入 # + 代號查即時股價"),
+                        make_row("台積電", "輸入公司名稱搜尋股票"),
+                        make_row("股價查詢", "顯示熱門股票選單"),
+                        make_row("股票清單", "查看已關注的股票"),
+                        make_row("股價提醒", "檢查關注股票是否達標"),
                         {"type": "separator", "margin": "lg"},
-                        {"type": "text", "text": "💱 匯率功能", "weight": "bold", "size": "sm", "color": "#2196F3", "margin": "lg"},
-                        {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
-                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
-                             "action": {"type": "message", "label": "匯率查詢", "text": "匯率查詢"}},
-                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
-                             "action": {"type": "message", "label": "幣別種類", "text": "幣別種類"}},
-                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
-                             "action": {"type": "message", "label": "我的外幣", "text": "我的外幣"}}
-                        ], "spacing": "sm"},
+                        {"type": "text", "text": "💱 匯率", "weight": "bold", "size": "sm", "color": "#2196F3", "margin": "lg"},
+                        make_row("匯率查詢", "匯率功能選單"),
+                        make_row("外幣USD", "輸入「外幣」+代碼查匯率"),
+                        make_row("美元 / 日圓", "直接輸入幣別名稱也行"),
+                        make_row("幣別種類", "顯示所有支援的幣別"),
+                        make_row("我的外幣", "查看已關注的外幣清單"),
                         {"type": "separator", "margin": "lg"},
-                        {"type": "text", "text": "⛽ 生活資訊", "weight": "bold", "size": "sm", "color": "#FF6600", "margin": "lg"},
-                        {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
-                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
-                             "action": {"type": "message", "label": "油價查詢", "text": "油價查詢"}},
-                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
-                             "action": {"type": "message", "label": "最新氣象", "text": "最新氣象"}},
-                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
-                             "action": {"type": "message", "label": "雷達回波", "text": "雷達回波"}}
-                        ], "spacing": "sm"},
+                        {"type": "text", "text": "⛽ 生活", "weight": "bold", "size": "sm", "color": "#FF6600", "margin": "lg"},
+                        make_row("油價查詢", "查詢中油最新油價與下週預測"),
+                        make_row("最新氣象", "天氣查詢選單"),
+                        make_row("雷達回波", "顯示即時雷達回波圖"),
                         {"type": "separator", "margin": "lg"},
-                        {"type": "text", "text": "💡 小提示", "weight": "bold", "size": "sm", "color": "#888888", "margin": "lg"},
-                        {"type": "text", "text": "• 直接輸入股票代號（如 2330）查股價\n• 輸入公司名稱（如 台積電）搜尋\n• 輸入幣別名稱（如 美元）查匯率", "size": "xs", "color": "#888888", "wrap": True, "margin": "sm"}
+                        {"type": "text", "text": "🔔 自動通知", "weight": "bold", "size": "sm", "color": "#9C27B0", "margin": "lg"},
+                        make_row("股票關注", "查股價時點「☆關注」設條件"),
+                        make_row("外幣關注", "查匯率時點「加入關注」設條件"),
+                        make_row("", "符合條件時系統自動通知"),
+                        make_row("", "每週六日自動推播油價週報"),
                     ], "paddingAll": "15px", "spacing": "sm"
-                },
-                "footer": {
-                    "type": "box", "layout": "vertical",
-                    "contents": [
-                        {"type": "button", "style": "primary", "color": "#1DB446", "height": "sm",
-                         "action": {"type": "message", "label": "開始玩", "text": "開始玩"}}
-                    ], "paddingAll": "10px"
                 }
             }
         )
