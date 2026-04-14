@@ -650,7 +650,7 @@ def handle_message(event):
                             ),
                             URIAction(
                                 label='內政部實價登錄',
-                                uri='https://liff.line.me/2006134063-JojNgek2'
+                                uri='https://lvr.land.moi.gov.tw/'
                             )
                         ]
                     ),
@@ -665,7 +665,7 @@ def handle_message(event):
                             ),
                             MessageAction(
                                 label='油價報你知',
-                                text='油價報你知'
+                                text='油價查詢'
                             ),
                             URIAction(
                                 label='奇摩股市',
