@@ -375,16 +375,58 @@ def handle_message(event):
         line_bot_api.push_message(uid, btn_msg)
         return 0
     if re.match('外幣[A-Z]{3}',msg):
-        currency = msg[2:5] # 外幣代號
+        currency = msg[2:5]
         currency_name = EXRate.getCurrencyName(currency)
-        if currency_name == "無可支援的外幣": 
-            content = "無可支援的外幣"
-            line_bot_api.push_message(uid, TextSendMessage(content))
+        if currency_name == "無可支援的外幣":
+            line_bot_api.push_message(uid, TextSendMessage("無可支援的外幣"))
         else:
-            line_bot_api.push_message(uid, TextSendMessage(f'您要查詢的外幣是: {currency_name}'))
-            content = EXRate.showCurrency(currency)
-            #content = EXRate.getExchangeRate(msg)
-            line_bot_api.push_message(uid, TextSendMessage(content))
+            try:
+                data = twder.now(currency)
+                now_time = str(data[0])
+                items = [
+                    ("現金買入", data[1]), ("現金賣出", data[2]),
+                    ("即期買入", data[3]), ("即期賣出", data[4])
+                ]
+                rows = []
+                for label, val in items:
+                    v = "無資料" if val == '-' else str(float(val))
+                    rows.append({
+                        "type": "box", "layout": "horizontal", "margin": "md",
+                        "contents": [
+                            {"type": "text", "text": label, "size": "sm", "color": "#555555", "flex": 3},
+                            {"type": "text", "text": v, "size": "sm", "weight": "bold", "align": "end", "flex": 2, "color": "#2196F3"}
+                        ]
+                    })
+                currency_flex = FlexSendMessage(
+                    alt_text=f"{currency_name}匯率查詢",
+                    contents={
+                        "type": "bubble",
+                        "header": {
+                            "type": "box", "layout": "vertical",
+                            "contents": [
+                                {"type": "text", "text": f"💱 {currency_name} ({currency})", "weight": "bold", "size": "lg", "color": "#2196F3"},
+                                {"type": "text", "text": f"掛牌時間：{now_time}", "size": "xs", "color": "#888888", "margin": "sm"}
+                            ], "paddingAll": "15px"
+                        },
+                        "body": {
+                            "type": "box", "layout": "vertical",
+                            "contents": rows,
+                            "paddingAll": "15px"
+                        },
+                        "footer": {
+                            "type": "box", "layout": "horizontal",
+                            "contents": [
+                                {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm", "flex": 1,
+                                 "action": {"type": "message", "label": "走勢圖", "text": f"CT{currency}"}},
+                                {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
+                                 "action": {"type": "message", "label": "兌換台幣", "text": f"換匯{currency}/TWD"}}
+                            ], "spacing": "sm", "paddingAll": "10px"
+                        }
+                    }
+                )
+                line_bot_api.reply_message(event.reply_token, currency_flex)
+            except Exception as e:
+                line_bot_api.push_message(uid, TextSendMessage(text=f"匯率查詢失敗: {str(e)}"))
         return 0
     ######################## 使用說明 選單 油價報你知################################
     if event.message.text == "油價查詢":
