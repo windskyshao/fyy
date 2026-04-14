@@ -303,6 +303,25 @@ def handle_message(event):
         btn_msg = Msg_Template.stock_reply_rate()
         line_bot_api.push_message(uid, btn_msg)
         return 0
+    if re.match(r"自訂換匯[A-Z]{3}/[A-Z]{3}", msg):
+        parts = msg[4:].split("/")
+        mat_d[uid] = f"換匯{parts[0]}/{parts[1]}"
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=f"請輸入要兌換的 {parts[0]} 金額（數字）：")
+        )
+        return 0
+    # 用戶輸入數字 → 接續自訂換匯
+    if uid in mat_d and mat_d[uid].startswith('換匯') and re.match(r'^[\d,.]+$', msg):
+        amount_str = msg.replace(',', '')
+        try:
+            amount = float(amount_str)
+            cmd = f"{mat_d[uid]}/{amount_str}"
+            del mat_d[uid]
+            # 重新組合 msg 讓下面的換匯 handler 處理
+            msg = cmd.upper()
+        except ValueError:
+            del mat_d[uid]
     if re.match("匯率兌換", msg):
         pairs = [
             ("美元→台幣", "換匯USD/TWD"), ("日圓→台幣", "換匯JPY/TWD"),
@@ -342,6 +361,9 @@ def handle_message(event):
                     label=f"{a:,} {from_cur}", text=f"換匯{from_cur}/{to_cur}/{a}"
                 )) for a in amounts if a != amount
             ]
+            amount_btns.append(QuickReplyButton(action=MessageAction(
+                label="✏️ 自訂金額", text=f"自訂換匯{from_cur}/{to_cur}"
+            )))
             flex = FlexSendMessage(
                 alt_text=f"匯率兌換 {from_cur}→{to_cur}",
                 contents={
