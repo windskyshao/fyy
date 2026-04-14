@@ -858,49 +858,73 @@ def handle_message(event):
         def make_row(cmd, desc):
             return {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
                 {"type": "text", "text": cmd, "size": "sm", "color": "#1DB446", "flex": 3, "weight": "bold"},
-                {"type": "text", "text": desc, "size": "sm", "color": "#555555", "flex": 4, "wrap": True}
+                {"type": "text", "text": desc, "size": "sm", "color": "#555555", "flex": 5, "wrap": True}
             ]}
+        def make_bubble(title, color, rows):
+            return {
+                "type": "bubble", "size": "mega",
+                "header": {"type": "box", "layout": "vertical", "contents": [
+                    {"type": "text", "text": title, "weight": "bold", "size": "lg", "color": color, "align": "center"}
+                ], "paddingAll": "15px"},
+                "body": {"type": "box", "layout": "vertical", "contents": rows, "paddingAll": "15px", "spacing": "sm"}
+            }
+        stock_bubble = make_bubble("📈 股票功能", "#1DB446", [
+            make_row("#2330", "輸入 # 加股票代號，查詢即時股價、漲跌、成交量與近一週走勢"),
+            make_row("台積電", "直接輸入公司名稱，系統會搜尋相關股票讓你點選"),
+            make_row("2330", "直接輸入 4~6 位數字也能查（免打 #）"),
+            make_row("股價查詢", "顯示 12 檔熱門股票按鈕，點選即查"),
+            {"type": "separator", "margin": "lg"},
+            {"type": "text", "text": "K線圖", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
+            make_row("", "查詢股價後，卡片底部有 3個月、半年、1年、2年 四個 K 線圖按鈕"),
+            {"type": "separator", "margin": "lg"},
+            {"type": "text", "text": "關注股票", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
+            make_row("☆關注", "查詢股價時，右上角可點擊關注/取消關注"),
+            make_row("股票清單", "查看所有已關注的股票與條件"),
+            make_row("股價提醒", "手動檢查關注股票是否達到設定條件"),
+            make_row("🔔 自動通知", "每個交易日收盤後，系統自動檢查並推播符合條件的股票"),
+        ])
+        currency_bubble = make_bubble("💱 匯率功能", "#2196F3", [
+            make_row("匯率查詢", "進入匯率功能選單，包含：查詢幣別、匯率兌換、走勢圖、關注清單"),
+            make_row("外幣USD", "輸入「外幣」加幣別代碼，查詢即時買入賣出匯率"),
+            make_row("美元", "直接輸入中文幣別名稱也能查（如日圓、港幣、英鎊等）"),
+            make_row("幣別種類", "顯示所有 18 種支援幣別的按鈕選單"),
+            {"type": "separator", "margin": "lg"},
+            {"type": "text", "text": "匯率兌換", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
+            make_row("", "匯率查詢 → 匯率兌換 → 選幣別 → 顯示兌換結果"),
+            make_row("", "可選常用金額或自訂金額，全程不用打字"),
+            {"type": "separator", "margin": "lg"},
+            {"type": "text", "text": "匯率走勢圖", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
+            make_row("", "匯率查詢 → 走勢圖 → 選幣別，顯示近 6 個月現金與即期匯率走勢"),
+            make_row("", "查詢匯率後，卡片底部也有「走勢圖」按鈕可直接查看"),
+        ])
+        currency_follow_bubble = make_bubble("🔔 匯率關注與通知", "#9C27B0", [
+            make_row("加入關注", "查詢匯率後，卡片底部點「加入關注」"),
+            make_row("", "可選擇：不設條件 / 低於某值通知 / 高於某值通知"),
+            make_row("我的外幣", "查看已關注的外幣清單、即時匯率與通知條件"),
+            make_row("", "每個幣別旁有「刪除」按鈕，可單獨移除"),
+            make_row("匯率推播", "手動檢查所有關注幣別是否符合條件"),
+            make_row("", "未設定條件的幣別可點「設定條件」補設"),
+            {"type": "separator", "margin": "lg"},
+            {"type": "text", "text": "自動通知", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
+            make_row("🔔 匯率", "每天早上 9 點自動檢查，符合條件主動推播"),
+            make_row("🔔 股票", "每個交易日 13:35 收盤後自動檢查推播"),
+            make_row("🔔 油價", "每週六日中午 12 點自動推播油價週報與下週預測"),
+        ])
+        life_bubble = make_bubble("⛽ 生活資訊", "#FF6600", [
+            make_row("油價查詢", "查詢中油最新油價（92/95/98/柴油）"),
+            make_row("", "同時顯示下週預測調整幅度"),
+            make_row("", "每週六日中午自動推播，不用查"),
+            {"type": "separator", "margin": "lg"},
+            {"type": "text", "text": "天氣", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
+            make_row("最新氣象", "顯示天氣查詢選單（雷達回波、即時天氣等）"),
+            make_row("雷達回波", "直接顯示中央氣象署即時雷達回波圖"),
+            {"type": "separator", "margin": "lg"},
+            {"type": "text", "text": "更多功能", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
+            make_row("開始玩", "顯示完整功能選單（投資工具、財經資訊、房地產、生活資訊、AI工具）"),
+        ])
         usage_flex = FlexSendMessage(
             alt_text="使用說明",
-            contents={
-                "type": "bubble", "size": "mega",
-                "header": {
-                    "type": "box", "layout": "vertical",
-                    "contents": [
-                        {"type": "text", "text": "🌟 阿生生 使用說明", "weight": "bold", "size": "lg", "color": "#1DB446", "align": "center"},
-                        {"type": "text", "text": "以下是各功能的操作方式", "size": "xs", "color": "#888888", "align": "center", "margin": "sm"}
-                    ], "paddingAll": "15px"
-                },
-                "body": {
-                    "type": "box", "layout": "vertical",
-                    "contents": [
-                        {"type": "text", "text": "📈 股票", "weight": "bold", "size": "sm", "color": "#1DB446"},
-                        make_row("#2330", "輸入 # + 代號查即時股價"),
-                        make_row("台積電", "輸入公司名稱搜尋股票"),
-                        make_row("股價查詢", "顯示熱門股票選單"),
-                        make_row("股票清單", "查看已關注的股票"),
-                        make_row("股價提醒", "檢查關注股票是否達標"),
-                        {"type": "separator", "margin": "lg"},
-                        {"type": "text", "text": "💱 匯率", "weight": "bold", "size": "sm", "color": "#2196F3", "margin": "lg"},
-                        make_row("匯率查詢", "匯率功能選單"),
-                        make_row("外幣USD", "輸入「外幣」+代碼查匯率"),
-                        make_row("美元 / 日圓", "直接輸入幣別名稱也行"),
-                        make_row("幣別種類", "顯示所有支援的幣別"),
-                        make_row("我的外幣", "查看已關注的外幣清單"),
-                        {"type": "separator", "margin": "lg"},
-                        {"type": "text", "text": "⛽ 生活", "weight": "bold", "size": "sm", "color": "#FF6600", "margin": "lg"},
-                        make_row("油價查詢", "查詢中油最新油價與下週預測"),
-                        make_row("最新氣象", "天氣查詢選單"),
-                        make_row("雷達回波", "顯示即時雷達回波圖"),
-                        {"type": "separator", "margin": "lg"},
-                        {"type": "text", "text": "🔔 自動通知", "weight": "bold", "size": "sm", "color": "#9C27B0", "margin": "lg"},
-                        make_row("股票關注", "查股價時點「☆關注」設條件"),
-                        make_row("外幣關注", "查匯率時點「加入關注」設條件"),
-                        make_row("", "符合條件時系統自動通知"),
-                        make_row("", "每週六日自動推播油價週報"),
-                    ], "paddingAll": "15px", "spacing": "sm"
-                }
-            }
+            contents={"type": "carousel", "contents": [stock_bubble, currency_bubble, currency_follow_bubble, life_bubble]}
         )
         line_bot_api.reply_message(event.reply_token, usage_flex)
         return 0
