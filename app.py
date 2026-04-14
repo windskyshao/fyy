@@ -188,13 +188,36 @@ def handle_message(event):
     # message = TextSendMessage(text=event.message.text)
     # line_bot_api.reply_message(event.reply_token, message)
     msg = str(event.message.text).upper().strip() # 使用者輸入的內容
+    original_msg = str(event.message.text).strip() # 保留原始大小寫
     profile = line_bot_api.get_profile(event.source.user_id)
-   
-    usespeak=str(event.message.text) #使用者講的話
+
     uid = profile.user_id #使用者ID
     user_name = profile.display_name #使用者名稱
-    
-    ######################## 匯率區 ##############################################    
+
+    # 中文幣別名稱對照表
+    currency_alias = {
+        '美元': 'USD', '美金': 'USD', '日圓': 'JPY', '日幣': 'JPY', '日元': 'JPY',
+        '港幣': 'HKD', '英鎊': 'GBP', '澳幣': 'AUD', '加幣': 'CAD', '加拿大幣': 'CAD',
+        '瑞士法郎': 'CHF', '瑞郎': 'CHF', '新加坡幣': 'SGD', '星幣': 'SGD',
+        '南非幣': 'ZAR', '瑞典幣': 'SEK', '紐元': 'NZD', '紐幣': 'NZD',
+        '泰銖': 'THB', '泰幣': 'THB', '菲國比索': 'PHP', '菲律賓比索': 'PHP',
+        '印尼幣': 'IDR', '韓元': 'KRW', '韓幣': 'KRW', '馬來幣': 'MYR',
+        '越南盾': 'VND', '人民幣': 'CNY', '陸幣': 'CNY'
+    }
+
+    # 指令容錯：中文幣別 → 轉換為外幣查詢
+    if original_msg in currency_alias:
+        code = currency_alias[original_msg]
+        line_bot_api.push_message(uid, TextSendMessage(f'您要查詢的外幣是: {original_msg}'))
+        content = EXRate.showCurrency(code)
+        line_bot_api.push_message(uid, TextSendMessage(content))
+        return 0
+
+    # 指令容錯：純4位數字 → 當作股票查詢
+    if re.match('^[0-9]{4,6}$', msg):
+        msg = '#' + msg
+
+    ######################## 匯率區 ##############################################
     if re.match("匯率大小事", msg):
         btn_msg = Msg_Template.stock_reply_rate()
         line_bot_api.push_message(uid, btn_msg)
@@ -207,6 +230,7 @@ def handle_message(event):
     if re.match('幣別種類',msg):
         message = Msg_Template.show_Button()
         line_bot_api.reply_message(event.reply_token,message)
+        return 0
     if re.match('新增外幣[A-Z]{3}', msg):
         currency = msg[4:7]
         currency_name = EXRate.getCurrencyName(currency)
@@ -273,7 +297,7 @@ def handle_message(event):
         return 0
     if event.message.text == "使用說明":
         Usage(event)
-        print(user_name)
+        return 0
     if re.match("理財YOUTUBER推薦", msg):
         content = Msg_Template.youtube_channel()
         line_bot_api.push_message(uid, content)
@@ -281,6 +305,7 @@ def handle_message(event):
     if re.match('分析趨勢',msg):
         message = Msg_Template.stock_reply_trend()
         line_bot_api.reply_message(event.reply_token,message)
+        return 0
     ############################### 股票區 ################################
     
     if re.match('關注[0-9]{4}[<>][0-9]' ,msg):
@@ -296,11 +321,11 @@ def handle_message(event):
         return 0
     if event.message.text == "股價查詢":
         line_bot_api.push_message(uid,TextSendMessage("請輸入#股票代號....."))
+        return 0
     if(msg.startswith('#')):
         text = msg[1:]
         try:
             ticker = yf.Ticker(f"{text}.TW")
-            info = ticker.fast_info
             hist = ticker.history(period="7d")
 
             if hist.empty:
@@ -311,19 +336,115 @@ def handle_message(event):
                 return 0
 
             latest = hist.iloc[-1]
-            content = f'{text}\n'
-            content += f'現價: {latest["Close"]:.2f} / 開盤: {latest["Open"]:.2f}\n'
-            content += f'最高: {latest["High"]:.2f} / 最低: {latest["Low"]:.2f}\n'
-            content += f'量: {int(latest["Volume"])}\n'
-            content += '-----\n'
-            content += '最近交易日價格:\n'
-            for date, row in hist.iloc[::-1].iterrows():
-                content += f'[{date.strftime("%Y-%m-%d")}] {row["Close"]:.2f}\n'
+            prev_close = hist.iloc[-2]["Close"] if len(hist) >= 2 else latest["Open"]
+            change = latest["Close"] - prev_close
+            change_pct = (change / prev_close) * 100 if prev_close != 0 else 0
+            arrow = "▲" if change >= 0 else "▼"
+            change_color = "#FF3B30" if change >= 0 else "#34C759"
 
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=content.strip())
+            history_items = []
+            for date, row in hist.iloc[::-1].iterrows():
+                history_items.append({
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": date.strftime("%m/%d"), "size": "sm", "color": "#888888", "flex": 3},
+                        {"type": "text", "text": f"{row['Close']:.2f}", "size": "sm", "align": "end", "flex": 3},
+                        {"type": "text", "text": f"{int(row['Volume']):,}", "size": "xxs", "align": "end", "color": "#aaaaaa", "flex": 4}
+                    ]
+                })
+
+            stock_flex = FlexSendMessage(
+                alt_text=f"{text} 股價查詢",
+                contents={
+                    "type": "bubble",
+                    "size": "kilo",
+                    "header": {
+                        "type": "box", "layout": "vertical",
+                        "contents": [
+                            {"type": "text", "text": text, "weight": "bold", "size": "xl", "color": "#333333"},
+                            {
+                                "type": "box", "layout": "horizontal", "margin": "md",
+                                "contents": [
+                                    {"type": "text", "text": f"{latest['Close']:.2f}", "size": "xxl", "weight": "bold", "color": change_color},
+                                    {
+                                        "type": "box", "layout": "vertical", "margin": "md",
+                                        "contents": [
+                                            {"type": "text", "text": f"{arrow} {abs(change):.2f} ({abs(change_pct):.2f}%)", "size": "sm", "color": change_color, "align": "end"}
+                                        ],
+                                        "justifyContent": "center"
+                                    }
+                                ]
+                            }
+                        ],
+                        "paddingAll": "15px",
+                        "backgroundColor": "#FAFAFA"
+                    },
+                    "body": {
+                        "type": "box", "layout": "vertical",
+                        "contents": [
+                            {
+                                "type": "box", "layout": "horizontal",
+                                "contents": [
+                                    {
+                                        "type": "box", "layout": "vertical",
+                                        "contents": [
+                                            {"type": "text", "text": "開盤", "size": "xs", "color": "#888888"},
+                                            {"type": "text", "text": f"{latest['Open']:.2f}", "size": "sm", "weight": "bold"}
+                                        ], "flex": 1
+                                    },
+                                    {
+                                        "type": "box", "layout": "vertical",
+                                        "contents": [
+                                            {"type": "text", "text": "最高", "size": "xs", "color": "#888888"},
+                                            {"type": "text", "text": f"{latest['High']:.2f}", "size": "sm", "weight": "bold", "color": "#FF3B30"}
+                                        ], "flex": 1
+                                    },
+                                    {
+                                        "type": "box", "layout": "vertical",
+                                        "contents": [
+                                            {"type": "text", "text": "最低", "size": "xs", "color": "#888888"},
+                                            {"type": "text", "text": f"{latest['Low']:.2f}", "size": "sm", "weight": "bold", "color": "#34C759"}
+                                        ], "flex": 1
+                                    },
+                                    {
+                                        "type": "box", "layout": "vertical",
+                                        "contents": [
+                                            {"type": "text", "text": "成交量", "size": "xs", "color": "#888888"},
+                                            {"type": "text", "text": f"{int(latest['Volume']):,}", "size": "sm", "weight": "bold"}
+                                        ], "flex": 1
+                                    }
+                                ]
+                            },
+                            {"type": "separator", "margin": "lg"},
+                            {
+                                "type": "box", "layout": "horizontal", "margin": "lg",
+                                "contents": [
+                                    {"type": "text", "text": "日期", "size": "xs", "color": "#888888", "weight": "bold", "flex": 3},
+                                    {"type": "text", "text": "收盤價", "size": "xs", "color": "#888888", "weight": "bold", "align": "end", "flex": 3},
+                                    {"type": "text", "text": "成交量", "size": "xs", "color": "#888888", "weight": "bold", "align": "end", "flex": 4}
+                                ]
+                            }
+                        ] + history_items,
+                        "paddingAll": "15px",
+                        "spacing": "sm"
+                    },
+                    "footer": {
+                        "type": "box", "layout": "horizontal",
+                        "contents": [
+                            {
+                                "type": "button", "style": "primary", "color": "#1DB446", "height": "sm",
+                                "action": {"type": "message", "label": "K線圖", "text": f"@K{text}2024-01-01"}
+                            },
+                            {
+                                "type": "button", "style": "secondary", "height": "sm",
+                                "action": {"type": "message", "label": "加入關注", "text": f"關注{text}>0"}
+                            }
+                        ],
+                        "spacing": "sm", "paddingAll": "10px"
+                    }
+                }
             )
+            line_bot_api.reply_message(event.reply_token, stock_flex)
         except Exception as e:
             line_bot_api.push_message(uid, TextSendMessage(text=f'股票查詢發生錯誤: {str(e)}'))
         return 0
@@ -344,8 +465,8 @@ def handle_message(event):
         content = plot_stock_k_chart(IMGUR_CLIENT_ID,stock_name,start_date)
         message = ImageSendMessage(original_content_url= content,preview_image_url=content)
         line_bot_api.reply_message(event.reply_token, message)
+        return 0
 
-    
     ################################ 目錄區 ##########################################
     if event.message.text == "開始玩":
         message = TemplateSendMessage(
@@ -413,7 +534,8 @@ def handle_message(event):
             )
         )
         line_bot_api.reply_message(event.reply_token, message)
-    
+        return 0
+
     if re.match("股價提醒", msg):
         try:
             dataList = cache_users_stock()
@@ -506,6 +628,23 @@ def handle_message(event):
             preview_image_url=url
         )
         line_bot_api.reply_message(event.reply_token, radar_img)
+        return 0
+
+    ######################## 未知指令預設回覆 ################################
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(
+            text="抱歉，我不太懂您的意思 😅\n\n可以試試以下指令：\n📈 #2330（股價查詢）\n💱 外幣USD（匯率查詢）\n⛽ 油價查詢\n🌤 最新氣象\n\n或輸入「使用說明」查看所有功能",
+            quick_reply=QuickReply(
+                items=[
+                    QuickReplyButton(action=MessageAction(label="使用說明", text="使用說明")),
+                    QuickReplyButton(action=MessageAction(label="開始玩", text="開始玩")),
+                    QuickReplyButton(action=MessageAction(label="油價查詢", text="油價查詢")),
+                    QuickReplyButton(action=MessageAction(label="查美元匯率", text="外幣USD")),
+                ]
+            )
+        )
+    )
 
 @handler.add(FollowEvent)
 def handle_follow(event):
