@@ -30,6 +30,33 @@ currency_list = {
 ####################################################################
 #股票機器人 Python基礎教學 【pymongo教學】
 ####################################################################
+followersDB = 'followers'
+
+def constructor_followers():
+    client = MongoClient(MONGODB_URI)
+    db = client[followersDB]
+    return db
+
+def save_follower(user_id, display_name=""):
+    db = constructor_followers()
+    collect = db['users']
+    if not collect.find_one({"userID": user_id}):
+        collect.insert_one({
+            "userID": user_id,
+            "display_name": display_name,
+            "date_info": datetime.datetime.now()
+        })
+
+def remove_follower(user_id):
+    db = constructor_followers()
+    collect = db['users']
+    collect.delete_one({"userID": user_id})
+
+def get_all_followers():
+    db = constructor_followers()
+    collect = db['users']
+    return [doc['userID'] for doc in collect.find({}, {"userID": 1})]
+
 Authdb='test-good1'
 stockDB='mydb'
 currencyDB = 'users'

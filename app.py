@@ -110,8 +110,47 @@ def cron_check_currency():
     except Exception as e:
         return f"Error: {e}", 500
 
+@app.route('/cron/oil_price')
+def cron_oil_price():
+    """排程推播下週油價預測給所有追蹤者"""
+    try:
+        data = oil_price()
+        prices = data['prices']
+        forecast = data['forecast']
+        label_map = {'92': '92無鉛', '95': '95無鉛', '98': '98無鉛', '柴油': '超級柴油', '今日中油油價': None}
+        price_lines = ""
+        for key, val in prices.items():
+            label = label_map.get(key, key)
+            if label is None:
+                continue
+            price_lines += f"  {label}：${val}\n"
+        forecast_lines = ""
+        if forecast.get('日期'):
+            forecast_lines += f"{forecast['日期']}\n"
+        if forecast.get('汽油調整'):
+            forecast_lines += f"  汽油：{forecast['汽油調整']}\n"
+        if forecast.get('柴油預計調整'):
+            forecast_lines += f"  柴油：{forecast['柴油預計調整']}\n"
+        if forecast.get('變動幅度'):
+            forecast_lines += f"  變動幅度：{forecast['變動幅度']}\n"
+        msg = f"⛽ 油價週報\n\n本週油價：\n{price_lines}\n📊 下週預測：\n{forecast_lines}"
+        followers = mongodb.get_all_followers()
+        sent = 0
+        for uid in followers:
+            try:
+                line_bot_api.push_message(uid, TextSendMessage(text=msg.strip()))
+                sent += 1
+            except Exception as e:
+                print(f"[cron_oil] Failed to push to {uid}: {e}")
+        return f"OK, sent={sent}", 200
+    except Exception as e:
+        return f"Error: {e}", 500
 
-
+@app.route('/register_me/<user_id>')
+def register_me(user_id):
+    """手動註冊現有用戶（用於已追蹤但未記錄的用戶）"""
+    mongodb.save_follower(user_id)
+    return f"OK, registered {user_id}", 200
 
 
 #這段主要在畫k線圖
@@ -1375,6 +1414,11 @@ def handle_postback(event):
 
 @handler.add(FollowEvent)
 def handle_follow(event):
+    try:
+        profile = line_bot_api.get_profile(event.source.user_id)
+        mongodb.save_follower(event.source.user_id, profile.display_name)
+    except:
+        mongodb.save_follower(event.source.user_id)
     welcome_flex = FlexSendMessage(
         alt_text="歡迎加入阿生生！",
         contents={
@@ -1517,6 +1561,7 @@ def handle_follow(event):
 
 @handler.add(UnfollowEvent)
 def handle_unfollow(event):
+    mongodb.remove_follower(event.source.user_id)
     print(f"User unfollowed: {event.source.user_id}")
 
 if __name__ == "__main__":
