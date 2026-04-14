@@ -421,8 +421,18 @@ def handle_message(event):
     if(msg.startswith('#')):
         text = msg[1:]
         try:
-            ticker = yf.Ticker(f"{text}.TW")
-            hist = ticker.history(period="7d")
+            # 重試機制：yfinance 首次查詢有時會失敗
+            hist = pd.DataFrame()
+            for attempt in range(2):
+                try:
+                    ticker = yf.Ticker(f"{text}.TW")
+                    hist = ticker.history(period="7d")
+                    if hist is not None and not hist.empty:
+                        break
+                except Exception:
+                    pass
+                if attempt == 0:
+                    time.sleep(1)
 
             if hist.empty:
                 line_bot_api.reply_message(
@@ -454,7 +464,6 @@ def handle_message(event):
                 alt_text=f"{text} 股價查詢",
                 contents={
                     "type": "bubble",
-                    "size": "kilo",
                     "header": {
                         "type": "box", "layout": "vertical",
                         "contents": [
@@ -539,24 +548,22 @@ def handle_message(event):
                                 "type": "box", "layout": "horizontal",
                                 "contents": [
                                     {"type": "button", "style": "primary", "color": "#1DB446", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "3個月", "text": f"@K{text} 3m"}},
+                                     "action": {"type": "message", "label": "3月", "text": f"@K{text} 3m"}},
                                     {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm", "flex": 1,
                                      "action": {"type": "message", "label": "半年", "text": f"@K{text} 6m"}},
                                     {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
                                      "action": {"type": "message", "label": "1年", "text": f"@K{text} 1y"}},
                                     {"type": "button", "style": "primary", "color": "#9C27B0", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "3年", "text": f"@K{text} 3y"}}
+                                     "action": {"type": "message", "label": "3年", "text": f"@K{text} 3y"}},
+                                    {"type": "button", "height": "sm", "flex": 1,
+                                     "style": "primary" if mongodb.is_stock_followed(user_name, text) else "secondary",
+                                     "color": "#FF5252" if mongodb.is_stock_followed(user_name, text) else "#BBBBBB",
+                                     "action": {
+                                         "type": "postback",
+                                         "label": "★已關注" if mongodb.is_stock_followed(user_name, text) else "☆關注",
+                                         "data": f"action=unfollow&stock={text}" if mongodb.is_stock_followed(user_name, text) else f"action=follow&stock={text}"
+                                     }}
                                 ], "spacing": "sm"
-                            },
-                            {
-                                "type": "button", "height": "sm",
-                                "style": "primary" if mongodb.is_stock_followed(user_name, text) else "secondary",
-                                "color": "#FF5252" if mongodb.is_stock_followed(user_name, text) else "#EEEEEE",
-                                "action": {
-                                    "type": "message",
-                                    "label": "已關注 ✓ (點擊取消)" if mongodb.is_stock_followed(user_name, text) else "加入關注",
-                                    "text": f"刪除{text}" if mongodb.is_stock_followed(user_name, text) else f"關注{text}>0"
-                                }
                             }
                         ],
                         "spacing": "sm", "paddingAll": "10px"
@@ -808,6 +815,21 @@ def handle_message(event):
             )
         )
     )
+
+@handler.add(PostbackEvent)
+def handle_postback(event):
+    data = dict(x.split('=') for x in event.postback.data.split('&'))
+    uid = event.source.user_id
+    profile = line_bot_api.get_profile(uid)
+    user_name = profile.display_name
+    action = data.get('action', '')
+    stock = data.get('stock', '')
+    if action == 'follow' and stock:
+        mongodb.write_my_stock(uid, user_name, stock, '>', '0')
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"✓ 已關注 {stock}"))
+    elif action == 'unfollow' and stock:
+        mongodb.delete_my_stock(user_name, stock)
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"✓ 已取消關注 {stock}"))
 
 @handler.add(FollowEvent)
 def handle_follow(event):
