@@ -176,16 +176,34 @@ def cache_users_stock():
 
 # 油價報你知
 def oil_price():
+    """回傳結構化油價資料 dict"""
     target_url = 'https://gas.goodlife.tw/'
     rs = requests.session()
     res = rs.get(target_url, verify=False)
     res.encoding = 'utf-8'
     soup = BeautifulSoup(res.text, 'html.parser')
-    title = soup.select('#main')[0].text.replace('\n', '').split('(')[0]
-    gas_price = soup.select('#gas-price')[0].text.replace('\n\n\n', '').replace(' ', '')
-    cpc = soup.select('#cpc')[0].text.replace(' ', '')
-    content = '{}\n{}{}'.format(title, gas_price, cpc)
-    return content
+    # 解析中油油價
+    cpc_text = soup.select('#cpc')[0].text
+    prices = {}
+    for line in cpc_text.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        # 統一解析 "92:", "95油價:", "98:", "柴油:" 等格式
+        if ':' in line:
+            key, val = line.split(':', 1)
+            key = key.replace('油價', '').strip()
+            val = val.strip()
+            if val:
+                prices[key] = val
+    # 解析預計調整
+    gas_price_text = soup.select('#gas-price')[0].text
+    adjust_info = ""
+    for line in gas_price_text.split('\n'):
+        line = line.strip()
+        if '調整' in line or '不調整' in line or ('元' in line and ('+' in line or '-' in line)):
+            adjust_info += line + " "
+    return {'prices': prices, 'adjust': adjust_info.strip()}
 
 # 監聽所有來自 /callback 的 Post Request
 @app.route("/callback", methods=['POST'])
@@ -347,12 +365,28 @@ def handle_message(event):
     ######################## 使用說明 選單 油價報你知################################
     if event.message.text == "油價查詢":
         try:
-            content = oil_price()
-            lines = [l.strip() for l in content.split('\n') if l.strip()]
-            title = lines[0] if lines else "油價資訊"
-            body_items = []
-            for line in lines[1:]:
-                body_items.append({"type": "text", "text": line, "size": "sm", "wrap": True, "margin": "sm"})
+            data = oil_price()
+            prices = data['prices']
+            adjust = data['adjust']
+            # 油品名稱對照
+            label_map = {'92': '92無鉛', '95': '95無鉛', '98': '98無鉛', '柴油': '超級柴油',
+                         '今日中油油價': None}
+            price_rows = []
+            for key, val in prices.items():
+                label = label_map.get(key, key)
+                if label is None:
+                    continue
+                price_rows.append({
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": label, "size": "md", "color": "#555555", "flex": 3},
+                        {"type": "text", "text": f"${val}", "size": "md", "weight": "bold", "align": "end", "flex": 2, "color": "#FF6600"}
+                    ], "margin": "md"
+                })
+            body_contents = price_rows if price_rows else [{"type": "text", "text": "暫無資料", "wrap": True}]
+            if adjust:
+                body_contents.append({"type": "separator", "margin": "lg"})
+                body_contents.append({"type": "text", "text": adjust, "size": "xs", "color": "#888888", "wrap": True, "margin": "md"})
             oil_flex = FlexSendMessage(
                 alt_text="油價查詢",
                 contents={
@@ -360,14 +394,14 @@ def handle_message(event):
                     "header": {
                         "type": "box", "layout": "vertical",
                         "contents": [
-                            {"type": "text", "text": "⛽ 最新油價", "weight": "bold", "size": "lg", "color": "#FF6600"},
-                            {"type": "text", "text": title, "size": "xs", "color": "#888888", "margin": "sm", "wrap": True}
+                            {"type": "text", "text": "⛽ 中油最新油價", "weight": "bold", "size": "lg", "color": "#FF6600"},
+                            {"type": "text", "text": "單位：元/公升", "size": "xs", "color": "#888888", "margin": "sm"}
                         ], "paddingAll": "15px"
                     },
                     "body": {
                         "type": "box", "layout": "vertical",
-                        "contents": body_items if body_items else [{"type": "text", "text": content, "wrap": True}],
-                        "paddingAll": "15px", "spacing": "sm"
+                        "contents": body_contents,
+                        "paddingAll": "15px"
                     }
                 }
             )
@@ -669,12 +703,12 @@ def handle_message(event):
             columns=[
                 CarouselColumn(
                         thumbnail_image_url='https://i.imgur.com/bGyGdb1.jpg',
-                        title='選擇服務',
+                        title='投資工具',
                         text='請選擇',
                         actions=[
                             MessageAction(
-                                label='股價查詢',
-                                text='股價查詢'
+                                label='關注的股票',
+                                text='股票清單'
                             ),
                             URIAction(
                                 label='財經新聞',
@@ -688,39 +722,20 @@ def handle_message(event):
                     ),
                 CarouselColumn(
                         thumbnail_image_url='https://i.imgur.com/N9TKsay.jpg',
-                        title='選擇服務',
+                        title='財經資訊',
                         text='請選擇',
                         actions=[
-                            MessageAction(
-                                label='我的關注',
-                                text='股票清單'
-                            ),
-                            MessageAction(
-                                label='油價報你知',
-                                text='油價查詢'
+                            URIAction(
+                                label='匯率查詢(台銀)',
+                                uri='https://rate.bot.com.tw/xrt?Lang=zh-TW'
                             ),
                             URIAction(
                                 label='奇摩股市',
                                 uri='https://tw.stock.yahoo.com/'
-                            )
-                        ]
-                    ),
-                CarouselColumn(
-                        thumbnail_image_url='https://i.imgur.com/rwR2yUr.jpg',
-                        title='選擇服務',
-                        text='請選擇',
-                        actions=[
-                            URIAction(
-                                label='匯率分享',
-                                uri='https://rate.bot.com.tw/xrt?Lang=zh-TW'
                             ),
                             URIAction(
                                 label='財經PTT',
                                 uri='https://www.ptt.cc/bbs/Finance/index.html'
-                            ),
-                            URIAction(
-                                label='youtube 程式教學分享頻道',
-                                uri='https://www.youtube.com/channel/UCPhn2rCqhu0HdktsFjixahA'
                             )
                         ]
                     )
