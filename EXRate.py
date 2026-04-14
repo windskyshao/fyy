@@ -87,12 +87,14 @@ def cash_exrate_sixMonth(code1) -> "USA":
     currency = currency.iloc[::-1] #  row 順序反轉，因原始資料是從最新開始排
     if currency["現金買入"][0] == "-" or currency["現金買入"][0]== 0.0:
         return "現金匯率無資料可分析"
+    import uuid
+    fname = f"{code1}_cash_{uuid.uuid4().hex[:8]}"
     currency.plot(kind = 'line', figsize=(12, 6), x='Date', y=[u'現金買入', u'現金賣出'])
     plt.legend(prop=chinese_font) # 支援中文字
     plt.title(currency_name + " 現金匯率",  fontsize=20, fontproperties=chinese_font)
-    plt.savefig(f"{code1}.png")
+    plt.savefig(f"{fname}.png")
     plt.close()
-    return Imgur.showImgur(code1)
+    return Imgur.showImgur(fname)
 
 ##--------------------------------------------
 #######     走勢圖
@@ -108,9 +110,11 @@ def spot_exrate_sixMonth(code2):
     currency = currency.iloc[::-1] #  row 順序反轉，因原始資料是從最新開始排
     if currency["即期買入"][0] == "-" or currency["即期買入"][0] == 0.0:
         return "即期匯率無資料可分析"
+    import uuid
+    fname = f"{code2}_spot_{uuid.uuid4().hex[:8]}"
     currency.plot(kind = 'line', figsize=(12, 6),x='Date', y=[u'即期買入', u'即期賣出'])
     plt.legend(prop=chinese_font) # 支援中文字
     plt.title(f"{currency_name} 即期匯率",  fontsize=20, fontproperties=chinese_font)
-    plt.savefig(f"{code2}.png")
+    plt.savefig(f"{fname}.png")
     plt.close()
-    return Imgur.showImgur(code2)
+    return Imgur.showImgur(fname)
