@@ -20,7 +20,13 @@ def stock_reply_rate():
                                        ),
                                        QuickReplyButton(
                                                 action=MessageAction(
-                                                    label="💜💜關注的匯率", 
+                                                    label="💜💜匯率走勢圖",
+                                                    text="匯率走勢",
+                                                )
+                                       ),
+                                       QuickReplyButton(
+                                                action=MessageAction(
+                                                    label="💜💜關注的匯率",
                                                     text="我的外幣",
                                                 )
                                        ),
@@ -42,7 +48,7 @@ def stock_reply_trend():
                                        QuickReplyButton(
                                                 action=MessageAction(
                                                     label="💜匯率走勢圖💜",
-                                                    text="CTUSD",
+                                                    text="匯率走勢",
                                                 )
                                        ),
                                        QuickReplyButton(

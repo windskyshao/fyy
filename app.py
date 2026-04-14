@@ -429,6 +429,19 @@ def handle_message(event):
         content = mongodb.delete_my_allcurrency(user_name, uid)
         line_bot_api.push_message(uid, TextSendMessage(content))
         return 0
+    if re.match("匯率走勢|走勢圖", msg):
+        pairs = [
+            ("美元", "CTUSD"), ("日圓", "CTJPY"), ("港幣", "CTHKD"),
+            ("英鎊", "CTGBP"), ("澳幣", "CTAUD"), ("人民幣", "CTCNY"),
+            ("加幣", "CTCAD"), ("新加坡幣", "CTSGD"), ("韓元", "CTKRW"),
+            ("泰銖", "CTTHB"),
+        ]
+        buttons = [QuickReplyButton(action=MessageAction(label=label, text=cmd)) for label, cmd in pairs]
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="請選擇要查看走勢的幣別：", quick_reply=QuickReply(items=buttons))
+        )
+        return 0
     if re.match("CT[A-Z]{3}", msg):
         currency = msg[2:5] # 外幣代號
         if EXRate.getCurrencyName(currency) == "無可支援的外幣":
