@@ -321,9 +321,63 @@ def handle_message(event):
         )
         return 0
     if re.match("換匯[A-Z]{3}/[A-Z]{3}", msg):
-        line_bot_api.push_message(uid,TextSendMessage("將為您做外匯計算....."))
-        content = EXRate.getExchangeRate(msg)
-        line_bot_api.push_message(uid, TextSendMessage(content))
+        try:
+            parts = msg[2:].split("/")
+            from_cur = parts[0]
+            to_cur = parts[1]
+            amount = float(parts[2]) if len(parts) > 2 else 1
+            from_name = EXRate.getCurrencyName(from_cur)
+            if from_name == "無可支援的外幣":
+                from_name = from_cur
+            # 取得匯率
+            url_coinbase = f'https://api.coinbase.com/v2/exchange-rates?currency={from_cur}'
+            res_api = requests.get(url_coinbase)
+            rate_data = res_api.json()
+            rate = float(rate_data['data']['rates'][to_cur])
+            result = rate * amount
+            # 常用金額按鈕
+            amounts = [1, 100, 1000, 10000]
+            amount_btns = [
+                QuickReplyButton(action=MessageAction(
+                    label=f"{a:,} {from_cur}", text=f"換匯{from_cur}/{to_cur}/{a}"
+                )) for a in amounts if a != amount
+            ]
+            flex = FlexSendMessage(
+                alt_text=f"匯率兌換 {from_cur}→{to_cur}",
+                contents={
+                    "type": "bubble",
+                    "header": {
+                        "type": "box", "layout": "vertical",
+                        "contents": [
+                            {"type": "text", "text": f"💱 {from_name} → {to_cur}", "weight": "bold", "size": "lg", "color": "#2196F3"},
+                            {"type": "text", "text": f"匯率：1 {from_cur} = {rate:.4f} {to_cur}", "size": "xs", "color": "#888888", "margin": "sm"}
+                        ], "paddingAll": "15px"
+                    },
+                    "body": {
+                        "type": "box", "layout": "vertical",
+                        "contents": [
+                            {"type": "box", "layout": "horizontal", "contents": [
+                                {"type": "text", "text": "兌換金額", "size": "sm", "color": "#555555", "flex": 2},
+                                {"type": "text", "text": f"{amount:,.2f} {from_cur}", "size": "sm", "weight": "bold", "align": "end", "flex": 3}
+                            ]},
+                            {"type": "box", "layout": "horizontal", "margin": "md", "contents": [
+                                {"type": "text", "text": "兌換結果", "size": "sm", "color": "#555555", "flex": 2},
+                                {"type": "text", "text": f"{result:,.2f} {to_cur}", "size": "lg", "weight": "bold", "align": "end", "flex": 3, "color": "#FF6600"}
+                            ]}
+                        ], "paddingAll": "15px"
+                    }
+                }
+            )
+            if amount_btns:
+                reply_msg = TextSendMessage(
+                    text="換其他金額：",
+                    quick_reply=QuickReply(items=amount_btns)
+                )
+                line_bot_api.reply_message(event.reply_token, [flex, reply_msg])
+            else:
+                line_bot_api.reply_message(event.reply_token, flex)
+        except Exception as e:
+            line_bot_api.push_message(uid, TextSendMessage(text=f"匯率兌換失敗: {str(e)}"))
         return 0
     if re.match('幣別種類',msg):
         message = Msg_Template.show_Button()
