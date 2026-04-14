@@ -42,6 +42,11 @@ def constructor_currency():
     db = client[currencyDB]
     return db
 
+# --------------------- 檢查使用者是否已關注某股票 ---------------------
+def is_stock_followed(user_name, stockNumber):
+    db = constructor_stock()
+    collect = db[user_name]
+    return collect.find_one({"favorite_stock": stockNumber}) is not None
 # --------------------- 新增使用者的股票 ---------------------
 def write_my_stock(userID, user_name, stockNumber, condition, target_price):
     db=constructor_stock()

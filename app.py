@@ -558,8 +558,14 @@ def handle_message(event):
                                 ], "spacing": "sm"
                             },
                             {
-                                "type": "button", "style": "secondary", "height": "sm",
-                                "action": {"type": "message", "label": "加入關注", "text": f"關注{text}>0"}
+                                "type": "button", "height": "sm",
+                                "style": "primary" if mongodb.is_stock_followed(user_name, text) else "secondary",
+                                "color": "#FF5252" if mongodb.is_stock_followed(user_name, text) else "#EEEEEE",
+                                "action": {
+                                    "type": "message",
+                                    "label": "已關注 ✓ (點擊取消)" if mongodb.is_stock_followed(user_name, text) else "加入關注",
+                                    "text": f"刪除{text}" if mongodb.is_stock_followed(user_name, text) else f"關注{text}>0"
+                                }
                             }
                         ],
                         "spacing": "sm", "paddingAll": "10px"
