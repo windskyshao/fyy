@@ -21,6 +21,20 @@ import time
 import place
 import os
 import uuid
+
+def get_stock_name(code):
+    """取得股票中文名稱，查不到就回傳英文或代號"""
+    try:
+        info = twstock.codes.get(code)
+        if info:
+            return info.name
+    except:
+        pass
+    try:
+        ticker = yf.Ticker(f"{code}.TW")
+        return ticker.info.get('shortName', code)
+    except:
+        return code
 from flask import send_from_directory
 #=================這裡是呼叫的內容=====================
 
@@ -367,6 +381,7 @@ def handle_message(event):
             change_pct = (change / prev_close) * 100 if prev_close != 0 else 0
             arrow = "▲" if change >= 0 else "▼"
             change_color = "#FF3B30" if change >= 0 else "#34C759"
+            stock_name = get_stock_name(text)
 
             history_items = []
             for date, row in hist.iloc[::-1].iterrows():
@@ -387,7 +402,13 @@ def handle_message(event):
                     "header": {
                         "type": "box", "layout": "vertical",
                         "contents": [
-                            {"type": "text", "text": text, "weight": "bold", "size": "xl", "color": "#333333"},
+                            {
+                                "type": "box", "layout": "horizontal",
+                                "contents": [
+                                    {"type": "text", "text": stock_name, "weight": "bold", "size": "xl", "color": "#333333", "flex": 0},
+                                    {"type": "text", "text": text, "size": "md", "color": "#888888", "align": "end", "gravity": "center"}
+                                ]
+                            },
                             {
                                 "type": "box", "layout": "horizontal", "margin": "md",
                                 "contents": [
@@ -489,7 +510,8 @@ def handle_message(event):
         stock_name = input_word[2:6]
         start_date = input_word[6:] if len(input_word) > 6 else '2024-01-01'
         try:
-            line_bot_api.push_message(uid, TextSendMessage(text=f"正在繪製 {stock_name} K線圖，請稍候..."))
+            k_stock_name = get_stock_name(stock_name)
+            line_bot_api.push_message(uid, TextSendMessage(text=f"正在繪製 {k_stock_name}({stock_name}) K線圖，請稍候..."))
             img_url = plot_stock_k_chart(IMGUR_CLIENT_ID, stock_name, start_date)
             if img_url:
                 message = ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
