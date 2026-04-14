@@ -14,8 +14,8 @@ def stock_reply_rate():
                                        ),
                                        QuickReplyButton(
                                                 action=MessageAction(
-                                                    label="💜💜匯率兌換(範例)",
-                                                    text="換匯USD/TWD",
+                                                    label="💜💜匯率兌換",
+                                                    text="匯率兌換",
                                                 )
                                        ),
                                        QuickReplyButton(

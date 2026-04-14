@@ -303,6 +303,23 @@ def handle_message(event):
         btn_msg = Msg_Template.stock_reply_rate()
         line_bot_api.push_message(uid, btn_msg)
         return 0
+    if re.match("匯率兌換", msg):
+        pairs = [
+            ("美元→台幣", "換匯USD/TWD"), ("日圓→台幣", "換匯JPY/TWD"),
+            ("港幣→台幣", "換匯HKD/TWD"), ("英鎊→台幣", "換匯GBP/TWD"),
+            ("澳幣→台幣", "換匯AUD/TWD"), ("人民幣→台幣", "換匯CNY/TWD"),
+            ("加幣→台幣", "換匯CAD/TWD"), ("新加坡幣→台幣", "換匯SGD/TWD"),
+            ("韓元→台幣", "換匯KRW/TWD"), ("泰銖→台幣", "換匯THB/TWD"),
+        ]
+        buttons = [QuickReplyButton(action=MessageAction(label=label, text=cmd)) for label, cmd in pairs]
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text="請選擇要兌換的幣別：",
+                quick_reply=QuickReply(items=buttons)
+            )
+        )
+        return 0
     if re.match("換匯[A-Z]{3}/[A-Z]{3}", msg):
         line_bot_api.push_message(uid,TextSendMessage("將為您做外匯計算....."))
         content = EXRate.getExchangeRate(msg)
