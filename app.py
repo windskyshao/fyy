@@ -734,8 +734,8 @@ def handle_message(event):
                                 uri='https://www.ptt.cc/bbs/Finance/index.html'
                             ),
                             URIAction(
-                                label='理財YouTube',
-                                uri='https://www.youtube.com/channel/UCPhn2rCqhu0HdktsFjixahA'
+                                label='理財YouTube(柴鼠兄弟)',
+                                uri='https://www.youtube.com/@ZRBros'
                             )
                         ]
                     ),
@@ -755,6 +755,25 @@ def handle_message(event):
                             URIAction(
                                 label='591房屋交易',
                                 uri='https://www.591.com.tw/'
+                            )
+                        ]
+                    ),
+                CarouselColumn(
+                        thumbnail_image_url='https://i.imgur.com/bGyGdb1.jpg',
+                        title='AI 工具',
+                        text='請選擇',
+                        actions=[
+                            URIAction(
+                                label='程式教學YouTube',
+                                uri='https://www.youtube.com/channel/UCPhn2rCqhu0HdktsFjixahA'
+                            ),
+                            URIAction(
+                                label='ChatGPT',
+                                uri='https://chat.openai.com/'
+                            ),
+                            URIAction(
+                                label='Perplexity AI搜尋',
+                                uri='https://www.perplexity.ai/'
                             )
                         ]
                     )
