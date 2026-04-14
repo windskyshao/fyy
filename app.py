@@ -572,7 +572,7 @@ def handle_message(event):
                                     {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
                                      "action": {"type": "message", "label": "1年", "text": f"@K{text} 1y"}},
                                     {"type": "button", "style": "primary", "color": "#9C27B0", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "3年", "text": f"@K{text} 3y"}}
+                                     "action": {"type": "message", "label": "2年", "text": f"@K{text} 2y"}}
                                 ], "spacing": "sm"
                             }
                         ],
