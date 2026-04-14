@@ -71,6 +71,45 @@ RENDER_URL = 'https://fyy-l8a3.onrender.com'
 def serve_chart(filename):
     return send_from_directory(CHART_DIR, filename)
 
+@app.route('/cron/check_currency')
+def cron_check_currency():
+    """排程自動檢查匯率條件並推播通知"""
+    try:
+        db = mongodb.constructor_currency()
+        nameList = db.list_collection_names()
+        notified = 0
+        for col_name in nameList:
+            collect = db[col_name]
+            entries = list(collect.find({"tag": "currency"}))
+            for entry in entries:
+                uid = entry.get('userID')
+                currency = entry.get('favorite_currency')
+                condition = entry.get('condition', '未設定')
+                price = entry.get('price', '未設定')
+                if condition == '未設定' or price == '未設定' or not uid:
+                    continue
+                try:
+                    now_rate = twder.now(currency)[4]
+                    if now_rate == '-':
+                        continue
+                    current = float(now_rate)
+                    target = float(price)
+                    cur_name = mongodb.currency_list.get(currency, currency)
+                    triggered = False
+                    if condition == '<' and current < target:
+                        triggered = True
+                    elif condition == '>' and current > target:
+                        triggered = True
+                    if triggered:
+                        msg = f"📢 匯率通知\n{cur_name}({currency}) 即期賣出：{current}\n已{'低於' if condition == '<' else '高於'}您設定的 {target}！"
+                        line_bot_api.push_message(uid, TextSendMessage(text=msg))
+                        notified += 1
+                except Exception as e:
+                    print(f"[cron] Error checking {currency}: {e}")
+        return f"OK, notified={notified}", 200
+    except Exception as e:
+        return f"Error: {e}", 500
+
 
 
 
@@ -412,6 +451,30 @@ def handle_message(event):
         except Exception as e:
             line_bot_api.push_message(uid, TextSendMessage(text=f"匯率兌換失敗: {str(e)}"))
         return 0
+    if re.match(r'關注外幣[A-Z]{3}$', msg):
+        currency = msg[4:7]
+        currency_name = EXRate.getCurrencyName(currency)
+        if currency_name == "無可支援的外幣":
+            line_bot_api.push_message(uid, TextSendMessage("無可支援的外幣"))
+            return 0
+        try:
+            spot_sell = twder.now(currency)[4]
+            current = float(spot_sell) if spot_sell != '-' else 0
+        except:
+            current = 0
+        buttons = [
+            QuickReplyButton(action=MessageAction(label="不設條件，直接關注", text=f"新增外幣{currency}")),
+            QuickReplyButton(action=MessageAction(label=f"低於 {current:.2f} 通知", text=f"新增外幣{currency}<{current:.2f}")),
+            QuickReplyButton(action=MessageAction(label=f"高於 {current:.2f} 通知", text=f"新增外幣{currency}>{current:.2f}")),
+        ]
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=f"要關注 {currency_name}({currency})\n目前即期賣出：{current:.2f}\n請選擇通知條件：",
+                quick_reply=QuickReply(items=buttons)
+            )
+        )
+        return 0
     if re.match('幣別種類',msg):
         message = Msg_Template.show_Button()
         line_bot_api.reply_message(event.reply_token,message)
@@ -429,8 +492,66 @@ def handle_message(event):
         return 0
     if re.match('我的外幣', msg):
         line_bot_api.push_message(uid, TextSendMessage('稍等一下, 匯率查詢中...'))
-        content = mongodb.show_my_currency(uid, user_name)
-        line_bot_api.push_message(uid, TextSendMessage(content))
+        db = mongodb.constructor_currency()
+        collect = db[user_name]
+        dataList = list(collect.find({"userID": uid}))
+        if not dataList:
+            line_bot_api.push_message(uid, TextSendMessage("您的外幣清單為空，請先透過外幣查詢頁面加入關注"))
+            return 0
+        rows = []
+        for entry in dataList:
+            cur = entry['favorite_currency']
+            condition = entry.get('condition', '未設定')
+            price = entry.get('price', '未設定')
+            cur_name = mongodb.currency_list.get(cur, cur)
+            try:
+                now_rate = twder.now(cur)[4]
+                rate_text = str(float(now_rate)) if now_rate != '-' else '無資料'
+            except:
+                rate_text = '查詢失敗'
+            cond_text = f" ({condition}{price})" if condition != '未設定' else ""
+            rows.append({
+                "type": "box", "layout": "horizontal", "margin": "md",
+                "contents": [
+                    {"type": "text", "text": f"{cur_name}({cur})", "size": "sm", "color": "#333333", "flex": 3},
+                    {"type": "text", "text": rate_text, "size": "sm", "weight": "bold", "align": "end", "flex": 2, "color": "#2196F3"},
+                    {"type": "box", "layout": "vertical", "flex": 0, "width": "50px", "height": "25px",
+                     "contents": [{"type": "text", "text": "刪除", "size": "xs", "color": "#FFFFFF", "align": "center", "gravity": "center"}],
+                     "backgroundColor": "#FF5252", "cornerRadius": "12px", "justifyContent": "center",
+                     "margin": "md",
+                     "action": {"type": "message", "label": "刪除", "text": f"刪除外幣{cur}"}}
+                ]
+            })
+            if cond_text:
+                rows.append({"type": "text", "text": f"  通知條件：{condition}{price}", "size": "xxs", "color": "#888888", "margin": "sm"})
+        my_flex = FlexSendMessage(
+            alt_text="我的外幣關注清單",
+            contents={
+                "type": "bubble",
+                "header": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        {"type": "text", "text": "💱 我的外幣關注", "weight": "bold", "size": "lg", "color": "#2196F3"},
+                        {"type": "text", "text": f"共 {len(dataList)} 個幣別", "size": "xs", "color": "#888888", "margin": "sm"}
+                    ], "paddingAll": "15px"
+                },
+                "body": {
+                    "type": "box", "layout": "vertical",
+                    "contents": rows,
+                    "paddingAll": "15px"
+                },
+                "footer": {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "button", "style": "secondary", "height": "sm",
+                         "action": {"type": "message", "label": "匯率推播(檢查條件)", "text": "匯率推播"}},
+                        {"type": "button", "style": "secondary", "height": "sm", "color": "#FFCCCC",
+                         "action": {"type": "message", "label": "清空全部", "text": "清空外幣"}}
+                    ], "spacing": "sm", "paddingAll": "10px"
+                }
+            }
+        )
+        line_bot_api.push_message(uid, my_flex)
         return 0
     if re.match('刪除外幣[A-Z]{3}', msg):
         content = mongodb.delete_my_currency(user_name, msg[4:7])
@@ -530,13 +651,20 @@ def handle_message(event):
                             "paddingAll": "15px"
                         },
                         "footer": {
-                            "type": "box", "layout": "horizontal",
+                            "type": "box", "layout": "vertical",
                             "contents": [
-                                {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm", "flex": 1,
-                                 "action": {"type": "message", "label": "走勢圖", "text": f"CT{currency}"}},
-                                {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
-                                 "action": {"type": "message", "label": "兌換台幣", "text": f"換匯{currency}/TWD"}}
-                            ], "spacing": "sm", "paddingAll": "10px"
+                                {
+                                    "type": "box", "layout": "horizontal",
+                                    "contents": [
+                                        {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm", "flex": 1,
+                                         "action": {"type": "message", "label": "走勢圖", "text": f"CT{currency}"}},
+                                        {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
+                                         "action": {"type": "message", "label": "兌換台幣", "text": f"換匯{currency}/TWD"}},
+                                        {"type": "button", "style": "primary", "color": "#FF5252", "height": "sm", "flex": 1,
+                                         "action": {"type": "message", "label": "加入關注", "text": f"關注外幣{currency}"}}
+                                    ], "spacing": "sm"
+                                }
+                            ], "paddingAll": "10px"
                         }
                     }
                 )
