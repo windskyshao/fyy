@@ -641,8 +641,8 @@ def handle_message(event):
                         text='請選擇',
                         actions=[
                             MessageAction(
-                                label='開始玩',
-                                text='開始玩'
+                                label='股價查詢',
+                                text='股價查詢'
                             ),
                             URIAction(
                                 label='財經新聞',
@@ -660,8 +660,8 @@ def handle_message(event):
                         text='請選擇',
                         actions=[
                             MessageAction(
-                                label='other bot',
-                                text='imgur bot'
+                                label='我的關注',
+                                text='股票清單'
                             ),
                             MessageAction(
                                 label='油價報你知',
