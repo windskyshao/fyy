@@ -380,21 +380,24 @@ def handle_message(event):
         return 0
     if re.match('股價查詢|查股票|查股價', msg):
         popular_stocks = [
-            ("2330", "台積電"), ("2317", "鴻海"), ("2454", "聯發科"),
-            ("2881", "富邦金"), ("2882", "國泰金"), ("2303", "聯電"),
-            ("0050", "元大50"), ("0056", "高股息"), ("00878", "國泰永續"),
-            ("2412", "中華電"), ("3711", "日月光"), ("2886", "兆豐金"),
+            ("2330", "台積電"), ("2317", "鴻海"),
+            ("2454", "聯發科"), ("2303", "聯電"),
+            ("2881", "富邦金"), ("2882", "國泰金"),
+            ("2412", "中華電"), ("2886", "兆豐金"),
+            ("0050", "元大50"), ("0056", "高股息"),
+            ("3711", "日月光"), ("00878","國泰永續"),
         ]
-        buttons = []
-        for code, name in popular_stocks:
-            buttons.append({
+        col1 = []
+        col2 = []
+        for i, (code, name) in enumerate(popular_stocks):
+            btn = {
                 "type": "button", "style": "secondary", "height": "sm",
-                "action": {"type": "message", "label": f"{name} {code}", "text": f"#{code}"}
-            })
-        # 分成三欄
-        col1 = buttons[0:4]
-        col2 = buttons[4:8]
-        col3 = buttons[8:12]
+                "action": {"type": "message", "label": f"{name}({code})", "text": f"#{code}"}
+            }
+            if i % 2 == 0:
+                col1.append(btn)
+            else:
+                col2.append(btn)
         stock_menu = FlexSendMessage(
             alt_text="股價查詢 - 熱門股票",
             contents={
@@ -403,15 +406,14 @@ def handle_message(event):
                     "type": "box", "layout": "vertical",
                     "contents": [
                         {"type": "text", "text": "📈 熱門股票", "weight": "bold", "size": "lg", "color": "#1DB446"},
-                        {"type": "text", "text": "點選查詢，或直接輸入代號/公司名稱", "size": "xs", "color": "#888888", "margin": "sm"}
+                        {"type": "text", "text": "點選查詢，或直接輸入代號 / 公司名稱", "size": "xs", "color": "#888888", "margin": "sm"}
                     ], "paddingAll": "15px"
                 },
                 "body": {
                     "type": "box", "layout": "horizontal",
                     "contents": [
                         {"type": "box", "layout": "vertical", "contents": col1, "spacing": "sm", "flex": 1},
-                        {"type": "box", "layout": "vertical", "contents": col2, "spacing": "sm", "flex": 1, "margin": "sm"},
-                        {"type": "box", "layout": "vertical", "contents": col3, "spacing": "sm", "flex": 1, "margin": "sm"}
+                        {"type": "box", "layout": "vertical", "contents": col2, "spacing": "sm", "flex": 1, "margin": "sm"}
                     ], "paddingAll": "10px"
                 },
                 "footer": {
