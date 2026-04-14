@@ -321,21 +321,33 @@ def handle_message(event):
             TextSendMessage(text=f"請輸入要兌換的 {parts[0]} 金額（數字）：")
         )
         return 0
-    if re.match("匯率兌換", msg):
+    if re.match("匯率兌換$", msg):
         pairs = [
             ("美元→台幣", "換匯USD/TWD"), ("日圓→台幣", "換匯JPY/TWD"),
             ("港幣→台幣", "換匯HKD/TWD"), ("英鎊→台幣", "換匯GBP/TWD"),
             ("澳幣→台幣", "換匯AUD/TWD"), ("人民幣→台幣", "換匯CNY/TWD"),
             ("加幣→台幣", "換匯CAD/TWD"), ("新加坡幣→台幣", "換匯SGD/TWD"),
             ("韓元→台幣", "換匯KRW/TWD"), ("泰銖→台幣", "換匯THB/TWD"),
+            ("瑞士法郎→台幣", "換匯CHF/TWD"), ("瑞典幣→台幣", "換匯SEK/TWD"),
         ]
         buttons = [QuickReplyButton(action=MessageAction(label=label, text=cmd)) for label, cmd in pairs]
+        buttons.append(QuickReplyButton(action=MessageAction(label="更多幣別▸", text="匯率兌換更多")))
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(
-                text="請選擇要兌換的幣別：",
-                quick_reply=QuickReply(items=buttons)
-            )
+            TextSendMessage(text="請選擇要兌換的幣別：", quick_reply=QuickReply(items=buttons))
+        )
+        return 0
+    if re.match("匯率兌換更多", msg):
+        pairs = [
+            ("紐元→台幣", "換匯NZD/TWD"), ("菲國比索→台幣", "換匯PHP/TWD"),
+            ("印尼幣→台幣", "換匯IDR/TWD"), ("馬來幣→台幣", "換匯MYR/TWD"),
+            ("越南盾→台幣", "換匯VND/TWD"), ("南非幣→台幣", "換匯ZAR/TWD"),
+        ]
+        buttons = [QuickReplyButton(action=MessageAction(label=label, text=cmd)) for label, cmd in pairs]
+        buttons.append(QuickReplyButton(action=MessageAction(label="◂常用幣別", text="匯率兌換")))
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="更多幣別：", quick_reply=QuickReply(items=buttons))
         )
         return 0
     if re.match("換匯[A-Z]{3}/[A-Z]{3}", msg):
@@ -434,12 +446,25 @@ def handle_message(event):
             ("美元", "CTUSD"), ("日圓", "CTJPY"), ("港幣", "CTHKD"),
             ("英鎊", "CTGBP"), ("澳幣", "CTAUD"), ("人民幣", "CTCNY"),
             ("加幣", "CTCAD"), ("新加坡幣", "CTSGD"), ("韓元", "CTKRW"),
-            ("泰銖", "CTTHB"),
+            ("泰銖", "CTTHB"), ("瑞士法郎", "CTCHF"), ("瑞典幣", "CTSEK"),
         ]
         buttons = [QuickReplyButton(action=MessageAction(label=label, text=cmd)) for label, cmd in pairs]
+        buttons.append(QuickReplyButton(action=MessageAction(label="更多幣別▸", text="匯率走勢更多")))
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="請選擇要查看走勢的幣別：", quick_reply=QuickReply(items=buttons))
+        )
+        return 0
+    if re.match("匯率走勢更多", msg):
+        pairs = [
+            ("紐元", "CTNZD"), ("菲國比索", "CTPHP"), ("印尼幣", "CTIDR"),
+            ("馬來幣", "CTMYR"), ("越南盾", "CTVND"), ("南非幣", "CTZAR"),
+        ]
+        buttons = [QuickReplyButton(action=MessageAction(label=label, text=cmd)) for label, cmd in pairs]
+        buttons.append(QuickReplyButton(action=MessageAction(label="◂常用幣別", text="匯率走勢")))
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="更多幣別：", quick_reply=QuickReply(items=buttons))
         )
         return 0
     if re.match("CT[A-Z]{3}", msg):
