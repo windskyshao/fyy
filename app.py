@@ -35,6 +35,25 @@ def get_stock_name(code):
         return ticker.info.get('shortName', code)
     except:
         return code
+
+def search_stock_by_name(keyword, max_results=10):
+    """用中文名稱搜尋股票代號"""
+    results = []
+    try:
+        for code, info in twstock.codes.items():
+            if keyword in info.name and info.market == '上市':
+                results.append((code, info.name))
+            if len(results) >= max_results:
+                break
+        if len(results) < max_results:
+            for code, info in twstock.codes.items():
+                if keyword in info.name and info.market == '上櫃':
+                    results.append((code, info.name))
+                if len(results) >= max_results:
+                    break
+    except:
+        pass
+    return results
 from flask import send_from_directory
 #=================這裡是呼叫的內容=====================
 
@@ -359,8 +378,52 @@ def handle_message(event):
         content = mongodb.show_stock_setting(user_name, uid)
         line_bot_api.push_message(uid, TextSendMessage(content))
         return 0
-    if event.message.text == "股價查詢":
-        line_bot_api.push_message(uid,TextSendMessage("請輸入#股票代號....."))
+    if re.match('股價查詢|查股票|查股價', msg):
+        popular_stocks = [
+            ("2330", "台積電"), ("2317", "鴻海"), ("2454", "聯發科"),
+            ("2881", "富邦金"), ("2882", "國泰金"), ("2303", "聯電"),
+            ("0050", "元大50"), ("0056", "高股息"), ("00878", "國泰永續"),
+            ("2412", "中華電"), ("3711", "日月光"), ("2886", "兆豐金"),
+        ]
+        buttons = []
+        for code, name in popular_stocks:
+            buttons.append({
+                "type": "button", "style": "secondary", "height": "sm",
+                "action": {"type": "message", "label": f"{name} {code}", "text": f"#{code}"}
+            })
+        # 分成三欄
+        col1 = buttons[0:4]
+        col2 = buttons[4:8]
+        col3 = buttons[8:12]
+        stock_menu = FlexSendMessage(
+            alt_text="股價查詢 - 熱門股票",
+            contents={
+                "type": "bubble", "size": "mega",
+                "header": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        {"type": "text", "text": "📈 熱門股票", "weight": "bold", "size": "lg", "color": "#1DB446"},
+                        {"type": "text", "text": "點選查詢，或直接輸入代號/公司名稱", "size": "xs", "color": "#888888", "margin": "sm"}
+                    ], "paddingAll": "15px"
+                },
+                "body": {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "box", "layout": "vertical", "contents": col1, "spacing": "sm", "flex": 1},
+                        {"type": "box", "layout": "vertical", "contents": col2, "spacing": "sm", "flex": 1, "margin": "sm"},
+                        {"type": "box", "layout": "vertical", "contents": col3, "spacing": "sm", "flex": 1, "margin": "sm"}
+                    ], "paddingAll": "10px"
+                },
+                "footer": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        {"type": "text", "text": "💡 也可以直接輸入公司名稱搜尋", "size": "xs", "color": "#888888", "align": "center"},
+                        {"type": "text", "text": "例如：台積電、鴻海、富邦", "size": "xs", "color": "#aaaaaa", "align": "center", "margin": "sm"}
+                    ], "paddingAll": "10px"
+                }
+            }
+        )
+        line_bot_api.reply_message(event.reply_token, stock_menu)
         return 0
     if(msg.startswith('#')):
         text = msg[1:]
@@ -684,6 +747,24 @@ def handle_message(event):
         )
         line_bot_api.reply_message(event.reply_token, radar_img)
         return 0
+
+    ######################## 中文搜尋股票 ################################
+    if len(original_msg) >= 2 and not re.match('^[A-Za-z0-9#@]', original_msg):
+        results = search_stock_by_name(original_msg)
+        if results:
+            buttons = []
+            for code, name in results[:8]:
+                buttons.append(
+                    QuickReplyButton(action=MessageAction(label=f"{name} {code}", text=f"#{code}"))
+                )
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=f"找到以下與「{original_msg}」相關的股票：",
+                    quick_reply=QuickReply(items=buttons)
+                )
+            )
+            return 0
 
     ######################## 未知指令預設回覆 ################################
     line_bot_api.reply_message(
