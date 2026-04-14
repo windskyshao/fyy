@@ -471,7 +471,20 @@ def handle_message(event):
                                 "type": "box", "layout": "horizontal",
                                 "contents": [
                                     {"type": "text", "text": stock_name, "weight": "bold", "size": "xl", "color": "#333333", "flex": 0},
-                                    {"type": "text", "text": text, "size": "md", "color": "#888888", "align": "end", "gravity": "center"}
+                                    {"type": "text", "text": text, "size": "md", "color": "#888888", "gravity": "center", "flex": 1, "margin": "md"},
+                                    {"type": "box", "layout": "vertical", "flex": 0, "width": "70px", "height": "30px",
+                                     "contents": [
+                                         {"type": "text", "align": "center", "gravity": "center", "size": "xs", "weight": "bold",
+                                          "text": "★已關注" if mongodb.is_stock_followed(user_name, text) else "☆關注",
+                                          "color": "#FFFFFF" if mongodb.is_stock_followed(user_name, text) else "#888888"}
+                                     ],
+                                     "backgroundColor": "#FF5252" if mongodb.is_stock_followed(user_name, text) else "#EEEEEE",
+                                     "cornerRadius": "15px", "justifyContent": "center", "alignItems": "center",
+                                     "action": {
+                                         "type": "postback",
+                                         "label": "★已關注" if mongodb.is_stock_followed(user_name, text) else "☆關注",
+                                         "data": f"action=unfollow&stock={text}" if mongodb.is_stock_followed(user_name, text) else f"action=follow&stock={text}"
+                                     }}
                                 ]
                             },
                             {
@@ -548,21 +561,18 @@ def handle_message(event):
                                 "type": "box", "layout": "horizontal",
                                 "contents": [
                                     {"type": "button", "style": "primary", "color": "#1DB446", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "3月", "text": f"@K{text} 3m"}},
+                                     "action": {"type": "message", "label": "3個月", "text": f"@K{text} 3m"}},
                                     {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "半年", "text": f"@K{text} 6m"}},
+                                     "action": {"type": "message", "label": "半年", "text": f"@K{text} 6m"}}
+                                ], "spacing": "sm"
+                            },
+                            {
+                                "type": "box", "layout": "horizontal",
+                                "contents": [
                                     {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
                                      "action": {"type": "message", "label": "1年", "text": f"@K{text} 1y"}},
                                     {"type": "button", "style": "primary", "color": "#9C27B0", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "3年", "text": f"@K{text} 3y"}},
-                                    {"type": "button", "height": "sm", "flex": 1,
-                                     "style": "primary" if mongodb.is_stock_followed(user_name, text) else "secondary",
-                                     "color": "#FF5252" if mongodb.is_stock_followed(user_name, text) else "#BBBBBB",
-                                     "action": {
-                                         "type": "postback",
-                                         "label": "★已關注" if mongodb.is_stock_followed(user_name, text) else "☆關注",
-                                         "data": f"action=unfollow&stock={text}" if mongodb.is_stock_followed(user_name, text) else f"action=follow&stock={text}"
-                                     }}
+                                     "action": {"type": "message", "label": "3年", "text": f"@K{text} 3y"}}
                                 ], "spacing": "sm"
                             }
                         ],
