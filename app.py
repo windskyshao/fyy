@@ -346,10 +346,34 @@ def handle_message(event):
         return 0
     ######################## 使用說明 選單 油價報你知################################
     if event.message.text == "油價查詢":
-        content = oil_price()
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=content))
+        try:
+            content = oil_price()
+            lines = [l.strip() for l in content.split('\n') if l.strip()]
+            title = lines[0] if lines else "油價資訊"
+            body_items = []
+            for line in lines[1:]:
+                body_items.append({"type": "text", "text": line, "size": "sm", "wrap": True, "margin": "sm"})
+            oil_flex = FlexSendMessage(
+                alt_text="油價查詢",
+                contents={
+                    "type": "bubble",
+                    "header": {
+                        "type": "box", "layout": "vertical",
+                        "contents": [
+                            {"type": "text", "text": "⛽ 最新油價", "weight": "bold", "size": "lg", "color": "#FF6600"},
+                            {"type": "text", "text": title, "size": "xs", "color": "#888888", "margin": "sm", "wrap": True}
+                        ], "paddingAll": "15px"
+                    },
+                    "body": {
+                        "type": "box", "layout": "vertical",
+                        "contents": body_items if body_items else [{"type": "text", "text": content, "wrap": True}],
+                        "paddingAll": "15px", "spacing": "sm"
+                    }
+                }
+            )
+            line_bot_api.reply_message(event.reply_token, oil_flex)
+        except Exception as e:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"油價查詢失敗: {str(e)}"))
         return 0
     if event.message.text == "使用說明":
         Usage(event)
