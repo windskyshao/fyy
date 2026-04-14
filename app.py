@@ -182,20 +182,17 @@ def oil_price():
     res = rs.get(target_url, verify=False)
     res.encoding = 'utf-8'
     soup = BeautifulSoup(res.text, 'html.parser')
-    # 解析中油油價
+    # 解析中油油價（key 和 value 在不同行）
     cpc_text = soup.select('#cpc')[0].text
     prices = {}
-    for line in cpc_text.split('\n'):
-        line = line.strip()
-        if not line:
-            continue
-        # 統一解析 "92:", "95油價:", "98:", "柴油:" 等格式
-        if ':' in line:
-            key, val = line.split(':', 1)
-            key = key.replace('油價', '').strip()
-            val = val.strip()
-            if val:
-                prices[key] = val
+    lines = [l.strip() for l in cpc_text.split('\n') if l.strip()]
+    pending_key = None
+    for line in lines:
+        if line.endswith(':'):
+            pending_key = line[:-1].replace('油價', '').strip()
+        elif pending_key:
+            prices[pending_key] = line
+            pending_key = None
     # 解析預計調整
     gas_price_text = soup.select('#gas-price')[0].text
     adjust_info = ""
