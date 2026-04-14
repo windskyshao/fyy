@@ -972,6 +972,25 @@ def handle_message(event):
                     ),
                 CarouselColumn(
                         thumbnail_image_url='https://i.imgur.com/bGyGdb1.jpg',
+                        title='生活資訊',
+                        text='請選擇',
+                        actions=[
+                            MessageAction(
+                                label='最新氣象',
+                                text='最新氣象'
+                            ),
+                            MessageAction(
+                                label='雷達回波',
+                                text='雷達回波'
+                            ),
+                            URIAction(
+                                label='時事新聞(聯合新聞)',
+                                uri='https://udn.com/news/breaknews/1'
+                            )
+                        ]
+                    ),
+                CarouselColumn(
+                        thumbnail_image_url='https://i.imgur.com/N9TKsay.jpg',
                         title='AI 工具',
                         text='請選擇',
                         actions=[
