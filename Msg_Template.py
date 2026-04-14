@@ -14,8 +14,8 @@ def stock_reply_rate():
                                        ),
                                        QuickReplyButton(
                                                 action=MessageAction(
-                                                    label="💜💜查詢幣別匯率", 
-                                                    text="匯率兌換",
+                                                    label="💜💜匯率兌換(範例)",
+                                                    text="換匯USD/TWD",
                                                 )
                                        ),
                                        QuickReplyButton(
@@ -35,20 +35,20 @@ def stock_reply_trend():
                                    items=[
                                        QuickReplyButton(
                                                 action=MessageAction(
-                                                    label="💜即時股價💜", 
-                                                    text="股價查詢->#2330",
+                                                    label="💜即時股價💜",
+                                                    text="股價查詢",
                                                 )
                                        ),
                                        QuickReplyButton(
                                                 action=MessageAction(
-                                                    label="💜匯率圖💜", 
-                                                    text="CT幣別->CTUSD",
+                                                    label="💜匯率走勢圖💜",
+                                                    text="CTUSD",
                                                 )
                                        ),
                                        QuickReplyButton(
                                                 action=MessageAction(
-                                                    label="💜股價k線圖💜", 
-                                                    text="@k股票代號日期區期->@23302024-01-01",
+                                                    label="💜K線圖(台積電)💜",
+                                                    text="@K2330 1y",
                                                 )
                                        ),
                                    ]           
@@ -103,7 +103,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "美金",
-                            "text": "USD"
+                            "text": "外幣USD"
                             },
                             "style": "secondary",
                             "color": "#ffed00",
@@ -114,7 +114,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "日圓",
-                            "text": "JPY"
+                            "text": "外幣JPY"
                             },
                             "style": "secondary",
                             "color": "#ff828f",
@@ -126,7 +126,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "港幣",
-                            "text": "HKD"
+                            "text": "外幣HKD"
                             },
                             "style": "secondary",
                             "color": "#66ffe6"
@@ -149,7 +149,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "英鎊",
-                            "text": "GBP"
+                            "text": "外幣GBP"
                             },
                             "style": "secondary",
                             "color": "#ffed00",
@@ -160,7 +160,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "澳幣",
-                            "text": "AUD"
+                            "text": "外幣AUD"
                             },
                             "style": "secondary",
                             "color": "#ff828f",
@@ -172,7 +172,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "加拿大幣",
-                            "text": "CAD"
+                            "text": "外幣CAD"
                             },
                             "style": "secondary",
                             "color": "#66ffe6"
@@ -195,7 +195,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "瑞士幣",
-                            "text": "CHF"
+                            "text": "外幣CHF"
                             },
                             "style": "secondary",
                             "color": "#ffed00",
@@ -206,7 +206,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "新加坡幣",
-                            "text": "SGD"
+                            "text": "外幣SGD"
                             },
                             "style": "secondary",
                             "color": "#ff828f",
@@ -218,7 +218,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "南非幣",
-                            "text": "ZAR"
+                            "text": "外幣ZAR"
                             },
                             "style": "secondary",
                             "color": "#66ffe6"
@@ -241,7 +241,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "瑞典幣",
-                            "text": "SEK"
+                            "text": "外幣SEK"
                             },
                             "style": "secondary",
                             "color": "#ffed00",
@@ -252,7 +252,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "泰幣",
-                            "text": "THB"
+                            "text": "外幣THB"
                             },
                             "style": "secondary",
                             "color": "#ff828f",
@@ -264,7 +264,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "菲比索",
-                            "text": "PHP"
+                            "text": "外幣PHP"
                             },
                             "style": "secondary",
                             "color": "#66ffe6"
@@ -287,7 +287,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "印尼幣",
-                            "text": "IDR"
+                            "text": "外幣IDR"
                             },
                             "style": "secondary",
                             "color": "#ffed00",
@@ -298,7 +298,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "韓元",
-                            "text": "KRW"
+                            "text": "外幣KRW"
                             },
                             "style": "secondary",
                             "color": "#ff828f",
@@ -310,7 +310,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "馬來幣",
-                            "text": "MYR"
+                            "text": "外幣MYR"
                             },
                             "style": "secondary",
                             "color": "#66ffe6"
@@ -333,7 +333,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "越南盾",
-                            "text": "VND"
+                            "text": "外幣VND"
                             },
                             "style": "secondary",
                             "color": "#ffed00",
@@ -344,7 +344,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "人民幣",
-                            "text": "CNY"
+                            "text": "外幣CNY"
                             },
                             "style": "secondary",
                             "color": "#ff828f",
@@ -356,7 +356,7 @@ def show_Button():
                             "action": {
                             "type": "message",
                             "label": "紐元",
-                            "text": "NZD"
+                            "text": "外幣NZD"
                             },
                             "style": "secondary",
                             "color": "#66ffe6"
@@ -408,7 +408,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "美金",
-#                             "text": "USD"
+#                             "text": "外幣USD"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -420,7 +420,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "日圓",
-#                             "text": "JPY"
+#                             "text": "外幣JPY"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -432,7 +432,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "港幣",
-#                             "text": "HKD"
+#                             "text": "外幣HKD"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -454,7 +454,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "英鎊",
-#                             "text": "GBP"
+#                             "text": "外幣GBP"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -466,7 +466,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "澳幣",
-#                             "text": "AUD"
+#                             "text": "外幣AUD"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -478,7 +478,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "加拿大幣",
-#                             "text": "CAD"
+#                             "text": "外幣CAD"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -500,7 +500,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "瑞士法郎",
-#                             "text": "CHF"
+#                             "text": "外幣CHF"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -512,7 +512,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "新加坡",
-#                             "text": "SGD"
+#                             "text": "外幣SGD"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -524,7 +524,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "南非幣",
-#                             "text": "ZAR"
+#                             "text": "外幣ZAR"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -546,7 +546,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "瑞典幣",
-#                             "text": "SEK"
+#                             "text": "外幣SEK"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -558,7 +558,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "泰幣",
-#                             "text": "THB"
+#                             "text": "外幣THB"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -570,7 +570,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "菲比索",
-#                             "text": "PHP"
+#                             "text": "外幣PHP"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -592,7 +592,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "印尼幣",
-#                             "text": "IDR"
+#                             "text": "外幣IDR"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -604,7 +604,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "韓元",
-#                             "text": "KRW"
+#                             "text": "外幣KRW"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -616,7 +616,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "馬來幣",
-#                             "text": "MYR"
+#                             "text": "外幣MYR"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -638,7 +638,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "越南盾",
-#                             "text": "VND"
+#                             "text": "外幣VND"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -650,7 +650,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "人民幣",
-#                             "text": "CNY"
+#                             "text": "外幣CNY"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",
@@ -662,7 +662,7 @@ def show_Button():
 #                             "action": {
 #                             "type": "message",
 #                             "label": "紐元",
-#                             "text": "NZD"
+#                             "text": "外幣NZD"
 #                             },
 #                             "gravity": "center",
 #                             "style": "primary",

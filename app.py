@@ -140,14 +140,20 @@ def cache_users_currency():
         users.append(cel)
     return users
 def Usage(event):
-    push_msg(event,"    🌟🌟 查詢方法 🌟🌟   \
-                    \n\
-                    \n☢本機器人可查詢油價及匯率☢\
-                    \n\
-                    \n⑥ 油價通知 ➦➦➦ 輸入油價報你知\
-                    \n⑥ 匯率通知 ➦➦➦ 輸入查詢匯率\
-                    \n⑦ 匯率兌換 ➦➦➦ 換匯USD/TWD\
-                    \n⑦ 自動推播 ➦➦➦ 自動推播")
+    push_msg(event,"🌟🌟 使用說明 🌟🌟\n"
+        "\n📈 股票功能\n"
+        "  #2330 ➦ 查詢股價\n"
+        "  股價查詢 ➦ 熱門股票選單\n"
+        "  股票清單 ➦ 我的關注清單\n"
+        "  股價提醒 ➦ 關注股票現價\n"
+        "\n💱 匯率功能\n"
+        "  外幣USD ➦ 查詢美元匯率\n"
+        "  換匯USD/TWD ➦ 匯率換算\n"
+        "  幣別種類 ➦ 所有幣別\n"
+        "\n⛽ 其他功能\n"
+        "  油價查詢 ➦ 最新油價\n"
+        "  最新氣象 ➦ 天氣查詢\n"
+        "  雷達回波 ➦ 雷達回波圖")
 # 監聽所有來自 /callback 的 Post Request
 def push_msg(event,msg):
     try:
@@ -358,9 +364,10 @@ def handle_message(event):
         return 0
     ############################### 股票區 ################################
     
-    if re.match('關注[0-9]{4}[<>][0-9]' ,msg):
-        stockNumber = msg[2:6]
-        content = mongodb.write_my_stock(uid, user_name , stockNumber, msg[6:7], msg[7:])
+    if re.match(r'關注[0-9]{4,6}[<>][0-9]' ,msg):
+        m = re.match(r'關注([0-9]{4,6})([<>])(.*)', msg)
+        stockNumber = m.group(1)
+        content = mongodb.write_my_stock(uid, user_name, stockNumber, m.group(2), m.group(3))
         line_bot_api.push_message(uid, TextSendMessage(content))
         return 0
     # 查詢股票篩選條件清單
@@ -460,6 +467,7 @@ def handle_message(event):
                     ]
                 })
 
+            is_followed = mongodb.is_stock_followed(user_name, text)
             stock_flex = FlexSendMessage(
                 alt_text=f"{text} 股價查詢",
                 contents={
@@ -475,15 +483,15 @@ def handle_message(event):
                                     {"type": "box", "layout": "vertical", "flex": 0, "width": "70px", "height": "30px",
                                      "contents": [
                                          {"type": "text", "align": "center", "gravity": "center", "size": "xs", "weight": "bold",
-                                          "text": "★已關注" if mongodb.is_stock_followed(user_name, text) else "☆關注",
-                                          "color": "#FFFFFF" if mongodb.is_stock_followed(user_name, text) else "#888888"}
+                                          "text": "★已關注" if is_followed else "☆關注",
+                                          "color": "#FFFFFF" if is_followed else "#888888"}
                                      ],
-                                     "backgroundColor": "#FF5252" if mongodb.is_stock_followed(user_name, text) else "#EEEEEE",
+                                     "backgroundColor": "#FF5252" if is_followed else "#EEEEEE",
                                      "cornerRadius": "15px", "justifyContent": "center", "alignItems": "center",
                                      "action": {
                                          "type": "postback",
-                                         "label": "★已關注" if mongodb.is_stock_followed(user_name, text) else "☆關注",
-                                         "data": f"action=unfollow&stock={text}" if mongodb.is_stock_followed(user_name, text) else f"action=follow&stock={text}"
+                                         "label": "★已關注" if is_followed else "☆關注",
+                                         "data": f"action=unfollow&stock={text}" if is_followed else f"action=follow&stock={text}"
                                      }}
                                 ]
                             },
@@ -585,7 +593,7 @@ def handle_message(event):
             line_bot_api.push_message(uid, TextSendMessage(text=f'股票查詢發生錯誤: {str(e)}'))
         return 0
     # 刪除存在資料庫裡面的股票
-    if re.match('刪除[0-9]{4}',msg): 
+    if re.match(r'刪除[0-9]{4,6}',msg):
         content = mongodb.delete_my_stock(user_name, msg[2:])
         line_bot_api.push_message(uid, TextSendMessage(content))
         return 0
@@ -669,7 +677,7 @@ def handle_message(event):
                             ),
                             URIAction(
                                 label='奇摩股市',
-                                uri='https://tw.stock.yahoo.com/us/?s=NVS&tt=1'
+                                uri='https://tw.stock.yahoo.com/'
                             )
                         ]
                     ),
@@ -704,6 +712,8 @@ def handle_message(event):
             result = ""
             for user_stocks in dataList:
                 for stock_data in user_stocks:
+                    if stock_data.get('userID') != uid:
+                        continue
                     stock_code = stock_data['favorite_stock']
                     condition = stock_data['condition']
                     price = stock_data['price']
