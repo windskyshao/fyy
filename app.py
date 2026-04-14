@@ -110,6 +110,47 @@ def cron_check_currency():
     except Exception as e:
         return f"Error: {e}", 500
 
+@app.route('/cron/check_stock')
+def cron_check_stock():
+    """排程自動檢查股票條件並推播通知"""
+    try:
+        db = mongodb.constructor_stock()
+        nameList = db.list_collection_names()
+        notified = 0
+        for col_name in nameList:
+            collect = db[col_name]
+            entries = list(collect.find({"tag": "stock"}))
+            for entry in entries:
+                uid = entry.get('userID')
+                stock_code = entry.get('favorite_stock')
+                condition = entry.get('condition', '>')
+                price = entry.get('price', '0')
+                if not uid or not stock_code or price == '0':
+                    continue
+                try:
+                    ticker = yf.Ticker(f"{stock_code}.TW")
+                    hist = ticker.history(period="1d")
+                    if hist.empty:
+                        continue
+                    current = hist.iloc[-1]['Close']
+                    target = float(price)
+                    stock_name = get_stock_name(stock_code)
+                    triggered = False
+                    if condition == '<' and current < target:
+                        triggered = True
+                    elif condition == '>' and current > target:
+                        triggered = True
+                    if triggered:
+                        arrow = "低於" if condition == '<' else "高於"
+                        msg = f"📢 股票通知\n{stock_name}({stock_code}) 現價：{current:.2f}\n已{arrow}您設定的 {target}！"
+                        line_bot_api.push_message(uid, TextSendMessage(text=msg))
+                        notified += 1
+                except Exception as e:
+                    print(f"[cron_stock] Error checking {stock_code}: {e}")
+        return f"OK, notified={notified}", 200
+    except Exception as e:
+        return f"Error: {e}", 500
+
 @app.route('/cron/oil_price')
 def cron_oil_price():
     """排程推播下週油價預測給所有追蹤者"""
