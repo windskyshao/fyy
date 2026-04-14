@@ -194,13 +194,23 @@ def oil_price():
             prices[pending_key] = line
             pending_key = None
     # 解析預計調整
-    gas_price_text = soup.select('#gas-price')[0].text
-    adjust_info = ""
-    for line in gas_price_text.split('\n'):
-        line = line.strip()
-        if '調整' in line or '不調整' in line or ('元' in line and ('+' in line or '-' in line)):
-            adjust_info += line + " "
-    return {'prices': prices, 'adjust': adjust_info.strip()}
+    gas_lines = [l.strip() for l in soup.select('#gas-price')[0].text.split('\n') if l.strip()]
+    forecast = {}
+    for i, line in enumerate(gas_lines):
+        if '柴油預計調整' in line and i + 1 < len(gas_lines):
+            forecast['柴油預計調整'] = gas_lines[i + 1].replace(' ', '')
+        if '下週' in line:
+            forecast['日期'] = line
+        if '不' in line and '調' in line and '整' in line:
+            forecast['汽油調整'] = '不調整'
+        elif '預計' not in line and ('元' in line or '+' in line or '-' in line) and '調整' not in line:
+            forecast['汽油調整'] = line.replace(' ', '')
+    # 解析變動幅度
+    main_lines = [l.strip() for l in soup.select('#main')[0].text.split('\n') if l.strip()]
+    for i, line in enumerate(main_lines):
+        if '變動幅度' in line and i + 1 < len(main_lines):
+            forecast['變動幅度'] = main_lines[i + 1]
+    return {'prices': prices, 'forecast': forecast}
 
 # 監聽所有來自 /callback 的 Post Request
 @app.route("/callback", methods=['POST'])
@@ -364,7 +374,7 @@ def handle_message(event):
         try:
             data = oil_price()
             prices = data['prices']
-            adjust = data['adjust']
+            forecast = data['forecast']
             # 油品名稱對照
             label_map = {'92': '92無鉛', '95': '95無鉛', '98': '98無鉛', '柴油': '超級柴油',
                          '今日中油油價': None}
@@ -381,9 +391,39 @@ def handle_message(event):
                     ], "margin": "md"
                 })
             body_contents = price_rows if price_rows else [{"type": "text", "text": "暫無資料", "wrap": True}]
-            if adjust:
+            # 下週預測
+            if forecast:
                 body_contents.append({"type": "separator", "margin": "lg"})
-                body_contents.append({"type": "text", "text": adjust, "size": "xs", "color": "#888888", "wrap": True, "margin": "md"})
+                body_contents.append({"type": "text", "text": "📊 下週預測", "size": "sm", "weight": "bold", "color": "#333333", "margin": "lg"})
+                if '日期' in forecast:
+                    body_contents.append({"type": "text", "text": forecast['日期'], "size": "xs", "color": "#888888", "wrap": True, "margin": "sm"})
+                if '汽油調整' in forecast:
+                    body_contents.append({
+                        "type": "box", "layout": "horizontal", "margin": "sm",
+                        "contents": [
+                            {"type": "text", "text": "汽油", "size": "sm", "color": "#555555", "flex": 2},
+                            {"type": "text", "text": forecast['汽油調整'], "size": "sm", "weight": "bold", "align": "end", "flex": 3,
+                             "color": "#1DB446" if '不調整' in forecast['汽油調整'] else "#FF3B30"}
+                        ]
+                    })
+                if '柴油預計調整' in forecast:
+                    body_contents.append({
+                        "type": "box", "layout": "horizontal", "margin": "sm",
+                        "contents": [
+                            {"type": "text", "text": "柴油", "size": "sm", "color": "#555555", "flex": 2},
+                            {"type": "text", "text": forecast['柴油預計調整'], "size": "sm", "weight": "bold", "align": "end", "flex": 3,
+                             "color": "#1DB446" if '0.0' in forecast['柴油預計調整'] else "#FF3B30"}
+                        ]
+                    })
+                if '變動幅度' in forecast:
+                    body_contents.append({
+                        "type": "box", "layout": "horizontal", "margin": "sm",
+                        "contents": [
+                            {"type": "text", "text": "變動幅度", "size": "sm", "color": "#555555", "flex": 2},
+                            {"type": "text", "text": forecast['變動幅度'], "size": "sm", "weight": "bold", "align": "end", "flex": 3,
+                             "color": "#FF3B30" if '-' in forecast['變動幅度'] else "#1DB446"}
+                        ]
+                    })
             oil_flex = FlexSendMessage(
                 alt_text="油價查詢",
                 contents={
