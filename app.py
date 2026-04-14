@@ -715,8 +715,8 @@ def handle_message(event):
                                 uri='https://tw.stock.yahoo.com/news/'
                             ),
                             URIAction(
-                                label='內政部實價登錄',
-                                uri='https://lvr.land.moi.gov.tw/'
+                                label='匯率查詢(台銀)',
+                                uri='https://rate.bot.com.tw/xrt?Lang=zh-TW'
                             )
                         ]
                     ),
@@ -726,16 +726,35 @@ def handle_message(event):
                         text='請選擇',
                         actions=[
                             URIAction(
-                                label='匯率查詢(台銀)',
-                                uri='https://rate.bot.com.tw/xrt?Lang=zh-TW'
-                            ),
-                            URIAction(
                                 label='奇摩股市',
                                 uri='https://tw.stock.yahoo.com/'
                             ),
                             URIAction(
                                 label='財經PTT',
                                 uri='https://www.ptt.cc/bbs/Finance/index.html'
+                            ),
+                            URIAction(
+                                label='理財YouTube',
+                                uri='https://www.youtube.com/channel/UCPhn2rCqhu0HdktsFjixahA'
+                            )
+                        ]
+                    ),
+                CarouselColumn(
+                        thumbnail_image_url='https://i.imgur.com/rwR2yUr.jpg',
+                        title='房地產',
+                        text='請選擇',
+                        actions=[
+                            URIAction(
+                                label='內政部實價登錄',
+                                uri='https://lvr.land.moi.gov.tw/'
+                            ),
+                            URIAction(
+                                label='Google地圖',
+                                uri='https://www.google.com.tw/maps'
+                            ),
+                            URIAction(
+                                label='591房屋交易',
+                                uri='https://www.591.com.tw/'
                             )
                         ]
                     )
