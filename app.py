@@ -856,6 +856,8 @@ def handle_message(event):
         return 0
     if event.message.text == "使用說明":
         def make_row(cmd, desc):
+            if not cmd:
+                return {"type": "text", "text": f"  {desc}", "size": "sm", "color": "#555555", "wrap": True, "margin": "sm"}
             return {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
                 {"type": "text", "text": cmd, "size": "sm", "color": "#1DB446", "flex": 3, "weight": "bold"},
                 {"type": "text", "text": desc, "size": "sm", "color": "#555555", "flex": 5, "wrap": True}
