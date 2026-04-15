@@ -1430,7 +1430,36 @@ def handle_message(event):
                 ]
             )
         )
-        line_bot_api.reply_message(event.reply_token, message)
+        main_menu_sync = FlexSendMessage(
+            alt_text='主選單快捷',
+            contents={
+                "type": "bubble",
+                "size": "mega",
+                "header": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {"type": "text", "text": "主選單快捷", "weight": "bold", "size": "lg", "align": "center", "color": "#1DB446"},
+                        {"type": "text", "text": "iPad 也可直接使用", "size": "xs", "align": "center", "color": "#888888", "margin": "sm"}
+                    ],
+                    "paddingAll": "14px"
+                },
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "sm",
+                    "contents": [
+                        {"type": "button", "style": "primary", "height": "sm", "color": "#1976D2", "action": {"type": "message", "label": "股價查詢", "text": "股價查詢"}},
+                        {"type": "button", "style": "primary", "height": "sm", "color": "#FF7043", "action": {"type": "message", "label": "油價查詢", "text": "油價查詢"}},
+                        {"type": "button", "style": "primary", "height": "sm", "color": "#26A69A", "action": {"type": "message", "label": "匯率查詢", "text": "匯率查詢"}},
+                        {"type": "button", "style": "primary", "height": "sm", "color": "#8D6E63", "action": {"type": "message", "label": "房地資訊", "text": "房地資訊"}},
+                        {"type": "button", "style": "link", "height": "sm", "action": {"type": "message", "label": "使用說明", "text": "使用說明"}}
+                    ],
+                    "paddingAll": "12px"
+                }
+            }
+        )
+        line_bot_api.reply_message(event.reply_token, [main_menu_sync, message])
         return 0
 
     if re.match("股價提醒", msg):
@@ -1857,6 +1886,7 @@ def handle_unfollow(event):
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
