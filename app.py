@@ -190,8 +190,12 @@ def cron_oil_price():
 @app.route('/register_me/<user_id>')
 def register_me(user_id):
     """手動註冊現有用戶（用於已追蹤但未記錄的用戶）"""
-    mongodb.save_follower(user_id)
-    return f"OK, registered {user_id}", 200
+    try:
+        mongodb.save_follower(user_id)
+        count = len(mongodb.get_all_followers())
+        return f"OK, registered {user_id}, total followers={count}", 200
+    except Exception as e:
+        return f"Error: {e}", 500
 
 
 #這段主要在畫k線圖
