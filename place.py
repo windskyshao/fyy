@@ -1,4 +1,4 @@
-from linebot.models import *
+﻿from linebot.models import *
 #from config import  Config
 
 #即時天氣&預報天氣用
@@ -389,7 +389,7 @@ def img_Carousel():
                             "action": {
                             "type": "message",
                             "label": "action",
-                            "text": "雷達回波"
+                            "text": "潮汐預報"
                             },
                             "gravity": "center",
                             "aspectMode": "cover",
@@ -422,7 +422,7 @@ def img_Carousel():
                             "action": {
                             "type": "message",
                             "label": "action",
-                            "text": "即時天氣"
+                            "text": "港口天氣"
                             },
                             "size": "full"
                         },
@@ -475,3 +475,4 @@ def quick_reply_weather(mat):
         )
     )
     return text_message
+

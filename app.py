@@ -21,6 +21,7 @@ import time
 import place
 import os
 import uuid
+from urllib.parse import quote_plus
 
 def get_stock_name(code):
     """取得股票中文名稱，查不到就回傳英文或代號"""
@@ -1562,22 +1563,51 @@ def handle_message(event):
         return 0
 
     #＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊weather＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
-    #圖文選單
-    #第一層-最新氣象->4格圖片Flex Message
-    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather',msg):
-        content=place.img_Carousel() #呼叫4格圖片Flex Message
-        line_bot_api.reply_message(event.reply_token,content)
-        return 0
-    ##############################1.即時天氣##############################
-    # 1.第二層-即時天氣->呼叫quick_reply
-    if re.match('即時天氣|即時氣象',msg):
-        mat_d[uid]='即時天氣'
-        content=place.quick_reply_weather(mat_d[uid]) #呼叫quick_reply
-        line_bot_api.reply_message(event.reply_token,content)
+    weather_nav = [
+        QuickReplyButton(action=MessageAction(label="↩ 最新氣象", text="最新氣象")),
+        QuickReplyButton(action=MessageAction(label="即時天氣", text="即時天氣")),
+        QuickReplyButton(action=MessageAction(label="天氣預報", text="天氣預報")),
+    ]
+
+    # 第一層：最新氣象四格選單
+    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather', msg):
+        content = place.img_Carousel()
+        line_bot_api.reply_message(event.reply_token, content)
         return 0
 
+    # 第二層：即時天氣/天氣預報 -> 縣市選單
+    if re.match('即時天氣|即時氣象', msg):
+        mat_d[uid] = '即時天氣'
+        line_bot_api.reply_message(event.reply_token, place.select_city('即時天氣'))
+        return 0
 
-    ##############################weather quake############################         
+    if re.match('天氣預報|預報天氣', msg):
+        mat_d[uid] = '天氣預報'
+        line_bot_api.reply_message(event.reply_token, place.select_city('天氣預報'))
+        return 0
+
+    # 海象功能（先導向可用入口，避免點擊後無反應）
+    if re.match('潮汐預報', msg):
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text='潮汐預報可參考：\nhttps://www.google.com/search?q=中央氣象署+潮汐預報',
+                quick_reply=QuickReply(items=weather_nav)
+            )
+        )
+        return 0
+
+    if re.match('港口天氣', msg):
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text='港口天氣可參考：\nhttps://www.google.com/search?q=中央氣象署+港口天氣',
+                quick_reply=QuickReply(items=weather_nav)
+            )
+        )
+        return 0
+
+    # 雷達回波
     if re.match('雷達回波', msg):
         url = 'https://www.cwa.gov.tw/Data/radar/CV1_3600.png'
         radar_img = ImageSendMessage(
@@ -1587,6 +1617,32 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token, radar_img)
         return 0
 
+    # 第三層：城市點選後回覆（即時/預報）
+    m_now = re.match(r'^請問要查詢(.+?)的那個地區$', original_msg)
+    if m_now:
+        city = m_now.group(1)
+        q = quote_plus(f"{city} 即時天氣")
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=f"{city} 即時天氣查詢：\nhttps://www.google.com/search?q={q}",
+                quick_reply=QuickReply(items=weather_nav)
+            )
+        )
+        return 0
+
+    m_fc = re.match(r'^我要查詢(.+?)的預報天氣$', original_msg)
+    if m_fc:
+        city = m_fc.group(1)
+        q = quote_plus(f"{city} 天氣預報")
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=f"{city} 天氣預報查詢：\nhttps://www.google.com/search?q={q}",
+                quick_reply=QuickReply(items=weather_nav)
+            )
+        )
+        return 0
     ######################## 中文搜尋股票 ################################
     if len(original_msg) >= 2 and not re.match('^[A-Za-z0-9#@]', original_msg):
         results = search_stock_by_name(original_msg)
@@ -1801,5 +1857,7 @@ def handle_unfollow(event):
 
 if __name__ == "__main__":
     app.run()
+
+
 
 
