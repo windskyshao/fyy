@@ -370,90 +370,89 @@ def img_Carousel():
         alt_text="請選擇查詢事項：",
         contents={
             "type": "bubble",
+            "size": "mega",
             "header": {
                 "type": "box",
                 "layout": "vertical",
                 "contents": [
-                {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "contents": [
+                    {
+                        "type": "text",
+                        "text": "最新氣象功能",
+                        "weight": "bold",
+                        "size": "lg",
+                        "color": "#1DB446",
+                        "align": "center"
+                    },
+                    {
+                        "type": "text",
+                        "text": "請直接點選功能",
+                        "size": "xs",
+                        "color": "#888888",
+                        "align": "center",
+                        "margin": "sm"
+                    }
+                ],
+                "paddingAll": "16px"
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
                     {
                         "type": "box",
-                        "layout": "vertical",
+                        "layout": "horizontal",
+                        "spacing": "sm",
                         "contents": [
-                        {
-                            "type": "image",
-                            "url": "https://i.imgur.com/wQcsTzT.jpg",
-                            "flex": 1,
-                            "action": {
-                            "type": "message",
-                            "label": "action",
-                            "text": "潮汐預報"
+                            {
+                                "type": "button",
+                                "style": "primary",
+                                "color": "#2196F3",
+                                "height": "sm",
+                                "action": {"type": "message", "label": "雷達回波", "text": "雷達回波"}
                             },
-                            "gravity": "center",
-                            "aspectMode": "cover",
-                            "size": "full"
-                        },
-                        {
-                            "type": "image",
-                            "url": "https://i.imgur.com/jKqO32C.jpg",
-                            "aspectMode": "cover",
-                            "gravity": "center",
-                            "action": {
-                            "type": "message",
-                            "label": "action",
-                            "text": "即時天氣"
-                            },
-                            "size": "full"
-                        }
-                        ],
-                        "paddingAll": "0px"
+                            {
+                                "type": "button",
+                                "style": "primary",
+                                "color": "#00ACC1",
+                                "height": "sm",
+                                "action": {"type": "message", "label": "即時天氣", "text": "即時天氣"}
+                            }
+                        ]
                     },
                     {
                         "type": "box",
-                        "layout": "vertical",
+                        "layout": "horizontal",
+                        "spacing": "sm",
                         "contents": [
-                        {
-                            "type": "image",
-                            "url": "https://i.imgur.com/KCCL1B2.jpg",
-                            "aspectMode": "cover",
-                            "gravity": "center",
-                            "action": {
-                            "type": "message",
-                            "label": "action",
-                            "text": "港口天氣"
+                            {
+                                "type": "button",
+                                "style": "primary",
+                                "color": "#43A047",
+                                "height": "sm",
+                                "action": {"type": "message", "label": "天氣預報", "text": "天氣預報"}
                             },
-                            "size": "full"
-                        },
-                        {
-                            "type": "image",
-                            "url": "https://i.imgur.com/Iwmkr0V.jpg",
-                            "size": "full",
-                            "aspectMode": "cover",
-                            "aspectRatio": "150:150",
-                            "gravity": "center",
-                            "action": {
-                            "type": "message",
-                            "label": "action",
-                            "text": "天氣預報"
+                            {
+                                "type": "button",
+                                "style": "primary",
+                                "color": "#FB8C00",
+                                "height": "sm",
+                                "action": {"type": "message", "label": "潮汐預報", "text": "潮汐預報"}
                             }
-                        }
-                        ],
-                        "flex": 1,
-                        "paddingAll": "0px"
+                        ]
+                    },
+                    {
+                        "type": "button",
+                        "style": "link",
+                        "height": "sm",
+                        "action": {"type": "message", "label": "港口天氣", "text": "港口天氣"}
                     }
-                    ],
-                    "paddingAll": "0px"
-                }
                 ],
-                "paddingAll": "0px"
+                "paddingAll": "12px"
             }
         }
     )
     return flex_message
-
-###############################1+2.quick_reply#########################
 def quick_reply_weather(mat):
     content_text = '請選擇您要查詢的天氣：'
     text_message = TextSendMessage(
@@ -475,4 +474,5 @@ def quick_reply_weather(mat):
         )
     )
     return text_message
+
 
