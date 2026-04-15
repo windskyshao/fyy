@@ -480,9 +480,11 @@ def handle_message(event):
     # 指令容錯：中文幣別 → 轉換為外幣查詢
     if original_msg in currency_alias:
         code = currency_alias[original_msg]
-        line_bot_api.push_message(uid, TextSendMessage(f'您要查詢的外幣是: {original_msg}'))
         content = EXRate.showCurrency(code)
-        line_bot_api.push_message(uid, TextSendMessage(content))
+        line_bot_api.reply_message(event.reply_token, [
+            TextSendMessage(f'您要查詢的外幣是: {original_msg}'),
+            TextSendMessage(content)
+        ])
         return 0
 
     # 用戶輸入數字 → 接續自訂換匯（優先於股票查詢）
@@ -502,7 +504,7 @@ def handle_message(event):
     ######################## 匯率區 ##############################################
     if re.match("匯率大小事|匯率查詢", msg):
         btn_msg = Msg_Template.stock_reply_rate()
-        line_bot_api.push_message(uid, btn_msg)
+        line_bot_api.reply_message(event.reply_token, btn_msg)
         return 0
     if re.match(r"自訂換匯[A-Z]{3}/[A-Z]{3}", msg):
         parts = msg[4:].split("/")
@@ -635,39 +637,44 @@ def handle_message(event):
         currency = msg[4:7]
         currency_name = EXRate.getCurrencyName(currency)
         if currency_name == "無可支援的外幣":
-            line_bot_api.push_message(uid, TextSendMessage("無可支援的外幣"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage("無可支援的外幣"))
         else:
             if re.match('新增外幣[A-Z]{3}[<>][0-9]', msg):
                 mongodb.write_my_currency(uid, user_name, currency, msg[7:8], msg[8:])
             else:
                 mongodb.write_my_currency(uid, user_name, currency, "未設定", "未設定")
-            line_bot_api.push_message(uid, TextSendMessage(f"✓ 已關注 {currency_name}({currency})"))
+            reply_msgs = [TextSendMessage(f"✓ 已關注 {currency_name}({currency})")]
             my_flex = build_my_currency_flex(uid, user_name)
             if my_flex:
-                line_bot_api.push_message(uid, my_flex)
+                reply_msgs.append(my_flex)
+            line_bot_api.reply_message(event.reply_token, reply_msgs)
         return 0
     if re.match('我的外幣', msg):
-        line_bot_api.push_message(uid, TextSendMessage('稍等一下, 匯率查詢中...'))
         my_flex = build_my_currency_flex(uid, user_name)
         if my_flex:
-            line_bot_api.push_message(uid, my_flex)
+            line_bot_api.reply_message(event.reply_token, [
+                TextSendMessage('稍等一下, 匯率查詢中...'),
+                my_flex
+            ])
         else:
-            line_bot_api.push_message(uid, TextSendMessage("您的外幣清單為空，請先透過外幣查詢頁面加入關注"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage("您的外幣清單為空，請先透過外幣查詢頁面加入關注"))
         return 0
     if re.match('刪除外幣[A-Z]{3}', msg):
         cur_code = msg[4:7]
         mongodb.delete_my_currency(user_name, cur_code)
         cur_name = mongodb.currency_list.get(cur_code, cur_code)
-        line_bot_api.push_message(uid, TextSendMessage(f"✓ 已刪除 {cur_name}"))
         my_flex = build_my_currency_flex(uid, user_name)
         if my_flex:
-            line_bot_api.push_message(uid, my_flex)
+            line_bot_api.reply_message(event.reply_token, [
+                TextSendMessage(f"✓ 已刪除 {cur_name}"),
+                my_flex
+            ])
         else:
-            line_bot_api.push_message(uid, TextSendMessage("外幣清單已清空"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage("外幣清單已清空"))
         return 0
     if re.match('清空外幣', msg):
         mongodb.delete_my_allcurrency(user_name, uid)
-        line_bot_api.push_message(uid, TextSendMessage("✓ 外幣清單已全部清空"))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage("✓ 外幣清單已全部清空"))
         return 0
     if re.match("匯率走勢|走勢圖", msg):
         pairs = [
@@ -698,25 +705,26 @@ def handle_message(event):
     if re.match("CT[A-Z]{3}", msg):
         currency = msg[2:5] # 外幣代號
         if EXRate.getCurrencyName(currency) == "無可支援的外幣":
-            line_bot_api.push_message(uid, TextSendMessage('無可支援的外幣'))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage('無可支援的外幣'))
             return 0
         currency_name = EXRate.getCurrencyName(currency)
-        line_bot_api.push_message(uid, TextSendMessage(f'稍等一下, 正在產生 {currency_name} 匯率走勢圖...'))
+        reply_msgs = []
         cash_imgurl = EXRate.cash_exrate_sixMonth(currency)
         if cash_imgurl == "現金匯率無資料可分析":
-            line_bot_api.push_message(uid, TextSendMessage('現金匯率無資料可分析'))
+            reply_msgs.append(TextSendMessage('現金匯率無資料可分析'))
         else:
-            line_bot_api.push_message(uid, TextSendMessage(f'📊 {currency_name} 現金匯率走勢（近6個月）'))
-            line_bot_api.push_message(uid, ImageSendMessage(original_content_url=cash_imgurl, preview_image_url=cash_imgurl))
+            reply_msgs.append(TextSendMessage(f'📊 {currency_name} 現金匯率走勢（近6個月）'))
+            reply_msgs.append(ImageSendMessage(original_content_url=cash_imgurl, preview_image_url=cash_imgurl))
 
         spot_imgurl = EXRate.spot_exrate_sixMonth(currency)
         if spot_imgurl == "即期匯率無資料可分析":
-            line_bot_api.push_message(uid, TextSendMessage('即期匯率無資料可分析'))
+            reply_msgs.append(TextSendMessage('即期匯率無資料可分析'))
         else:
-            line_bot_api.push_message(uid, TextSendMessage(f'📊 {currency_name} 即期匯率走勢（近6個月）'))
-            line_bot_api.push_message(uid, ImageSendMessage(original_content_url=spot_imgurl, preview_image_url=spot_imgurl))
+            reply_msgs.append(TextSendMessage(f'📊 {currency_name} 即期匯率走勢（近6個月）'))
+            reply_msgs.append(ImageSendMessage(original_content_url=spot_imgurl, preview_image_url=spot_imgurl))
         btn_msg = Msg_Template.realtime_currency_other(currency)
-        line_bot_api.push_message(uid, btn_msg)
+        reply_msgs.append(btn_msg)
+        line_bot_api.reply_message(event.reply_token, reply_msgs[:5])
         return 0
     if re.match('外幣[A-Z]{3}',msg):
         currency = msg[2:5]
@@ -942,7 +950,7 @@ def handle_message(event):
         return 0
     if re.match("理財YOUTUBER推薦", msg):
         content = Msg_Template.youtube_channel()
-        line_bot_api.push_message(uid, content)
+        line_bot_api.reply_message(event.reply_token, content)
         return 0
     if re.match('分析趨勢',msg):
         line_bot_api.reply_message(event.reply_token,
@@ -1001,13 +1009,15 @@ def handle_message(event):
         m = re.match(r'關注([0-9]{4,6})([<>])(.*)', msg)
         stockNumber = m.group(1)
         content = mongodb.write_my_stock(uid, user_name, stockNumber, m.group(2), m.group(3))
-        line_bot_api.push_message(uid, TextSendMessage(content))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(content))
         return 0
     # 查詢股票篩選條件清單
-    if re.match('股票清單',msg): 
-        line_bot_api.push_message(uid, TextSendMessage('稍等一下, 股票查詢中...'))
+    if re.match('股票清單',msg):
         content = mongodb.show_stock_setting(user_name, uid)
-        line_bot_api.push_message(uid, TextSendMessage(content))
+        line_bot_api.reply_message(event.reply_token, [
+            TextSendMessage('稍等一下, 股票查詢中...'),
+            TextSendMessage(content)
+        ])
         return 0
     if re.match('股價查詢|查股票|查股價', msg):
         popular_stocks = [
@@ -1225,17 +1235,17 @@ def handle_message(event):
             )
             line_bot_api.reply_message(event.reply_token, stock_flex)
         except Exception as e:
-            line_bot_api.push_message(uid, TextSendMessage(text=f'股票查詢發生錯誤: {str(e)}'))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f'股票查詢發生錯誤: {str(e)}'))
         return 0
     # 刪除存在資料庫裡面的股票
     if re.match(r'刪除[0-9]{4,6}',msg):
         content = mongodb.delete_my_stock(user_name, msg[2:])
-        line_bot_api.push_message(uid, TextSendMessage(content))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(content))
         return 0
     # 清空存在資料庫裡面的股票
-    if re.match('清空股票',msg): 
+    if re.match('清空股票',msg):
         content = mongodb.delete_my_allstock( user_name, uid)
-        line_bot_api.push_message(uid, TextSendMessage(content))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(content))
         return 0
     if event.message.text[:2].upper() == "@K": #這段主要在畫k線圖
         input_word = event.message.text.strip()
@@ -1427,11 +1437,11 @@ def handle_message(event):
                     except Exception as e:
                         result += f"{stock_code} 查詢失敗\n"
             if result:
-                line_bot_api.push_message(uid, TextSendMessage(text=result.strip()))
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result.strip()))
             else:
-                line_bot_api.push_message(uid, TextSendMessage(text="您的股票清單為空，請先透過「關注」指令新增股票"))
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text="您的股票清單為空，請先透過「關注」指令新增股票"))
         except Exception as e:
-            line_bot_api.push_message(uid, TextSendMessage(text=f"股價查詢發生錯誤: {str(e)}"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"股價查詢發生錯誤: {str(e)}"))
         return 0
     ################################################匯率推播#######################################
     if re.match("匯率推播", msg):
@@ -1520,11 +1530,11 @@ def handle_message(event):
                         }
                     }
                 )
-                line_bot_api.push_message(uid, flex)
+                line_bot_api.reply_message(event.reply_token, flex)
             else:
-                line_bot_api.push_message(uid, TextSendMessage(text="您的外幣清單為空，請先透過外幣查詢頁面加入關注"))
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text="您的外幣清單為空，請先透過外幣查詢頁面加入關注"))
         except Exception as e:
-            line_bot_api.push_message(uid, TextSendMessage(text=f"匯率查詢發生錯誤: {str(e)}"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"匯率查詢發生錯誤: {str(e)}"))
         return 0
 
     #＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊weather＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
