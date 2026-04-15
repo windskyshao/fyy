@@ -926,6 +926,32 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token,
             TextSendMessage(text="此功能暫待推出，敬請見諒～～"))
         return 0
+    if re.match('房地資訊|房地產',msg):
+        house_flex = FlexSendMessage(
+            alt_text="房地資訊",
+            contents={
+                "type": "bubble", "size": "mega",
+                "header": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        {"type": "text", "text": "🏠 房地資訊", "weight": "bold", "size": "lg", "color": "#4CAF50", "align": "center"}
+                    ], "paddingAll": "15px"
+                },
+                "body": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        {"type": "button", "style": "primary", "color": "#4CAF50", "height": "sm",
+                         "action": {"type": "uri", "label": "內政部實價登錄", "uri": "https://lvr.land.moi.gov.tw/"}},
+                        {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm",
+                         "action": {"type": "uri", "label": "Google 地圖", "uri": "https://www.google.com.tw/maps"}},
+                        {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm",
+                         "action": {"type": "uri", "label": "591 房屋交易", "uri": "https://www.591.com.tw/"}}
+                    ], "spacing": "sm", "paddingAll": "15px"
+                }
+            }
+        )
+        line_bot_api.reply_message(event.reply_token, house_flex)
+        return 0
     ############################### 股票區 ################################
     
     if re.match(r'關注[0-9]{4,6}[<>][0-9]' ,msg):
