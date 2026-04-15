@@ -1,4 +1,4 @@
-# -- coding: utf-8 --**
+﻿# -- coding: utf-8 --**
 #載入LineBot所需要的套件
 from flask import Flask, request, abort
 from linebot import (LineBotApi, WebhookHandler, exceptions)
@@ -603,13 +603,13 @@ def handle_message(event):
             else:
                 line_bot_api.reply_message(event.reply_token, flex)
         except Exception as e:
-            line_bot_api.push_message(uid, TextSendMessage(text=f"匯率兌換失敗: {str(e)}"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"匯率兌換失敗: {str(e)}"))
         return 0
     if re.match(r'關注外幣[A-Z]{3}$', msg):
         currency = msg[4:7]
         currency_name = EXRate.getCurrencyName(currency)
         if currency_name == "無可支援的外幣":
-            line_bot_api.push_message(uid, TextSendMessage("無可支援的外幣"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage("無可支援的外幣"))
             return 0
         try:
             spot_sell = twder.now(currency)[4]
@@ -730,7 +730,7 @@ def handle_message(event):
         currency = msg[2:5]
         currency_name = EXRate.getCurrencyName(currency)
         if currency_name == "無可支援的外幣":
-            line_bot_api.push_message(uid, TextSendMessage("無可支援的外幣"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage("無可支援的外幣"))
         else:
             try:
                 data = twder.now(currency)
@@ -787,7 +787,7 @@ def handle_message(event):
                 )
                 line_bot_api.reply_message(event.reply_token, currency_flex)
             except Exception as e:
-                line_bot_api.push_message(uid, TextSendMessage(text=f"匯率查詢失敗: {str(e)}"))
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"匯率查詢失敗: {str(e)}"))
         return 0
     ######################## 使用說明 選單 油價報你知################################
     if event.message.text == "油價查詢":
@@ -1252,6 +1252,12 @@ def handle_message(event):
         parts = input_word[2:].strip().split()
         stock_name = parts[0] if parts else ''
         period_str = parts[1] if len(parts) > 1 else '1y'
+        if not stock_name:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="請使用格式：@K股票代號 期間，例如：@K2330 6m")
+            )
+            return 0
 
         # 支援期間簡寫：3m=3個月, 6m=半年, 1y=1年, 3y=3年
         from dateutil.relativedelta import relativedelta
@@ -1271,17 +1277,20 @@ def handle_message(event):
             start_date = (datetime.datetime.now() - relativedelta(years=1)).strftime('%Y-%m-%d')
         try:
             k_stock_name = get_stock_name(stock_name)
-            line_bot_api.push_message(uid, TextSendMessage(text=f"正在繪製 {k_stock_name}({stock_name}) K線圖，請稍候..."))
             img_url = plot_stock_k_chart(IMGUR_CLIENT_ID, stock_name, start_date)
             if img_url:
-                message = ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
-                line_bot_api.push_message(uid, message)
+                line_bot_api.reply_message(event.reply_token, [
+                    TextSendMessage(text=f"{k_stock_name}({stock_name}) K線圖"),
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
+                ])
             else:
-                line_bot_api.push_message(uid, TextSendMessage(text=f"股票 {stock_name} K線圖繪製失敗，請確認代號是否正確"))
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=f"股票 {stock_name} K線圖繪製失敗，請確認代號是否正確")
+                )
         except Exception as e:
-            line_bot_api.push_message(uid, TextSendMessage(text=f"K線圖發生錯誤: {str(e)}"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"K線圖發生錯誤: {str(e)}"))
         return 0
-
     ################################ 目錄區 ##########################################
     if event.message.text == "開始玩":
         message = TemplateSendMessage(
@@ -1777,3 +1786,4 @@ def handle_unfollow(event):
 
 if __name__ == "__main__":
     app.run()
+
