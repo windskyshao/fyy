@@ -509,9 +509,18 @@ def handle_message(event):
     if re.match(r"自訂換匯[A-Z]{3}/[A-Z]{3}", msg):
         parts = msg[4:].split("/")
         mat_d[uid] = f"換匯{parts[0]}/{parts[1]}"
+        hint_buttons = [
+            QuickReplyButton(action=MessageAction(label="100", text="100")),
+            QuickReplyButton(action=MessageAction(label="1000", text="1000")),
+            QuickReplyButton(action=MessageAction(label="10000", text="10000")),
+            QuickReplyButton(action=MessageAction(label="↩ 返回匯率兌換", text="匯率兌換")),
+        ]
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text=f"請輸入要兌換的 {parts[0]} 金額（數字）：")
+            TextSendMessage(
+                text=f"請輸入要兌換的 {parts[0]} 金額（數字），例如：1000",
+                quick_reply=QuickReply(items=hint_buttons)
+            )
         )
         return 0
     if re.match("匯率兌換$", msg):
@@ -567,6 +576,12 @@ def handle_message(event):
             ]
             amount_btns.append(QuickReplyButton(action=MessageAction(
                 label="✏️ 自訂金額", text=f"自訂換匯{from_cur}/{to_cur}"
+            )))
+            amount_btns.append(QuickReplyButton(action=MessageAction(
+                label="↩ 匯率查詢", text="匯率查詢"
+            )))
+            amount_btns.append(QuickReplyButton(action=MessageAction(
+                label="🏠 主選單", text="開始玩"
             )))
             flex = FlexSendMessage(
                 alt_text=f"匯率兌換 {from_cur}→{to_cur}",
@@ -1786,4 +1801,5 @@ def handle_unfollow(event):
 
 if __name__ == "__main__":
     app.run()
+
 
