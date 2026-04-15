@@ -400,52 +400,47 @@ def img_Carousel():
                 "spacing": "sm",
                 "contents": [
                     {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "spacing": "sm",
-                        "contents": [
-                            {
-                                "type": "button",
-                                "style": "primary",
-                                "color": "#2196F3",
-                                "height": "sm",
-                                "action": {"type": "message", "label": "雷達回波", "text": "雷達回波"}
-                            },
-                            {
-                                "type": "button",
-                                "style": "primary",
-                                "color": "#00ACC1",
-                                "height": "sm",
-                                "action": {"type": "message", "label": "即時天氣", "text": "即時天氣"}
-                            }
-                        ]
+                        "type": "button",
+                        "style": "primary",
+                        "color": "#00ACC1",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "即時天氣預報",
+                            "text": "即時天氣預報"
+                        }
                     },
                     {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "spacing": "sm",
-                        "contents": [
-                            {
-                                "type": "button",
-                                "style": "primary",
-                                "color": "#43A047",
-                                "height": "sm",
-                                "action": {"type": "message", "label": "天氣預報", "text": "天氣預報"}
-                            },
-                            {
-                                "type": "button",
-                                "style": "primary",
-                                "color": "#FB8C00",
-                                "height": "sm",
-                                "action": {"type": "message", "label": "潮汐預報", "text": "潮汐預報"}
-                            }
-                        ]
+                        "type": "button",
+                        "style": "primary",
+                        "color": "#2196F3",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "雷達回波",
+                            "text": "雷達回波"
+                        }
+                    },
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "color": "#FB8C00",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "潮汐預報",
+                            "text": "潮汐預報"
+                        }
                     },
                     {
                         "type": "button",
                         "style": "link",
                         "height": "sm",
-                        "action": {"type": "message", "label": "港口天氣", "text": "港口天氣"}
+                        "action": {
+                            "type": "message",
+                            "label": "港口天氣",
+                            "text": "港口天氣"
+                        }
                     }
                 ],
                 "paddingAll": "12px"
@@ -474,5 +469,6 @@ def quick_reply_weather(mat):
         )
     )
     return text_message
+
 
 
