@@ -855,13 +855,10 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"油價查詢失敗: {str(e)}"))
         return 0
     if event.message.text == "使用說明":
-        def make_row(cmd, desc):
-            if not cmd:
-                return {"type": "text", "text": f"  {desc}", "size": "sm", "color": "#555555", "wrap": True, "margin": "sm"}
-            return {"type": "box", "layout": "horizontal", "margin": "sm", "contents": [
-                {"type": "text", "text": cmd, "size": "sm", "color": "#1DB446", "flex": 3, "weight": "bold"},
-                {"type": "text", "text": desc, "size": "sm", "color": "#555555", "flex": 5, "wrap": True}
-            ]}
+        def make_desc(text):
+            return {"type": "text", "text": text, "size": "sm", "color": "#555555", "wrap": True, "margin": "sm"}
+        def make_subtitle(text):
+            return {"type": "text", "text": text, "weight": "bold", "size": "sm", "color": "#333333", "margin": "lg"}
         def make_bubble(title, color, rows):
             return {
                 "type": "bubble", "size": "mega",
@@ -871,62 +868,53 @@ def handle_message(event):
                 "body": {"type": "box", "layout": "vertical", "contents": rows, "paddingAll": "15px", "spacing": "sm"}
             }
         stock_bubble = make_bubble("📈 股票功能", "#1DB446", [
-            make_row("#2330", "輸入 # 加股票代號，查詢即時股價、漲跌、成交量與近一週走勢"),
-            make_row("台積電", "直接輸入公司名稱，系統會搜尋相關股票讓你點選"),
-            make_row("2330", "直接輸入 4~6 位數字也能查（免打 #）"),
-            make_row("股價查詢", "顯示 12 檔熱門股票按鈕，點選即查"),
+            make_subtitle("查詢股價"),
+            make_desc("在主選單點「股價查詢」，會顯示 12 檔熱門股票讓你直接點選。也可以在輸入框打股票代號（如 2330）或公司名稱（如 台積電），系統會自動搜尋。"),
+            make_desc("查詢結果會顯示即時股價、漲跌幅、開盤、最高、最低、成交量，以及近一週的收盤價走勢。"),
             {"type": "separator", "margin": "lg"},
-            {"type": "text", "text": "K線圖", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
-            make_row("", "查詢股價後，卡片底部有 3個月、半年、1年、2年 四個 K 線圖按鈕"),
+            make_subtitle("K線圖"),
+            make_desc("股價查詢結果的卡片底部有四個按鈕：3個月、半年、1年、2年，點擊後會繪製該期間的 K 線圖（含 5日線、20日線與成交量）。"),
             {"type": "separator", "margin": "lg"},
-            {"type": "text", "text": "關注股票", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
-            make_row("☆關注", "查詢股價時，右上角可點擊關注/取消關注"),
-            make_row("股票清單", "查看所有已關注的股票與條件"),
-            make_row("股價提醒", "手動檢查關注股票是否達到設定條件"),
-            make_row("🔔 自動通知", "每個交易日收盤後，系統自動檢查並推播符合條件的股票"),
+            make_subtitle("關注股票與自動通知"),
+            make_desc("查詢股價時，卡片右上角有「☆關注」按鈕，點擊即可關注該股票。關注後可設定條件（如高於或低於某個價格）。"),
+            make_desc("輸入「股票清單」可查看所有已關注的股票。輸入「股價提醒」可手動檢查是否達標。"),
+            make_desc("系統會在每個交易日下午 1:35（收盤後）自動檢查，符合條件時主動推播通知給你。"),
         ])
         currency_bubble = make_bubble("💱 匯率功能", "#2196F3", [
-            make_row("匯率查詢", "進入匯率功能選單，包含：查詢幣別、匯率兌換、走勢圖、關注清單"),
-            make_row("外幣USD", "輸入「外幣」加幣別代碼，查詢即時買入賣出匯率"),
-            make_row("美元", "直接輸入中文幣別名稱也能查（如日圓、港幣、英鎊等）"),
-            make_row("幣別種類", "顯示所有 18 種支援幣別的按鈕選單"),
+            make_subtitle("查詢匯率"),
+            make_desc("在主選單點「匯率查詢」，會顯示功能選單。也可以直接輸入幣別名稱（如美元、日圓）或輸入「外幣USD」來查詢。"),
+            make_desc("查詢結果會顯示台灣銀行的現金買入/賣出、即期買入/賣出匯率，卡片底部有「走勢圖」、「兌換台幣」、「加入關注」三個快捷按鈕。"),
+            make_desc("點「幣別種類」可以看到全部 18 種支援的外幣按鈕選單。"),
             {"type": "separator", "margin": "lg"},
-            {"type": "text", "text": "匯率兌換", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
-            make_row("", "匯率查詢 → 匯率兌換 → 選幣別 → 顯示兌換結果"),
-            make_row("", "可選常用金額或自訂金額，全程不用打字"),
+            make_subtitle("匯率兌換"),
+            make_desc("在匯率查詢選單中選「匯率兌換」，選擇想兌換的幣別後，會顯示兌換結果。底部有常用金額按鈕（100、1000、10000），也可以點「自訂金額」輸入任意數字，全程不需記指令。"),
             {"type": "separator", "margin": "lg"},
-            {"type": "text", "text": "匯率走勢圖", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
-            make_row("", "匯率查詢 → 走勢圖 → 選幣別，顯示近 6 個月現金與即期匯率走勢"),
-            make_row("", "查詢匯率後，卡片底部也有「走勢圖」按鈕可直接查看"),
+            make_subtitle("匯率走勢圖"),
+            make_desc("在匯率查詢選單中選「匯率走勢圖」，選擇幣別後，會產生近 6 個月的現金匯率和即期匯率兩張走勢圖。查詢匯率後卡片底部也有「走勢圖」按鈕可直接查看。"),
         ])
-        currency_follow_bubble = make_bubble("🔔 匯率關注與通知", "#9C27B0", [
-            make_row("加入關注", "查詢匯率後，卡片底部點「加入關注」"),
-            make_row("", "可選擇：不設條件 / 低於某值通知 / 高於某值通知"),
-            make_row("我的外幣", "查看已關注的外幣清單、即時匯率與通知條件"),
-            make_row("", "每個幣別旁有「刪除」按鈕，可單獨移除"),
-            make_row("匯率推播", "手動檢查所有關注幣別是否符合條件"),
-            make_row("", "未設定條件的幣別可點「設定條件」補設"),
+        follow_bubble = make_bubble("🔔 關注與自動通知", "#9C27B0", [
+            make_subtitle("關注外幣"),
+            make_desc("查詢匯率後，卡片底部有「加入關注」按鈕。點擊後可選擇：不設條件直接關注、低於某匯率時通知、或高於某匯率時通知。系統會以當前匯率作為參考值。"),
+            make_desc("輸入「我的外幣」可查看已關注的外幣清單、即時匯率與通知條件。每個幣別旁有「刪除」按鈕可移除，未設定條件的幣別有「設定條件」按鈕可補設。"),
             {"type": "separator", "margin": "lg"},
-            {"type": "text", "text": "自動通知", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
-            make_row("🔔 匯率", "每天早上 9 點自動檢查，符合條件主動推播"),
-            make_row("🔔 股票", "每個交易日 13:35 收盤後自動檢查推播"),
-            make_row("🔔 油價", "每週六日中午 12 點自動推播油價週報與下週預測"),
+            make_subtitle("自動通知時間"),
+            make_desc("匯率：每天早上 9 點自動檢查所有關注的外幣，匯率符合您設定的條件時會主動推播通知。"),
+            make_desc("股票：每個交易日（週一至週五）下午 1:35 收盤後自動檢查，符合條件時主動推播。"),
+            make_desc("油價週報：每週六、日中午 12 點自動推播本週油價與下週預測，所有用戶都會收到，不需額外設定。"),
         ])
         life_bubble = make_bubble("⛽ 生活資訊", "#FF6600", [
-            make_row("油價查詢", "查詢中油最新油價（92/95/98/柴油）"),
-            make_row("", "同時顯示下週預測調整幅度"),
-            make_row("", "每週六日中午自動推播，不用查"),
+            make_subtitle("油價查詢"),
+            make_desc("在主選單點「油價查詢」，會顯示中油最新油價（92無鉛、95無鉛、98無鉛、超級柴油），同時顯示下週預計調整幅度與變動百分比。"),
             {"type": "separator", "margin": "lg"},
-            {"type": "text", "text": "天氣", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
-            make_row("最新氣象", "顯示天氣查詢選單（雷達回波、即時天氣等）"),
-            make_row("雷達回波", "直接顯示中央氣象署即時雷達回波圖"),
+            make_subtitle("天氣查詢"),
+            make_desc("在主選單點「最新氣象」，會顯示天氣功能圖片選單，包含雷達回波和即時天氣等。也可以直接輸入「雷達回波」查看中央氣象署即時雷達回波圖。"),
             {"type": "separator", "margin": "lg"},
-            {"type": "text", "text": "更多功能", "weight": "bold", "size": "sm", "color": "#333333", "margin": "md"},
-            make_row("開始玩", "顯示完整功能選單（投資工具、財經資訊、房地產、生活資訊、AI工具）"),
+            make_subtitle("更多功能"),
+            make_desc("輸入「開始玩」可顯示完整功能選單，包含投資工具、財經資訊、房地產、生活資訊、AI 工具等五個分類，每個分類有三個外部連結或功能按鈕可使用。"),
         ])
         usage_flex = FlexSendMessage(
             alt_text="使用說明",
-            contents={"type": "carousel", "contents": [stock_bubble, currency_bubble, currency_follow_bubble, life_bubble]}
+            contents={"type": "carousel", "contents": [stock_bubble, currency_bubble, follow_bubble, life_bubble]}
         )
         line_bot_api.reply_message(event.reply_token, usage_flex)
         return 0
