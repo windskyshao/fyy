@@ -912,9 +912,27 @@ def handle_message(event):
             make_subtitle("更多功能"),
             make_desc("輸入「開始玩」可顯示完整功能選單，包含投資工具、財經資訊、房地產、生活資訊、AI 工具等五個分類，每個分類有三個外部連結或功能按鈕可使用。"),
         ])
+        sticker_bubble = {
+            "type": "bubble", "size": "mega",
+            "header": {"type": "box", "layout": "vertical", "contents": [
+                {"type": "text", "text": "🐱 阿生生貼圖", "weight": "bold", "size": "lg", "color": "#FF6600", "align": "center"}
+            ], "paddingAll": "15px"},
+            "hero": {
+                "type": "image",
+                "url": "https://stickershop.line-scdn.net/stickershop/v1/product/26305076/LINEStorePC/main.png?v=1",
+                "size": "full", "aspectRatio": "1.51:1", "aspectMode": "fit"
+            },
+            "body": {"type": "box", "layout": "vertical", "contents": [
+                make_desc("阿生生是我家的橘貓，現在也是你的財經小幫手！快來下載阿生生的可愛貼圖，讓聊天更有趣！"),
+            ], "paddingAll": "15px"},
+            "footer": {"type": "box", "layout": "vertical", "contents": [
+                {"type": "button", "style": "primary", "color": "#FF6600", "height": "sm",
+                 "action": {"type": "uri", "label": "前往下載貼圖", "uri": "https://line.me/S/sticker/26305076/?lang=zh-Hant"}}
+            ], "paddingAll": "10px"}
+        }
         usage_flex = FlexSendMessage(
             alt_text="使用說明",
-            contents={"type": "carousel", "contents": [stock_bubble, currency_bubble, follow_bubble, life_bubble]}
+            contents={"type": "carousel", "contents": [stock_bubble, currency_bubble, follow_bubble, life_bubble, sticker_bubble]}
         )
         line_bot_api.reply_message(event.reply_token, usage_flex)
         return 0
@@ -1329,6 +1347,25 @@ def handle_message(event):
                                 uri='https://www.perplexity.ai/'
                             )
                         ]
+                    ),
+                CarouselColumn(
+                        thumbnail_image_url='https://stickershop.line-scdn.net/stickershop/v1/product/26305076/LINEStorePC/main.png?v=1',
+                        title='阿生生貼圖',
+                        text='下載可愛的阿生生貼圖！',
+                        actions=[
+                            URIAction(
+                                label='前往下載貼圖',
+                                uri='https://line.me/S/sticker/26305076/?lang=zh-Hant'
+                            ),
+                            URIAction(
+                                label='更多作者貼圖',
+                                uri='https://store.line.me/stickershop/author/4668996/zh-Hant'
+                            ),
+                            MessageAction(
+                                label='使用說明',
+                                text='使用說明'
+                            )
+                        ]
                     )
                 ]
             )
@@ -1676,6 +1713,17 @@ def handle_follow(event):
                             "type": "message",
                             "label": "查看更多功能",
                             "text": "使用說明"
+                        },
+                        "height": "sm"
+                    },
+                    {
+                        "type": "button",
+                        "style": "link",
+                        "color": "#FF6600",
+                        "action": {
+                            "type": "uri",
+                            "label": "🐱 下載阿生生貼圖",
+                            "uri": "https://line.me/S/sticker/26305076/?lang=zh-Hant"
                         },
                         "height": "sm"
                     }
