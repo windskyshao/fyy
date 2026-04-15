@@ -949,28 +949,49 @@ def handle_message(event):
             TextSendMessage(text="此功能暫待推出，敬請見諒～～"))
         return 0
     if re.match('房地資訊|房地產',msg):
+        def house_bubble(title, links):
+            btns = []
+            colors = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0", "#E91E63"]
+            for i, (label, url) in enumerate(links):
+                btns.append({"type": "button", "style": "primary", "color": colors[i % len(colors)], "height": "sm",
+                             "action": {"type": "uri", "label": label, "uri": url}})
+            return {
+                "type": "bubble", "size": "mega",
+                "header": {"type": "box", "layout": "vertical", "contents": [
+                    {"type": "text", "text": title, "weight": "bold", "size": "md", "color": "#4CAF50", "align": "center"}
+                ], "paddingAll": "12px"},
+                "body": {"type": "box", "layout": "vertical", "contents": btns, "spacing": "sm", "paddingAll": "12px"}
+            }
+        b1 = house_bubble("🏠 房屋交易", [
+            ("內政部實價登錄", "https://lvr.land.moi.gov.tw/"),
+            ("591 房屋交易", "https://www.591.com.tw/"),
+            ("Google 地圖", "https://www.google.com.tw/maps"),
+        ])
+        b2 = house_bubble("🗺️ 地籍圖資", [
+            ("國土測繪圖資(電腦版)", "https://maps.nlsc.gov.tw/T09/mapshow.action?In_type=web"),
+            ("國土測繪圖資(手機版)", "https://maps.nlsc.gov.tw/T09/mobilemap.action"),
+            ("地籍圖資便民(新版)", "https://easymap.moi.gov.tw/Z10Web/Normal"),
+            ("地籍圖資便民(舊版)", "https://easymap.moi.gov.tw/Index"),
+        ])
+        b3 = house_bubble("🏙️ 高雄地政", [
+            ("高雄地籍圖資(新版)", "https://gisdawh.kcg.gov.tw/landeasy2"),
+            ("高雄地籍圖資(舊版)", "https://gisdawh.kcg.gov.tw/landeasy/page.cfm?major=12"),
+            ("高雄都市計畫", "https://urbangis.kcg.gov.tw/UBA/web_page/UBA010100.jsp"),
+            ("高雄地政綜合查詢", "https://eqs-landp.kcg.gov.tw/KCG_SYN_QUERY/SynthesisQuery?captchaCode=GISDAWH,C,18,2229,05450000&postWindowType=SYN"),
+        ])
+        b4 = house_bubble("🏗️ 建築 / 國土", [
+            ("全國建築執照查詢", "https://cloudbm.nlma.gov.tw/CPTL/cpt0407m.do?"),
+            ("國土規劃圖台", "https://nsp.nlma.gov.tw/ngis/"),
+            ("水庫集水區查詢", "https://web.wra.gov.tw/wratppr/sencad/"),
+        ])
+        b5 = house_bubble("🔍 生活查詢", [
+            ("重要設施查詢", "https://service.map.com.tw/houseol/AnalysisObject.aspx"),
+            ("工商登記查詢", "https://findbiz.nat.gov.tw/fts/query/QueryBar/queryInit.do"),
+            ("捷運離你多遠", "https://mrtexit.com/"),
+        ])
         house_flex = FlexSendMessage(
             alt_text="房地資訊",
-            contents={
-                "type": "bubble", "size": "mega",
-                "header": {
-                    "type": "box", "layout": "vertical",
-                    "contents": [
-                        {"type": "text", "text": "🏠 房地資訊", "weight": "bold", "size": "lg", "color": "#4CAF50", "align": "center"}
-                    ], "paddingAll": "15px"
-                },
-                "body": {
-                    "type": "box", "layout": "vertical",
-                    "contents": [
-                        {"type": "button", "style": "primary", "color": "#4CAF50", "height": "sm",
-                         "action": {"type": "uri", "label": "內政部實價登錄", "uri": "https://lvr.land.moi.gov.tw/"}},
-                        {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm",
-                         "action": {"type": "uri", "label": "Google 地圖", "uri": "https://www.google.com.tw/maps"}},
-                        {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm",
-                         "action": {"type": "uri", "label": "591 房屋交易", "uri": "https://www.591.com.tw/"}}
-                    ], "spacing": "sm", "paddingAll": "15px"
-                }
-            }
+            contents={"type": "carousel", "contents": [b1, b2, b3, b4, b5]}
         )
         line_bot_api.reply_message(event.reply_token, house_flex)
         return 0
