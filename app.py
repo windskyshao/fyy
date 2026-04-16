@@ -1309,126 +1309,184 @@ def handle_message(event):
         return 0
     ################################ 目錄區 ##########################################
     if event.message.text == "開始玩":
-        message = TemplateSendMessage(
-        alt_text='目錄 template',
-        template=CarouselTemplate(
-            columns=[
-                CarouselColumn(
-                        thumbnail_image_url='https://i.imgur.com/8m9yGfR.jpg',
-                        title='主選單功能',
-                        text='iPad 快捷入口',
-                        actions=[
-                            MessageAction(
-                                label='股價查詢',
-                                text='股價查詢'
-                            ),
-                            MessageAction(
-                                label='油價查詢',
-                                text='油價查詢'
-                            ),
-                            MessageAction(
-                                label='匯率查詢',
-                                text='匯率查詢'
-                            )
-                        ]
-                    ),
-                CarouselColumn(
-                        thumbnail_image_url='https://i.imgur.com/bGyGdb1.jpg',
-                        title='投資工具',
-                        text='請選擇',
-                        actions=[
-                            MessageAction(
-                                label='關注的股票',
-                                text='股票清單'
-                            ),
-                            URIAction(
-                                label='財經新聞',
-                                uri='https://tw.stock.yahoo.com/news/'
-                            ),
-                            URIAction(
-                                label='匯率查詢(台銀)',
-                                uri='https://rate.bot.com.tw/xrt?Lang=zh-TW'
-                            )
-                        ]
-                    ),
-                CarouselColumn(
-                        thumbnail_image_url='https://i.imgur.com/N9TKsay.jpg',
-                        title='財經資訊',
-                        text='請選擇',
-                        actions=[
-                            URIAction(
-                                label='奇摩股市',
-                                uri='https://tw.stock.yahoo.com/'
-                            ),
-                            URIAction(
-                                label='財經PTT',
-                                uri='https://www.ptt.cc/bbs/Finance/index.html'
-                            ),
-                            URIAction(
-                                label='理財YouTube(柴鼠兄弟)',
-                                uri='https://www.youtube.com/channel/UC45i13dEfEVac2IEJT_Nr5Q'
-                            )
-                        ]
-                    ),
-                CarouselColumn(
-                        thumbnail_image_url='https://i.imgur.com/bGyGdb1.jpg',
-                        title='生活資訊',
-                        text='請選擇',
-                        actions=[
-                            MessageAction(
-                                label='最新氣象',
-                                text='最新氣象'
-                            ),
-                            MessageAction(
-                                label='雷達回波',
-                                text='雷達回波'
-                            ),
-                            MessageAction(
-                                label='房地資訊',
-                                text='房地資訊'
-                            )
-                        ]
-                    ),
-                CarouselColumn(
-                        thumbnail_image_url='https://i.imgur.com/N9TKsay.jpg',
-                        title='AI 工具',
-                        text='請選擇',
-                        actions=[
-                            URIAction(
-                                label='程式教學YouTube',
-                                uri='https://www.youtube.com/channel/UCPhn2rCqhu0HdktsFjixahA'
-                            ),
-                            URIAction(
-                                label='ChatGPT',
-                                uri='https://chat.openai.com/'
-                            ),
-                            URIAction(
-                                label='Perplexity AI搜尋',
-                                uri='https://www.perplexity.ai/'
-                            )
-                        ]
-                    ),
-                CarouselColumn(
-                        thumbnail_image_url='https://stickershop.line-scdn.net/stickershop/v1/product/26305076/LINEStorePC/main.png?v=1',
-                        title='阿生生貼圖',
-                        text='下載可愛的阿生生貼圖！',
-                        actions=[
-                            URIAction(
-                                label='前往下載貼圖',
-                                uri='https://line.me/S/sticker/26305076/?lang=zh-Hant'
-                            ),
-                            URIAction(
-                                label='更多作者貼圖',
-                                uri='https://store.line.me/stickershop/author/4668996/zh-Hant'
-                            ),
-                            MessageAction(
-                                label='使用說明',
-                                text='使用說明'
-                            )
-                        ]
-                    )
+        message = FlexSendMessage(
+            alt_text='目錄選單',
+            contents={
+                "type": "carousel",
+                "contents": [
+                    {
+                        "type": "bubble",
+                        "size": "mega",
+                        "hero": {
+                            "type": "image",
+                            "url": "https://stickershop.line-scdn.net/stickershop/v1/product/26305076/LINEStorePC/main.png?v=1",
+                            "size": "full",
+                            "aspectMode": "cover",
+                            "aspectRatio": "20:13"
+                        },
+                        "body": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {"type": "text", "text": "主選單功能", "weight": "bold", "size": "lg"},
+                                {"type": "text", "text": "iPad 快捷入口", "size": "sm", "color": "#888888", "margin": "sm"}
+                            ]
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "spacing": "sm",
+                            "contents": [
+                                {"type": "button", "style": "primary", "height": "sm", "color": "#1976D2", "action": {"type": "message", "label": "股價查詢", "text": "股價查詢"}},
+                                {"type": "button", "style": "primary", "height": "sm", "color": "#FF7043", "action": {"type": "message", "label": "油價查詢", "text": "油價查詢"}},
+                                {"type": "button", "style": "primary", "height": "sm", "color": "#26A69A", "action": {"type": "message", "label": "匯率查詢", "text": "匯率查詢"}},
+                                {"type": "button", "style": "primary", "height": "sm", "color": "#8D6E63", "action": {"type": "message", "label": "房地資訊", "text": "房地資訊"}},
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "message", "label": "使用說明", "text": "使用說明"}}
+                            ]
+                        }
+                    },
+                    {
+                        "type": "bubble",
+                        "hero": {
+                            "type": "image",
+                            "url": "https://i.imgur.com/bGyGdb1.jpg",
+                            "size": "full",
+                            "aspectMode": "cover",
+                            "aspectRatio": "20:13"
+                        },
+                        "body": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {"type": "text", "text": "投資工具", "weight": "bold", "size": "lg"},
+                                {"type": "text", "text": "請選擇", "size": "sm", "color": "#888888", "margin": "sm"}
+                            ]
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "spacing": "sm",
+                            "contents": [
+                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "message", "label": "關注的股票", "text": "股票清單"}},
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "財經新聞", "uri": "https://tw.stock.yahoo.com/news/"}},
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "匯率查詢(台銀)", "uri": "https://rate.bot.com.tw/xrt?Lang=zh-TW"}}
+                            ]
+                        }
+                    },
+                    {
+                        "type": "bubble",
+                        "hero": {
+                            "type": "image",
+                            "url": "https://i.imgur.com/N9TKsay.jpg",
+                            "size": "full",
+                            "aspectMode": "cover",
+                            "aspectRatio": "20:13"
+                        },
+                        "body": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {"type": "text", "text": "財經資訊", "weight": "bold", "size": "lg"},
+                                {"type": "text", "text": "請選擇", "size": "sm", "color": "#888888", "margin": "sm"}
+                            ]
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "spacing": "sm",
+                            "contents": [
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "奇摩股市", "uri": "https://tw.stock.yahoo.com/"}},
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "財經PTT", "uri": "https://www.ptt.cc/bbs/Finance/index.html"}},
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "理財YouTube(柴鼠兄弟)", "uri": "https://www.youtube.com/channel/UC45i13dEfEVac2IEJT_Nr5Q"}}
+                            ]
+                        }
+                    },
+                    {
+                        "type": "bubble",
+                        "hero": {
+                            "type": "image",
+                            "url": "https://i.imgur.com/bGyGdb1.jpg",
+                            "size": "full",
+                            "aspectMode": "cover",
+                            "aspectRatio": "20:13"
+                        },
+                        "body": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {"type": "text", "text": "生活資訊", "weight": "bold", "size": "lg"},
+                                {"type": "text", "text": "請選擇", "size": "sm", "color": "#888888", "margin": "sm"}
+                            ]
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "spacing": "sm",
+                            "contents": [
+                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "message", "label": "最新氣象", "text": "最新氣象"}},
+                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "message", "label": "雷達回波", "text": "雷達回波"}},
+                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "message", "label": "房地資訊", "text": "房地資訊"}}
+                            ]
+                        }
+                    },
+                    {
+                        "type": "bubble",
+                        "hero": {
+                            "type": "image",
+                            "url": "https://i.imgur.com/N9TKsay.jpg",
+                            "size": "full",
+                            "aspectMode": "cover",
+                            "aspectRatio": "20:13"
+                        },
+                        "body": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {"type": "text", "text": "AI 工具", "weight": "bold", "size": "lg"},
+                                {"type": "text", "text": "請選擇", "size": "sm", "color": "#888888", "margin": "sm"}
+                            ]
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "spacing": "sm",
+                            "contents": [
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "程式教學YouTube", "uri": "https://www.youtube.com/channel/UCPhn2rCqhu0HdktsFjixahA"}},
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "ChatGPT", "uri": "https://chat.openai.com/"}},
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "Perplexity AI搜尋", "uri": "https://www.perplexity.ai/"}}
+                            ]
+                        }
+                    },
+                    {
+                        "type": "bubble",
+                        "hero": {
+                            "type": "image",
+                            "url": "https://stickershop.line-scdn.net/stickershop/v1/product/26305076/LINEStorePC/main.png?v=1",
+                            "size": "full",
+                            "aspectMode": "cover",
+                            "aspectRatio": "20:13"
+                        },
+                        "body": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {"type": "text", "text": "阿生生貼圖", "weight": "bold", "size": "lg"},
+                                {"type": "text", "text": "下載可愛的阿生生貼圖！", "size": "sm", "color": "#888888", "margin": "sm"}
+                            ]
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "spacing": "sm",
+                            "contents": [
+                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "uri", "label": "前往下載貼圖", "uri": "https://line.me/S/sticker/26305076/?lang=zh-Hant"}},
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "message", "label": "阿生生頻道(規劃中)", "text": "使用說明"}},
+                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "message", "label": "使用說明", "text": "使用說明"}}
+                            ]
+                        }
+                    }
                 ]
-            )
+            }
         )
         line_bot_api.reply_message(event.reply_token, message)
         return 0
@@ -1840,6 +1898,7 @@ def handle_unfollow(event):
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
