@@ -1620,60 +1620,16 @@ def handle_message(event):
         return 0
 
     #＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊weather＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
-    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather', msg):
-        content = place.img_Carousel()
-        line_bot_api.reply_message(event.reply_token, content)
-        return 0
-
-    if re.match('即時天氣預報|即時天氣|即時氣象|天氣預報|預報天氣', msg):
-        line_bot_api.reply_message(
-            event.reply_token,
-            TemplateSendMessage(
-                alt_text='即時天氣預報',
-                template=ButtonsTemplate(
-                    title='即時天氣預報',
-                    text='開啟中央氣象署縣市天氣頁面',
-                    actions=[
-                        URIAction(label='開啟即時天氣預報', uri='https://www.cwa.gov.tw/V8/C/W/County/index.html'),
-                        MessageAction(label='↩ 返回最新氣象', text='最新氣象')
-                    ]
-                )
-            )
-        )
+    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather|即時天氣預報|即時天氣|即時氣象|天氣預報|預報天氣', msg):
+        line_bot_api.reply_message(event.reply_token, place.select_city_direct_links('weather'))
         return 0
 
     if re.match('潮汐預報', msg):
-        line_bot_api.reply_message(
-            event.reply_token,
-            TemplateSendMessage(
-                alt_text='潮汐預報',
-                template=ButtonsTemplate(
-                    title='潮汐預報',
-                    text='開啟中央氣象署潮汐預報頁面',
-                    actions=[
-                        URIAction(label='開啟潮汐預報', uri='https://www.cwa.gov.tw/V8/C/L/Port/Port.html?PID=H003&QS='),
-                        MessageAction(label='↩ 返回最新氣象', text='最新氣象')
-                    ]
-                )
-            )
-        )
+        line_bot_api.reply_message(event.reply_token, place.select_city_direct_links('tide'))
         return 0
 
     if re.match('港口天氣', msg):
-        line_bot_api.reply_message(
-            event.reply_token,
-            TemplateSendMessage(
-                alt_text='港口天氣',
-                template=ButtonsTemplate(
-                    title='港口天氣',
-                    text='開啟中央氣象署港口天氣頁面',
-                    actions=[
-                        URIAction(label='開啟港口天氣', uri='https://www.cwa.gov.tw/V8/C/L/Port/Port.html?PID=H003&QS='),
-                        MessageAction(label='↩ 返回最新氣象', text='最新氣象')
-                    ]
-                )
-            )
-        )
+        line_bot_api.reply_message(event.reply_token, place.select_city_direct_links('harbor'))
         return 0
 
     if re.match('雷達回波', msg):
@@ -1898,6 +1854,7 @@ def handle_unfollow(event):
 
 if __name__ == "__main__":
     app.run()
+
 
 
 

@@ -472,3 +472,72 @@ def quick_reply_weather(mat):
 
 
 
+
+def select_city_direct_links(mode='weather'):
+    """顯示縣市按鈕，點擊後直接開啟中央氣象署頁面。"""
+    county_cids = [
+        ('基隆市', '10017'), ('台北市', '63'), ('新北市', '65'), ('桃園市', '68'),
+        ('新竹市', '10018'), ('新竹縣', '10004'), ('苗栗縣', '10005'), ('台中市', '66'),
+        ('彰化縣', '10007'), ('南投縣', '10008'), ('雲林縣', '10009'), ('嘉義市', '10020'),
+        ('嘉義縣', '10010'), ('台南市', '67'), ('高雄市', '64'), ('屏東縣', '10013'),
+        ('宜蘭縣', '10002'), ('花蓮縣', '10015'), ('臺東縣', '10014'), ('澎湖縣', '10016'),
+        ('金門縣', '09020'), ('連江縣', '09007')
+    ]
+
+    if mode == 'tide':
+        title = '潮汐預報'
+        subtitle = '請選擇縣市（點擊後直接開啟）'
+    elif mode == 'harbor':
+        title = '港口天氣'
+        subtitle = '請選擇縣市（點擊後直接開啟）'
+    else:
+        title = '即時天氣預報'
+        subtitle = '請選擇縣市（點擊後直接開啟）'
+
+    bubbles = []
+    for i in range(0, len(county_cids), 11):
+        chunk = county_cids[i:i+11]
+        buttons = []
+        for city, cid in chunk:
+            uri = f'https://www.cwa.gov.tw/V8/C/W/County/County.html?CID={cid}'
+            buttons.append({
+                "type": "button",
+                "style": "primary",
+                "color": "#1E88E5",
+                "height": "sm",
+                "action": {
+                    "type": "uri",
+                    "label": city,
+                    "uri": uri
+                }
+            })
+
+        bubble = {
+            "type": "bubble",
+            "size": "mega",
+            "header": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": title, "weight": "bold", "size": "lg", "align": "center", "color": "#1DB446"},
+                    {"type": "text", "text": subtitle, "size": "xs", "align": "center", "color": "#888888", "margin": "sm"}
+                ],
+                "paddingAll": "14px"
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": buttons,
+                "paddingAll": "12px"
+            }
+        }
+        bubbles.append(bubble)
+
+    return FlexSendMessage(
+        alt_text=f'{title}縣市選單',
+        contents={
+            "type": "carousel",
+            "contents": bubbles
+        }
+    )
