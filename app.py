@@ -1309,184 +1309,58 @@ def handle_message(event):
         return 0
     ################################ 目錄區 ##########################################
     if event.message.text == "開始玩":
+        def card(title, subtitle, color, buttons):
+            return {
+                "type": "bubble", "size": "kilo",
+                "header": {"type": "box", "layout": "vertical", "contents": [
+                    {"type": "text", "text": title, "weight": "bold", "size": "lg", "color": color, "align": "center"},
+                    {"type": "text", "text": subtitle, "size": "xs", "color": "#888888", "align": "center", "margin": "sm"}
+                ], "paddingAll": "12px", "backgroundColor": "#FAFAFA"},
+                "body": {"type": "box", "layout": "vertical", "spacing": "sm", "contents": buttons, "paddingAll": "10px"}
+            }
+        def btn(label, text_or_uri, color, is_uri=False):
+            action = {"type": "uri", "label": label, "uri": text_or_uri} if is_uri else {"type": "message", "label": label, "text": text_or_uri}
+            return {"type": "button", "style": "primary", "height": "sm", "color": color, "action": action}
+
+        card1 = card("🏠 主選單", "快捷功能入口", "#FF6600", [
+            btn("股價查詢", "股價查詢", "#1976D2"),
+            btn("油價查詢", "油價查詢", "#FF7043"),
+            btn("匯率查詢", "匯率查詢", "#26A69A"),
+            btn("房地資訊", "房地資訊", "#8D6E63"),
+            btn("最新氣象", "最新氣象", "#00ACC1"),
+            btn("使用說明", "使用說明", "#78909C"),
+        ])
+        card2 = card("📈 投資理財", "股票 / 匯率 / 財經", "#1DB446", [
+            btn("關注的股票", "股票清單", "#43A047"),
+            btn("我的外幣", "我的外幣", "#00897B"),
+            btn("財經新聞", "https://tw.stock.yahoo.com/news/", "#1565C0", True),
+            btn("奇摩股市", "https://tw.stock.yahoo.com/", "#1976D2", True),
+            btn("財經PTT", "https://www.ptt.cc/bbs/Finance/index.html", "#5C6BC0", True),
+            btn("理財YouTube(柴鼠兄弟)", "https://www.youtube.com/channel/UC45i13dEfEVac2IEJT_Nr5Q", "#E53935", True),
+        ])
+        card3 = card("🌤 生活資訊", "天氣 / 新聞 / 實用工具", "#FF9800", [
+            btn("最新氣象", "最新氣象", "#00ACC1"),
+            btn("雷達回波", "雷達回波", "#0288D1"),
+            btn("時事新聞(聯合)", "https://udn.com/news/breaknews/1", "#E64A19", True),
+            btn("台灣電力即時資訊", "https://www.taipower.com.tw/tc/page.aspx?mid=206", "#F9A825", True),
+            btn("高鐵時刻查詢", "https://www.thsrc.com.tw/ArticleContent/a3b630bb-070c-4f76-b26a-2cc257efa001", "#6D4C41", True),
+            btn("台鐵時刻查詢", "https://tip.railway.gov.tw/tra-tip-web/tip/tip001/tip112/querybytrainno", "#00695C", True),
+        ])
+        card4 = card("🤖 AI 工具", "人工智慧 / 學習資源", "#9C27B0", [
+            btn("ChatGPT", "https://chat.openai.com/", "#10A37F", True),
+            btn("Claude AI", "https://claude.ai/", "#D97706", True),
+            btn("Perplexity AI搜尋", "https://www.perplexity.ai/", "#1E88E5", True),
+            btn("Google Gemini", "https://gemini.google.com/", "#4285F4", True),
+            btn("程式教學YouTube", "https://www.youtube.com/channel/UCPhn2rCqhu0HdktsFjixahA", "#E53935", True),
+            btn("AI新聞(The Verge)", "https://www.theverge.com/ai-artificial-intelligence", "#7B1FA2", True),
+        ])
+        card5 = card("🐱 阿生生貼圖", "下載可愛的阿生生！", "#FF6600", [
+            btn("前往下載貼圖", "https://line.me/S/sticker/26305076/?lang=zh-Hant", "#FF6600", True),
+            btn("更多作者貼圖", "https://store.line.me/stickershop/author/4668996/zh-Hant", "#FF8A65", True),
+        ])
         message = FlexSendMessage(
             alt_text='目錄選單',
-            contents={
-                "type": "carousel",
-                "contents": [
-                    {
-                        "type": "bubble",
-                        "size": "mega",
-                        "hero": {
-                            "type": "image",
-                            "url": "https://stickershop.line-scdn.net/stickershop/v1/product/26305076/LINEStorePC/main.png?v=1",
-                            "size": "full",
-                            "aspectMode": "cover",
-                            "aspectRatio": "20:13"
-                        },
-                        "body": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "contents": [
-                                {"type": "text", "text": "主選單功能", "weight": "bold", "size": "lg"},
-                                {"type": "text", "text": "iPad 快捷入口", "size": "sm", "color": "#888888", "margin": "sm"}
-                            ]
-                        },
-                        "footer": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "spacing": "sm",
-                            "contents": [
-                                {"type": "button", "style": "primary", "height": "sm", "color": "#1976D2", "action": {"type": "message", "label": "股價查詢", "text": "股價查詢"}},
-                                {"type": "button", "style": "primary", "height": "sm", "color": "#FF7043", "action": {"type": "message", "label": "油價查詢", "text": "油價查詢"}},
-                                {"type": "button", "style": "primary", "height": "sm", "color": "#26A69A", "action": {"type": "message", "label": "匯率查詢", "text": "匯率查詢"}},
-                                {"type": "button", "style": "primary", "height": "sm", "color": "#8D6E63", "action": {"type": "message", "label": "房地資訊", "text": "房地資訊"}},
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "message", "label": "使用說明", "text": "使用說明"}}
-                            ]
-                        }
-                    },
-                    {
-                        "type": "bubble",
-                        "hero": {
-                            "type": "image",
-                            "url": "https://i.imgur.com/bGyGdb1.jpg",
-                            "size": "full",
-                            "aspectMode": "cover",
-                            "aspectRatio": "20:13"
-                        },
-                        "body": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "contents": [
-                                {"type": "text", "text": "投資工具", "weight": "bold", "size": "lg"},
-                                {"type": "text", "text": "請選擇", "size": "sm", "color": "#888888", "margin": "sm"}
-                            ]
-                        },
-                        "footer": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "spacing": "sm",
-                            "contents": [
-                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "message", "label": "關注的股票", "text": "股票清單"}},
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "財經新聞", "uri": "https://tw.stock.yahoo.com/news/"}},
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "匯率查詢(台銀)", "uri": "https://rate.bot.com.tw/xrt?Lang=zh-TW"}}
-                            ]
-                        }
-                    },
-                    {
-                        "type": "bubble",
-                        "hero": {
-                            "type": "image",
-                            "url": "https://i.imgur.com/N9TKsay.jpg",
-                            "size": "full",
-                            "aspectMode": "cover",
-                            "aspectRatio": "20:13"
-                        },
-                        "body": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "contents": [
-                                {"type": "text", "text": "財經資訊", "weight": "bold", "size": "lg"},
-                                {"type": "text", "text": "請選擇", "size": "sm", "color": "#888888", "margin": "sm"}
-                            ]
-                        },
-                        "footer": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "spacing": "sm",
-                            "contents": [
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "奇摩股市", "uri": "https://tw.stock.yahoo.com/"}},
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "財經PTT", "uri": "https://www.ptt.cc/bbs/Finance/index.html"}},
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "理財YouTube(柴鼠兄弟)", "uri": "https://www.youtube.com/channel/UC45i13dEfEVac2IEJT_Nr5Q"}}
-                            ]
-                        }
-                    },
-                    {
-                        "type": "bubble",
-                        "hero": {
-                            "type": "image",
-                            "url": "https://i.imgur.com/bGyGdb1.jpg",
-                            "size": "full",
-                            "aspectMode": "cover",
-                            "aspectRatio": "20:13"
-                        },
-                        "body": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "contents": [
-                                {"type": "text", "text": "生活資訊", "weight": "bold", "size": "lg"},
-                                {"type": "text", "text": "請選擇", "size": "sm", "color": "#888888", "margin": "sm"}
-                            ]
-                        },
-                        "footer": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "spacing": "sm",
-                            "contents": [
-                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "message", "label": "最新氣象", "text": "最新氣象"}},
-                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "message", "label": "雷達回波", "text": "雷達回波"}},
-                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "message", "label": "房地資訊", "text": "房地資訊"}}
-                            ]
-                        }
-                    },
-                    {
-                        "type": "bubble",
-                        "hero": {
-                            "type": "image",
-                            "url": "https://i.imgur.com/N9TKsay.jpg",
-                            "size": "full",
-                            "aspectMode": "cover",
-                            "aspectRatio": "20:13"
-                        },
-                        "body": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "contents": [
-                                {"type": "text", "text": "AI 工具", "weight": "bold", "size": "lg"},
-                                {"type": "text", "text": "請選擇", "size": "sm", "color": "#888888", "margin": "sm"}
-                            ]
-                        },
-                        "footer": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "spacing": "sm",
-                            "contents": [
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "程式教學YouTube", "uri": "https://www.youtube.com/channel/UCPhn2rCqhu0HdktsFjixahA"}},
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "ChatGPT", "uri": "https://chat.openai.com/"}},
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "uri", "label": "Perplexity AI搜尋", "uri": "https://www.perplexity.ai/"}}
-                            ]
-                        }
-                    },
-                    {
-                        "type": "bubble",
-                        "hero": {
-                            "type": "image",
-                            "url": "https://stickershop.line-scdn.net/stickershop/v1/product/26305076/LINEStorePC/main.png?v=1",
-                            "size": "full",
-                            "aspectMode": "cover",
-                            "aspectRatio": "20:13"
-                        },
-                        "body": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "contents": [
-                                {"type": "text", "text": "阿生生貼圖", "weight": "bold", "size": "lg"},
-                                {"type": "text", "text": "下載可愛的阿生生貼圖！", "size": "sm", "color": "#888888", "margin": "sm"}
-                            ]
-                        },
-                        "footer": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "spacing": "sm",
-                            "contents": [
-                                {"type": "button", "style": "primary", "height": "sm", "action": {"type": "uri", "label": "前往下載貼圖", "uri": "https://line.me/S/sticker/26305076/?lang=zh-Hant"}},
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "message", "label": "阿生生頻道(規劃中)", "text": "使用說明"}},
-                                {"type": "button", "style": "link", "height": "sm", "action": {"type": "message", "label": "使用說明", "text": "使用說明"}}
-                            ]
-                        }
-                    }
-                ]
-            }
+            contents={"type": "carousel", "contents": [card1, card2, card3, card4, card5]}
         )
         line_bot_api.reply_message(event.reply_token, message)
         return 0
@@ -1620,7 +1494,10 @@ def handle_message(event):
         return 0
 
     #＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊weather＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
-    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather|即時天氣預報|即時天氣|即時氣象|天氣預報|預報天氣', msg):
+    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather', msg):
+        line_bot_api.reply_message(event.reply_token, place.img_Carousel())
+        return 0
+    if re.match('即時天氣預報|即時天氣|即時氣象|天氣預報|預報天氣', msg):
         line_bot_api.reply_message(event.reply_token, place.select_city_direct_links('weather'))
         return 0
 
