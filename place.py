@@ -474,70 +474,69 @@ def quick_reply_weather(mat):
 
 
 def select_city_direct_links(mode='weather'):
-    """顯示縣市按鈕，點擊後直接開啟中央氣象署頁面。"""
-    county_cids = [
-        ('基隆市', '10017'), ('台北市', '63'), ('新北市', '65'), ('桃園市', '68'),
-        ('新竹市', '10018'), ('新竹縣', '10004'), ('苗栗縣', '10005'), ('台中市', '66'),
-        ('彰化縣', '10007'), ('南投縣', '10008'), ('雲林縣', '10009'), ('嘉義市', '10020'),
-        ('嘉義縣', '10010'), ('台南市', '67'), ('高雄市', '64'), ('屏東縣', '10013'),
-        ('宜蘭縣', '10002'), ('花蓮縣', '10015'), ('臺東縣', '10014'), ('澎湖縣', '10016'),
-        ('金門縣', '09020'), ('連江縣', '09007')
+    """顯示縣市按鈕（3欄漂亮格子），點擊後直接開啟中央氣象署頁面。"""
+    # 按地理位置排列，每行3個
+    county_rows = [
+        [('基隆市', '10017'), ('宜蘭縣', '10002'), ('花蓮縣', '10015')],
+        [('台北市', '63'),    ('新北市', '65'),    ('桃園市', '68')],
+        [('新竹市', '10018'), ('新竹縣', '10004'), ('苗栗縣', '10005')],
+        [('彰化縣', '10007'), ('雲林縣', '10009'), ('南投縣', '10008')],
+        [('台中市', '66'),    ('嘉義市', '10020'), ('嘉義縣', '10010')],
+        [('高雄市', '64'),    ('台南市', '67'),    ('屏東縣', '10013')],
+        [('澎湖縣', '10016'), ('金門縣', '09020'), ('臺東縣', '10014')],
+        [('連江縣', '09007')],
     ]
+    # 每行不同顏色，漸層效果
+    row_colors = ['#00ACC1', '#0097A7', '#00897B', '#43A047', '#558B2F', '#E65100', '#D84315', '#6D4C41']
 
     if mode == 'tide':
-        title = '潮汐預報'
-        subtitle = '請選擇縣市（點擊後直接開啟）'
+        title = '🌊 潮汐預報'
     elif mode == 'harbor':
-        title = '港口天氣'
-        subtitle = '請選擇縣市（點擊後直接開啟）'
+        title = '⚓ 港口天氣'
     else:
-        title = '即時天氣預報'
-        subtitle = '請選擇縣市（點擊後直接開啟）'
+        title = '🌤 全台縣市選單'
 
-    bubbles = []
-    for i in range(0, len(county_cids), 11):
-        chunk = county_cids[i:i+11]
-        buttons = []
-        for city, cid in chunk:
-            uri = f'https://www.cwa.gov.tw/V8/C/W/County/County.html?CID={cid}'
-            buttons.append({
+    base_url = 'https://www.cwa.gov.tw/V8/C/W/County/County.html?CID='
+
+    body_rows = []
+    for r, row in enumerate(county_rows):
+        color = row_colors[r % len(row_colors)]
+        row_btns = []
+        for city, cid in row:
+            row_btns.append({
                 "type": "button",
+                "adjustMode": "shrink-to-fit",
+                "color": color,
                 "style": "primary",
-                "color": "#1E88E5",
+                "margin": "sm",
                 "height": "sm",
-                "action": {
-                    "type": "uri",
-                    "label": city,
-                    "uri": uri
-                }
+                "action": {"type": "uri", "label": city, "uri": f"{base_url}{cid}"}
             })
+        # 補齊不足3個的行
+        while len(row_btns) < 3:
+            row_btns.append({"type": "filler"})
+        body_rows.append({
+            "type": "box", "layout": "horizontal", "spacing": "sm", "margin": "sm",
+            "contents": row_btns
+        })
 
-        bubble = {
+    flex_message = FlexSendMessage(
+        alt_text=f'{title}',
+        contents={
             "type": "bubble",
             "size": "mega",
             "header": {
-                "type": "box",
-                "layout": "vertical",
+                "type": "box", "layout": "vertical",
                 "contents": [
-                    {"type": "text", "text": title, "weight": "bold", "size": "lg", "align": "center", "color": "#1DB446"},
-                    {"type": "text", "text": subtitle, "size": "xs", "align": "center", "color": "#888888", "margin": "sm"}
-                ],
-                "paddingAll": "14px"
+                    {"type": "text", "text": title, "weight": "bold", "size": "xl", "color": "#00695C", "align": "center"},
+                    {"type": "text", "text": "點擊縣市直接開啟氣象署查詢", "size": "xs", "color": "#888888", "align": "center", "margin": "sm"}
+                ], "paddingAll": "14px"
             },
             "body": {
-                "type": "box",
-                "layout": "vertical",
-                "spacing": "sm",
-                "contents": buttons,
-                "paddingAll": "12px"
+                "type": "box", "layout": "vertical",
+                "contents": body_rows,
+                "paddingAll": "8px"
             }
         }
-        bubbles.append(bubble)
-
-    return FlexSendMessage(
-        alt_text=f'{title}縣市選單',
-        contents={
-            "type": "carousel",
-            "contents": bubbles
-        }
     )
+    return flex_message

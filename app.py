@@ -1494,10 +1494,7 @@ def handle_message(event):
         return 0
 
     #＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊weather＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
-    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather', msg):
-        line_bot_api.reply_message(event.reply_token, place.img_Carousel())
-        return 0
-    if re.match('即時天氣預報|即時天氣|即時氣象|天氣預報|預報天氣', msg):
+    if re.match('最新氣象|查詢天氣|天氣查詢|weather|Weather|即時天氣預報|即時天氣|即時氣象|天氣預報|預報天氣', msg):
         line_bot_api.reply_message(event.reply_token, place.select_city_direct_links('weather'))
         return 0
 
