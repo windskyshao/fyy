@@ -1314,6 +1314,25 @@ def handle_message(event):
         template=CarouselTemplate(
             columns=[
                 CarouselColumn(
+                        thumbnail_image_url='https://i.imgur.com/8m9yGfR.jpg',
+                        title='主選單功能',
+                        text='iPad 快捷入口',
+                        actions=[
+                            MessageAction(
+                                label='股價查詢',
+                                text='股價查詢'
+                            ),
+                            MessageAction(
+                                label='油價查詢',
+                                text='油價查詢'
+                            ),
+                            MessageAction(
+                                label='匯率查詢',
+                                text='匯率查詢'
+                            )
+                        ]
+                    ),
+                CarouselColumn(
                         thumbnail_image_url='https://i.imgur.com/bGyGdb1.jpg',
                         title='投資工具',
                         text='請選擇',
@@ -1352,25 +1371,6 @@ def handle_message(event):
                         ]
                     ),
                 CarouselColumn(
-                        thumbnail_image_url='https://i.imgur.com/rwR2yUr.jpg',
-                        title='房地產',
-                        text='請選擇',
-                        actions=[
-                            URIAction(
-                                label='內政部實價登錄',
-                                uri='https://lvr.land.moi.gov.tw/'
-                            ),
-                            URIAction(
-                                label='Google地圖',
-                                uri='https://www.google.com.tw/maps'
-                            ),
-                            URIAction(
-                                label='591房屋交易',
-                                uri='https://www.591.com.tw/'
-                            )
-                        ]
-                    ),
-                CarouselColumn(
                         thumbnail_image_url='https://i.imgur.com/bGyGdb1.jpg',
                         title='生活資訊',
                         text='請選擇',
@@ -1383,9 +1383,9 @@ def handle_message(event):
                                 label='雷達回波',
                                 text='雷達回波'
                             ),
-                            URIAction(
-                                label='時事新聞(聯合新聞)',
-                                uri='https://udn.com/news/breaknews/1'
+                            MessageAction(
+                                label='房地資訊',
+                                text='房地資訊'
                             )
                         ]
                     ),
@@ -1430,38 +1430,8 @@ def handle_message(event):
                 ]
             )
         )
-        main_menu_sync = FlexSendMessage(
-            alt_text='主選單快捷',
-            contents={
-                "type": "bubble",
-                "size": "mega",
-                "header": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {"type": "text", "text": "主選單快捷", "weight": "bold", "size": "lg", "align": "center", "color": "#1DB446"},
-                        {"type": "text", "text": "iPad 也可直接使用", "size": "xs", "align": "center", "color": "#888888", "margin": "sm"}
-                    ],
-                    "paddingAll": "14px"
-                },
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "spacing": "sm",
-                    "contents": [
-                        {"type": "button", "style": "primary", "height": "sm", "color": "#1976D2", "action": {"type": "message", "label": "股價查詢", "text": "股價查詢"}},
-                        {"type": "button", "style": "primary", "height": "sm", "color": "#FF7043", "action": {"type": "message", "label": "油價查詢", "text": "油價查詢"}},
-                        {"type": "button", "style": "primary", "height": "sm", "color": "#26A69A", "action": {"type": "message", "label": "匯率查詢", "text": "匯率查詢"}},
-                        {"type": "button", "style": "primary", "height": "sm", "color": "#8D6E63", "action": {"type": "message", "label": "房地資訊", "text": "房地資訊"}},
-                        {"type": "button", "style": "link", "height": "sm", "action": {"type": "message", "label": "使用說明", "text": "使用說明"}}
-                    ],
-                    "paddingAll": "12px"
-                }
-            }
-        )
-        line_bot_api.reply_message(event.reply_token, [main_menu_sync, message])
+        line_bot_api.reply_message(event.reply_token, message)
         return 0
-
     if re.match("股價提醒", msg):
         try:
             dataList = cache_users_stock()
@@ -1870,6 +1840,7 @@ def handle_unfollow(event):
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
