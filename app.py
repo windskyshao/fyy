@@ -1092,6 +1092,10 @@ def handle_message(event):
         return 0
     if(msg.startswith('#')):
         text = msg[1:]
+        # 支援 #代碼@關鍵字 格式：從中文搜尋點進來時，把關鍵字帶著，詳情頁才能再列出其他搜尋結果
+        search_keyword = None
+        if '@' in text:
+            text, search_keyword = text.split('@', 1)
         try:
             # 重試機制：yfinance 首次查詢有時會失敗
             hist = pd.DataFrame()
@@ -1133,6 +1137,15 @@ def handle_message(event):
                 })
 
             is_followed = mongodb.is_stock_followed(user_name, text)
+            # 若從中文搜尋點進來，附上其他搜尋結果的快速回覆，讓使用者不用重新搜尋
+            stock_quick_reply = None
+            if search_keyword:
+                other_results = [(c, n) for c, n in search_stock_by_name(search_keyword) if c != text]
+                if other_results:
+                    stock_quick_reply = QuickReply(items=[
+                        QuickReplyButton(action=MessageAction(label=f"{n} {c}", text=f"#{c}@{search_keyword}"))
+                        for c, n in other_results[:8]
+                    ])
             stock_flex = FlexSendMessage(
                 alt_text=f"{text} 股價查詢",
                 contents={
@@ -1253,7 +1266,8 @@ def handle_message(event):
                         ],
                         "spacing": "sm", "paddingAll": "10px"
                     }
-                }
+                },
+                quick_reply=stock_quick_reply
             )
             line_bot_api.reply_message(event.reply_token, stock_flex)
         except Exception as e:
@@ -1527,7 +1541,7 @@ def handle_message(event):
             buttons = []
             for code, name in results[:8]:
                 buttons.append(
-                    QuickReplyButton(action=MessageAction(label=f"{name} {code}", text=f"#{code}"))
+                    QuickReplyButton(action=MessageAction(label=f"{name} {code}", text=f"#{code}@{original_msg}"))
                 )
             line_bot_api.reply_message(
                 event.reply_token,
