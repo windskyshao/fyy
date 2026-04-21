@@ -188,6 +188,11 @@ def cron_oil_price():
     except Exception as e:
         return f"Error: {e}", 500
 
+@app.route('/keep_alive')
+def keep_alive():
+    """保持服務清醒用，供 cron-job.org 等監控服務定期 ping"""
+    return "alive", 200
+
 @app.route('/register_me/<user_id>')
 def register_me(user_id):
     """手動註冊現有用戶（用於已追蹤但未記錄的用戶）"""
