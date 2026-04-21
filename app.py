@@ -38,17 +38,18 @@ def get_stock_name(code):
         return code
 
 def search_stock_by_name(keyword, max_results=10):
-    """用中文名稱搜尋股票代號"""
+    """用中文名稱搜尋股票代號（只搜普通股與 ETF，排除權證、牛熊證等衍生商品）"""
     results = []
+    allowed_types = {'股票', 'ETF'}
     try:
         for code, info in twstock.codes.items():
-            if keyword in info.name and info.market == '上市':
+            if keyword in info.name and info.market == '上市' and info.type in allowed_types:
                 results.append((code, info.name))
             if len(results) >= max_results:
                 break
         if len(results) < max_results:
             for code, info in twstock.codes.items():
-                if keyword in info.name and info.market == '上櫃':
+                if keyword in info.name and info.market == '上櫃' and info.type in allowed_types:
                     results.append((code, info.name))
                 if len(results) >= max_results:
                     break
