@@ -37,6 +37,23 @@ def get_stock_name(code):
     except:
         return code
 
+def get_sell_rate(currency):
+    """取得賣出匯率，優先即期、fallback 到現金（韓元/泰銖等弱勢貨幣無即期資料時使用）
+
+    回傳 (rate_str, rate_type)：rate_type 為 '即期' 或 '現金'；皆無資料時回傳 (None, None)
+    """
+    try:
+        data = twder.now(currency)
+        spot_sell = data[4]
+        if spot_sell != '-':
+            return spot_sell, '即期'
+        cash_sell = data[2]
+        if cash_sell != '-':
+            return cash_sell, '現金'
+    except:
+        pass
+    return None, None
+
 def search_stock_by_name(keyword, max_results=10):
     """用中文名稱搜尋股票代號（只搜普通股與 ETF，排除權證、牛熊證等衍生商品）"""
     results = []
@@ -91,10 +108,10 @@ def cron_check_currency():
                 if condition == '未設定' or price == '未設定' or not uid:
                     continue
                 try:
-                    now_rate = twder.now(currency)[4]
-                    if now_rate == '-':
+                    rate_val, rate_type = get_sell_rate(currency)
+                    if rate_val is None:
                         continue
-                    current = float(now_rate)
+                    current = float(rate_val)
                     target = float(price)
                     cur_name = mongodb.currency_list.get(currency, currency)
                     triggered = False
@@ -103,7 +120,7 @@ def cron_check_currency():
                     elif condition == '>' and current > target:
                         triggered = True
                     if triggered:
-                        msg = f"📢 匯率通知\n{cur_name}({currency}) 即期賣出：{current}\n已{'低於' if condition == '<' else '高於'}您設定的 {target}！"
+                        msg = f"📢 匯率通知\n{cur_name}({currency}) {rate_type}賣出：{current}\n已{'低於' if condition == '<' else '高於'}您設定的 {target}！"
                         line_bot_api.push_message(uid, TextSendMessage(text=msg))
                         notified += 1
                 except Exception as e:
@@ -273,8 +290,13 @@ def build_my_currency_flex(uid, user_name):
         price = entry.get('price', '未設定')
         cur_name = mongodb.currency_list.get(cur, cur)
         try:
-            now_rate = twder.now(cur)[4]
-            rate_text = str(float(now_rate)) if now_rate != '-' else '無資料'
+            rate_val, rate_type = get_sell_rate(cur)
+            if rate_val is None:
+                rate_text = '無資料'
+            elif rate_type == '現金':
+                rate_text = f"{float(rate_val)} (現金)"
+            else:
+                rate_text = str(float(rate_val))
         except:
             rate_text = '查詢失敗'
         cond_text = f" ({condition}{price})" if condition != '未設定' else ""
@@ -641,22 +663,27 @@ def handle_message(event):
         if currency_name == "無可支援的外幣":
             line_bot_api.reply_message(event.reply_token, TextSendMessage("無可支援的外幣"))
             return 0
-        try:
-            spot_sell = twder.now(currency)[4]
-            current = float(spot_sell) if spot_sell != '-' else 0
-        except:
-            current = 0
+        rate_val, rate_type = get_sell_rate(currency)
+        current = float(rate_val) if rate_val is not None else 0
+        rate_label = f"{rate_type}賣出" if rate_type else "即期賣出"
         buttons = [
             QuickReplyButton(action=MessageAction(label="不設條件，直接關注", text=f"新增外幣{currency}")),
-            QuickReplyButton(action=MessageAction(label=f"低於 {current:.2f} 通知", text=f"新增外幣{currency}<{current:.2f}")),
-            QuickReplyButton(action=MessageAction(label=f"高於 {current:.2f} 通知", text=f"新增外幣{currency}>{current:.2f}")),
+        ]
+        if current > 0:
+            buttons += [
+                QuickReplyButton(action=MessageAction(label=f"低於 {current:.2f} 通知", text=f"新增外幣{currency}<{current:.2f}")),
+                QuickReplyButton(action=MessageAction(label=f"高於 {current:.2f} 通知", text=f"新增外幣{currency}>{current:.2f}")),
+            ]
+        buttons += [
             QuickReplyButton(action=MessageAction(label="✏️ 自訂 低於", text=f"自訂關注{currency}<")),
             QuickReplyButton(action=MessageAction(label="✏️ 自訂 高於", text=f"自訂關注{currency}>")),
         ]
+        current_text = f"{current:.4f}" if rate_type == '現金' and current < 1 else f"{current:.2f}"
+        info_line = f"目前{rate_label}：{current_text}" if current > 0 else "目前無即期/現金報價"
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text=f"要關注 {currency_name}({currency})\n目前即期賣出：{current:.2f}\n請選擇通知條件：",
+                text=f"要關注 {currency_name}({currency})\n{info_line}\n請選擇通知條件：",
                 quick_reply=QuickReply(items=buttons)
             )
         )
@@ -1462,9 +1489,13 @@ def handle_message(event):
                     price = entry.get('price', '未設定')
                     currency_name = mongodb.currency_list.get(currency, currency)
                     try:
-                        realtime_currency = (twder.now(currency))[4]
-                        rate = float(realtime_currency) if realtime_currency != '-' else 0
-                        rate_text = str(rate) if rate else '無資料'
+                        rate_val, rate_type = get_sell_rate(currency)
+                        if rate_val is None:
+                            rate = 0
+                            rate_text = '無資料'
+                        else:
+                            rate = float(rate_val)
+                            rate_text = f"{rate} (現金)" if rate_type == '現金' else str(rate)
                     except:
                         rate_text = '查詢失敗'
                         rate = 0
