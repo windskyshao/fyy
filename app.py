@@ -617,6 +617,8 @@ def handle_message(event):
                 }
             )
             if amount_btns:
+                # 設定換匯狀態，讓使用者直接輸入數字就能換匯（不用先按「自訂金額」）
+                mat_d[uid] = f"換匯{from_cur}/{to_cur}"
                 reply_msg = TextSendMessage(
                     text="換其他金額：",
                     quick_reply=QuickReply(items=amount_btns)
