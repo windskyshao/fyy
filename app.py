@@ -494,13 +494,19 @@ def handle_message(event):
         ])
         return 0
 
-    # 用戶輸入數字 → 接續自訂換匯（優先於股票查詢）
-    if uid in mat_d and mat_d[uid].startswith('換匯') and re.match(r'^[\d,.]+$', msg):
+    # 用戶輸入數字 → 接續自訂換匯或自訂關注外幣（優先於股票查詢）
+    if uid in mat_d and re.match(r'^[\d,.]+$', msg):
+        state = mat_d[uid]
         amount_str = msg.replace(',', '')
         try:
             float(amount_str)
-            msg = f"{mat_d[uid]}/{amount_str}".upper()
-            del mat_d[uid]
+            if state.startswith('換匯'):
+                msg = f"{state}/{amount_str}".upper()
+                del mat_d[uid]
+            elif state.startswith('關注'):
+                # 例：state='關注USD<' → msg='新增外幣USD<31.5'
+                msg = f"新增外幣{state[2:]}{amount_str}"
+                del mat_d[uid]
         except ValueError:
             del mat_d[uid]
 
@@ -644,12 +650,33 @@ def handle_message(event):
             QuickReplyButton(action=MessageAction(label="不設條件，直接關注", text=f"新增外幣{currency}")),
             QuickReplyButton(action=MessageAction(label=f"低於 {current:.2f} 通知", text=f"新增外幣{currency}<{current:.2f}")),
             QuickReplyButton(action=MessageAction(label=f"高於 {current:.2f} 通知", text=f"新增外幣{currency}>{current:.2f}")),
+            QuickReplyButton(action=MessageAction(label="✏️ 自訂 低於", text=f"自訂關注{currency}<")),
+            QuickReplyButton(action=MessageAction(label="✏️ 自訂 高於", text=f"自訂關注{currency}>")),
         ]
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
                 text=f"要關注 {currency_name}({currency})\n目前即期賣出：{current:.2f}\n請選擇通知條件：",
                 quick_reply=QuickReply(items=buttons)
+            )
+        )
+        return 0
+    if re.match(r'自訂關注[A-Z]{3}[<>]', msg):
+        currency = msg[4:7]
+        op = msg[7]
+        currency_name = EXRate.getCurrencyName(currency)
+        if currency_name == "無可支援的外幣":
+            currency_name = currency
+        mat_d[uid] = f"關注{currency}{op}"
+        cond_word = "低於" if op == "<" else "高於"
+        hint_buttons = [
+            QuickReplyButton(action=MessageAction(label="↩ 返回選擇條件", text=f"關注外幣{currency}")),
+        ]
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=f"請輸入 {currency_name}({currency}) 要{cond_word}多少時通知（數字），例如 31.50",
+                quick_reply=QuickReply(items=hint_buttons)
             )
         )
         return 0
