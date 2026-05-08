@@ -57,6 +57,19 @@ def get_all_followers():
     collect = db['users']
     return [doc['userID'] for doc in collect.find({}, {"userID": 1})]
 
+def get_cron_last_run(key):
+    """取得指定 cron 任務上次成功執行的日期字串，沒紀錄回 None"""
+    db = constructor_followers()
+    collect = db['cron_state']
+    doc = collect.find_one({"key": key})
+    return doc.get('last_run_date') if doc else None
+
+def set_cron_last_run(key, date_str):
+    """記錄指定 cron 任務剛剛執行完的日期，用 upsert 避免重複新增"""
+    db = constructor_followers()
+    collect = db['cron_state']
+    collect.update_one({"key": key}, {"$set": {"last_run_date": date_str}}, upsert=True)
+
 Authdb='test-good1'
 stockDB='mydb'
 currencyDB = 'users'

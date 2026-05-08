@@ -172,8 +172,13 @@ def cron_check_stock():
 
 @app.route('/cron/oil_price')
 def cron_oil_price():
-    """排程推播下週油價預測給所有追蹤者"""
+    """排程推播下週油價預測給所有追蹤者；同一天重複觸發不會重複推播"""
     try:
+        # 冪等保護：cron-job.org 若超時重試，會多次呼叫此 endpoint，
+        # 用「今天是否已成功推播」擋掉重複，避免使用者收到多則一樣的通知。
+        today_str = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+        if mongodb.get_cron_last_run('oil_price') == today_str:
+            return f"OK, already sent today ({today_str})", 200
         data = oil_price()
         prices = data['prices']
         forecast = data['forecast']
@@ -202,6 +207,8 @@ def cron_oil_price():
                 sent += 1
             except Exception as e:
                 print(f"[cron_oil] Failed to push to {uid}: {e}")
+        # 推播完成才標記「今日已執行」，避免推播失敗時被誤鎖
+        mongodb.set_cron_last_run('oil_price', today_str)
         return f"OK, sent={sent}", 200
     except Exception as e:
         return f"Error: {e}", 500
