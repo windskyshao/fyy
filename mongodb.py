@@ -142,7 +142,11 @@ def delete_my_allstock(user_name, userID):
 def update_my_currency(user_name, currency, condition , target_price):
     db=constructor_currency()
     collect = db[user_name]
-    collect.update_many({"favorite_currency": currency }, {'$set': {'condition':condition , "price": target_price}})
+    # 條件變了就重置 notified，讓下次達標時還能發新通知
+    collect.update_many(
+        {"favorite_currency": currency },
+        {'$set': {'condition':condition , "price": target_price, "notified": False}}
+    )
     return f"{currency_list[currency]}更新成功"
 #----------------------------  新增匯率至雍率清單  --------------------------
 def write_my_currency(userID, user_name, currency, condition, target_price):
@@ -158,9 +162,16 @@ def write_my_currency(userID, user_name, currency, condition, target_price):
                 "condition": condition,
                 "price": target_price,
                 "tag": "currency",
+                "notified": False,
                 "date_info": datetime.datetime.now()
             })
         return f"{currency_list[currency]}已新增至您的外幣清單"
+
+def update_currency_notified(user_name, currency, notified):
+    """更新某筆關注外幣的 notified 旗標（cron 用：達標通知後標記，鬆開時清除）"""
+    db = constructor_currency()
+    collect = db[user_name]
+    collect.update_many({"favorite_currency": currency}, {'$set': {'notified': bool(notified)}})
 #----------------------------  查詢資料庫中匯率清單的匯率(文字)  --------------------------
 def show_my_currency(userID, user_name):
     db = constructor_currency()

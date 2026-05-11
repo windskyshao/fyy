@@ -90,23 +90,30 @@ RENDER_URL = 'https://fyy-l8a3.onrender.com'
 def serve_chart(filename):
     return send_from_directory(CHART_DIR, filename)
 
-def build_currency_alert_flex(currency_data, triggered_count):
-    """組裝匯率通知 flex：列出所有關注幣別，已觸發者以綠勾標示"""
+def build_currency_alert_flex(currency_data, new_trigger_count, currently_triggered):
+    """組裝匯率通知 flex：列出所有關注幣別，區分「剛達標」與「持續達標」"""
     rows = []
     for d in currency_data:
         if d['rate'] > 0:
             rate_text = f"{d['rate']} (現金)" if d['rate_type'] == '現金' else str(d['rate'])
         else:
             rate_text = '無資料'
-        if d['triggered']:
-            status_text = f"✅ 已{'低於' if d['condition'] == '<' else '高於'} {d['price']}"
+        if d.get('is_new'):
+            status_text = f"🔔 剛達標！{'低於' if d['condition'] == '<' else '高於'} {d['price']}"
+            status_color = "#FF5252"
+            status_weight = "bold"
+        elif d['triggered']:
+            status_text = f"✅ 持續{'低於' if d['condition'] == '<' else '高於'} {d['price']}"
             status_color = "#1DB446"
+            status_weight = "regular"
         elif d['condition'] == '未設定':
             status_text = "未設定條件"
             status_color = "#888888"
+            status_weight = "regular"
         else:
             status_text = f"條件：{d['condition']}{d['price']}（未達）"
             status_color = "#FF9800"
+            status_weight = "regular"
         rows.append({
             "type": "box", "layout": "horizontal", "margin": "lg",
             "contents": [
@@ -114,16 +121,19 @@ def build_currency_alert_flex(currency_data, triggered_count):
                 {"type": "text", "text": rate_text, "size": "sm", "weight": "bold", "align": "end", "flex": 2, "color": "#2196F3"},
             ]
         })
-        rows.append({"type": "text", "text": status_text, "size": "xxs", "color": status_color, "margin": "sm"})
+        rows.append({"type": "text", "text": status_text, "size": "xxs", "color": status_color, "weight": status_weight, "margin": "sm"})
+    subtitle = f"剛有 {new_trigger_count} 項達成條件"
+    if currently_triggered > new_trigger_count:
+        subtitle += f"（另有 {currently_triggered - new_trigger_count} 項持續達標中）"
     return FlexSendMessage(
-        alt_text=f"📢 匯率通知（{triggered_count} 項達成條件）",
+        alt_text=f"📢 匯率通知（{new_trigger_count} 項剛達標）",
         contents={
             "type": "bubble",
             "header": {
                 "type": "box", "layout": "vertical",
                 "contents": [
                     {"type": "text", "text": "📢 匯率通知", "weight": "bold", "size": "lg", "color": "#FF5252"},
-                    {"type": "text", "text": f"您關注的匯率中有 {triggered_count} 項達成條件", "size": "xs", "color": "#888888", "margin": "sm"}
+                    {"type": "text", "text": subtitle, "size": "xs", "color": "#888888", "margin": "sm", "wrap": True}
                 ], "paddingAll": "15px"
             },
             "body": {
@@ -143,7 +153,12 @@ def build_currency_alert_flex(currency_data, triggered_count):
 
 @app.route('/cron/check_currency')
 def cron_check_currency():
-    """排程自動檢查匯率條件並推播通知；每位使用者匯整為一則 flex，列出所有關注幣別"""
+    """排程自動檢查匯率條件並推播通知
+
+    交叉觸發 + 一次性失效：只在「從未達 → 剛達標」當次推播。
+    達標期間每天檢查但不重複推；條件鬆開（rate 跨回）後 notified 重置，
+    下次再達標時又會推一次。
+    """
     try:
         db = mongodb.constructor_currency()
         nameList = db.list_collection_names()
@@ -152,7 +167,8 @@ def cron_check_currency():
             collect = db[col_name]
             entries = list(collect.find({"tag": "currency"}))
             currency_data = []
-            triggered_count = 0
+            new_trigger_count = 0
+            currently_triggered = 0
             uid = None
             for entry in entries:
                 if uid is None:
@@ -160,6 +176,7 @@ def cron_check_currency():
                 currency = entry.get('favorite_currency')
                 condition = entry.get('condition', '未設定')
                 price = entry.get('price', '未設定')
+                notified_before = bool(entry.get('notified', False))
                 rate_val, rate_type = get_sell_rate(currency)
                 rate = float(rate_val) if rate_val is not None else 0
                 cur_name = mongodb.currency_list.get(currency, currency)
@@ -173,8 +190,17 @@ def cron_check_currency():
                             triggered = True
                     except ValueError:
                         pass
+                # 同步 notified 狀態：達標→True，鬆開→False
+                if triggered != notified_before:
+                    try:
+                        mongodb.update_currency_notified(col_name, currency, triggered)
+                    except Exception as e:
+                        print(f"[cron] Update notified failed {col_name}/{currency}: {e}")
+                is_new_trigger = triggered and not notified_before
                 if triggered:
-                    triggered_count += 1
+                    currently_triggered += 1
+                if is_new_trigger:
+                    new_trigger_count += 1
                 currency_data.append({
                     'cur_name': cur_name,
                     'rate': rate,
@@ -182,11 +208,13 @@ def cron_check_currency():
                     'condition': condition,
                     'price': price,
                     'triggered': triggered,
+                    'is_new': is_new_trigger,
                 })
-            if not uid or triggered_count == 0 or not currency_data:
+            # 只在「至少一筆是首次達標」才推播
+            if not uid or new_trigger_count == 0 or not currency_data:
                 continue
             try:
-                flex = build_currency_alert_flex(currency_data, triggered_count)
+                flex = build_currency_alert_flex(currency_data, new_trigger_count, currently_triggered)
                 line_bot_api.push_message(uid, flex)
                 notified += 1
             except Exception as e:
