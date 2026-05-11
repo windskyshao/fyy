@@ -75,6 +75,10 @@ stockDB='mydb'
 currencyDB = 'users'
 dbname = 'test-good1'
 
+# 每位使用者關注上限（控制 LINE 推播免費額度 500/月 與外部 API 用量）
+MAX_STOCKS_PER_USER = 5
+MAX_CURRENCIES_PER_USER = 5
+
 def constructor_stock():
     client = MongoClient(MONGODB_URI)
     db = client[stockDB]
@@ -98,16 +102,19 @@ def write_my_stock(userID, user_name, stockNumber, condition, target_price):
     if is_exit != None :
         content = update_my_stock(user_name, stockNumber, condition, target_price)
         return content
-    else:
-        collect.insert_one({
-            "userID": userID,
-            "favorite_stock": stockNumber,
-            "condition": condition,
-            "price": target_price,
-            "tag": "stock",
-            "notified": False,
-            "date_info": datetime.datetime.now()
-        })
+    # 新增前檢查上限
+    current_count = collect.count_documents({"tag": "stock"})
+    if current_count >= MAX_STOCKS_PER_USER:
+        return f"❌ 已達上限：每人最多關注 {MAX_STOCKS_PER_USER} 檔股票，請先用「股票清單」刪除不需要的再新增"
+    collect.insert_one({
+        "userID": userID,
+        "favorite_stock": stockNumber,
+        "condition": condition,
+        "price": target_price,
+        "tag": "stock",
+        "notified": False,
+        "date_info": datetime.datetime.now()
+    })
     return f"{stockNumber}已新增至您的股票清單"
 # --------------------- 更新暫存的股票名稱 ---------------------
 def update_my_stock(user_name, stockNumber, condition, target_price):
@@ -164,19 +171,21 @@ def write_my_currency(userID, user_name, currency, condition, target_price):
     db = constructor_currency()
     collect = db[user_name]
     is_exit = collect.find_one({"favorite_currency": currency})
-    content = ""
     if is_exit != None : return update_my_currency(user_name, currency,condition, target_price)
-    else:
-        collect.insert_one({
-                "userID": userID,
-                "favorite_currency": currency,
-                "condition": condition,
-                "price": target_price,
-                "tag": "currency",
-                "notified": False,
-                "date_info": datetime.datetime.now()
-            })
-        return f"{currency_list[currency]}已新增至您的外幣清單"
+    # 新增前檢查上限
+    current_count = collect.count_documents({"tag": "currency"})
+    if current_count >= MAX_CURRENCIES_PER_USER:
+        return f"❌ 已達上限：每人最多關注 {MAX_CURRENCIES_PER_USER} 個外幣，請先用「我的外幣」刪除不需要的再新增"
+    collect.insert_one({
+            "userID": userID,
+            "favorite_currency": currency,
+            "condition": condition,
+            "price": target_price,
+            "tag": "currency",
+            "notified": False,
+            "date_info": datetime.datetime.now()
+        })
+    return f"{currency_list[currency]}已新增至您的外幣清單"
 
 def update_currency_notified(user_name, currency, notified):
     """更新某筆關注外幣的 notified 旗標（cron 用：達標通知後標記，鬆開時清除）"""

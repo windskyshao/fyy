@@ -37,6 +37,19 @@ def get_stock_name(code):
     except:
         return code
 
+def is_trading_hours():
+    """判斷現在是否為台股盤中時段（週一至週五 09:00-13:30 Asia/Taipei）
+
+    Render 在 UTC 跑，台灣沒有日光節約時間，所以固定 +8 即可。
+    沒處理盤中休市的國定假日，假日盤資料源回的就是前一交易日，
+    cron 雖然會跑但不會誤觸發。
+    """
+    now_tw = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+    if now_tw.weekday() >= 5:  # 5=週六, 6=週日
+        return False
+    minutes = now_tw.hour * 60 + now_tw.minute
+    return 9 * 60 <= minutes <= 13 * 60 + 30
+
 def get_sell_rate(currency):
     """取得賣出匯率，優先即期、fallback 到現金（韓元/泰銖等弱勢貨幣無即期資料時使用）
 
@@ -293,7 +306,11 @@ def cron_check_stock():
     交叉觸發 + 一次性失效：只在「從未達 → 剛達標」當次推播。
     達標期間每天檢查但不重複推；條件鬆開（價格跨回）後 notified 重置，
     下次再達標時又會推一次。
+
+    盤中時段才實際檢查，避免假日/盤後重複觸發或浪費 yfinance 配額。
     """
+    if not is_trading_hours():
+        return "OK, skipped (not trading hours)", 200
     try:
         db = mongodb.constructor_stock()
         nameList = db.list_collection_names()
@@ -923,9 +940,13 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage("無可支援的外幣"))
         else:
             if re.match('新增外幣[A-Z]{3}[<>][0-9]', msg):
-                mongodb.write_my_currency(uid, user_name, currency, msg[7:8], msg[8:])
+                result = mongodb.write_my_currency(uid, user_name, currency, msg[7:8], msg[8:])
             else:
-                mongodb.write_my_currency(uid, user_name, currency, "未設定", "未設定")
+                result = mongodb.write_my_currency(uid, user_name, currency, "未設定", "未設定")
+            # 上限訊息以 ❌ 開頭，直接回給使用者
+            if isinstance(result, str) and result.startswith('❌'):
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(result))
+                return 0
             reply_msgs = [TextSendMessage(f"✓ 已關注 {currency_name}({currency})")]
             my_flex = build_my_currency_flex(uid, user_name)
             if my_flex:
@@ -1842,8 +1863,11 @@ def handle_postback(event):
     action = data.get('action', '')
     stock = data.get('stock', '')
     if action == 'follow' and stock:
-        mongodb.write_my_stock(uid, user_name, stock, '>', '0')
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"✓ 已關注 {stock}"))
+        result = mongodb.write_my_stock(uid, user_name, stock, '>', '0')
+        if isinstance(result, str) and result.startswith('❌'):
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result))
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"✓ 已關注 {stock}"))
     elif action == 'unfollow' and stock:
         mongodb.delete_my_stock(user_name, stock)
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"✓ 已取消關注 {stock}"))
