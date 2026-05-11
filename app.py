@@ -385,6 +385,94 @@ def cron_check_stock():
     except Exception as e:
         return f"Error: {e}", 500
 
+def build_my_stock_flex(uid, user_name):
+    """組裝「我的關注股票」flex，與 build_my_currency_flex 風格一致"""
+    db = mongodb.constructor_stock()
+    collect = db[user_name]
+    dataList = list(collect.find({"userID": uid}))
+    if not dataList:
+        return None
+    rows = []
+    for entry in dataList:
+        code = entry['favorite_stock']
+        condition = entry.get('condition', '>')
+        price_str = entry.get('price', '0')
+        try:
+            ticker = yf.Ticker(f"{code}.TW")
+            hist = ticker.history(period="1d")
+            price_now = float(hist.iloc[-1]['Close']) if not hist.empty else None
+        except:
+            price_now = None
+        stock_name = get_stock_name(code)
+        target = None
+        triggered = False
+        if price_str and price_str != '0':
+            try:
+                target = float(price_str)
+                if price_now is not None:
+                    if condition == '<' and price_now < target:
+                        triggered = True
+                    elif condition == '>' and price_now > target:
+                        triggered = True
+            except ValueError:
+                pass
+        if triggered:
+            status_text = f"✅ 已{'低於' if condition == '<' else '高於'} {target}"
+            status_color = "#1DB446"
+        elif target is None:
+            status_text = "未設定條件"
+            status_color = "#888888"
+        else:
+            status_text = f"條件：{condition}{target}（未達）"
+            status_color = "#FF9800"
+        price_text = f"{price_now:.2f}" if price_now is not None else "無資料"
+        rows.append({
+            "type": "box", "layout": "horizontal", "margin": "md",
+            "contents": [
+                {"type": "text", "text": f"{stock_name}({code})", "size": "sm", "color": "#333333", "flex": 3},
+                {"type": "text", "text": price_text, "size": "sm", "weight": "bold", "align": "end", "flex": 2, "color": "#2196F3"},
+                {"type": "box", "layout": "vertical", "flex": 0, "width": "50px", "height": "25px",
+                 "contents": [{"type": "text", "text": "刪除", "size": "xs", "color": "#FFFFFF", "align": "center", "gravity": "center"}],
+                 "backgroundColor": "#FF5252", "cornerRadius": "12px", "justifyContent": "center", "margin": "md",
+                 "action": {"type": "message", "label": "刪除", "text": f"刪除{code}"}}
+            ]
+        })
+        rows.append({"type": "text", "text": f"  {status_text}", "size": "xxs", "color": status_color, "margin": "sm"})
+    return FlexSendMessage(
+        alt_text="我的關注股票清單",
+        contents={
+            "type": "bubble",
+            "header": {
+                "type": "box", "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": "📈 我的關注股票", "weight": "bold", "size": "lg", "color": "#1DB446"},
+                    {"type": "text", "text": f"共 {len(dataList)} 檔（上限 {mongodb.MAX_STOCKS_PER_USER}）", "size": "xs", "color": "#888888", "margin": "sm"}
+                ], "paddingAll": "15px"
+            },
+            "body": {
+                "type": "box", "layout": "vertical",
+                "contents": rows,
+                "paddingAll": "15px"
+            },
+            "footer": {
+                "type": "box", "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "box", "layout": "horizontal",
+                        "contents": [
+                            {"type": "button", "style": "secondary", "height": "sm",
+                             "action": {"type": "message", "label": "檢查條件", "text": "股價提醒"}},
+                            {"type": "button", "style": "secondary", "height": "sm", "color": "#FFCCCC",
+                             "action": {"type": "message", "label": "清空全部", "text": "清空股票"}}
+                        ], "spacing": "sm"
+                    },
+                    {"type": "button", "style": "link", "height": "sm",
+                     "action": {"type": "message", "label": "↩ 返回股價查詢", "text": "股價查詢"}}
+                ], "paddingAll": "10px", "spacing": "sm"
+            }
+        }
+    )
+
 @app.route('/cron/oil_price')
 def cron_oil_price():
     """排程推播下週油價預測給所有追蹤者；同一天重複觸發不會重複推播"""
@@ -1317,11 +1405,14 @@ def handle_message(event):
         return 0
     # 查詢股票篩選條件清單
     if re.match('股票清單',msg):
-        content = mongodb.show_stock_setting(user_name, uid)
-        line_bot_api.reply_message(event.reply_token, [
-            TextSendMessage('稍等一下, 股票查詢中...'),
-            TextSendMessage(content)
-        ])
+        my_flex = build_my_stock_flex(uid, user_name)
+        if my_flex:
+            line_bot_api.reply_message(event.reply_token, [
+                TextSendMessage('稍等一下, 股票查詢中...'),
+                my_flex
+            ])
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage("您的股票清單為空，請先透過「關注」按鈕加入"))
         return 0
     if re.match('股價查詢|查股票|查股價', msg):
         popular_stocks = [
@@ -1557,8 +1648,17 @@ def handle_message(event):
         return 0
     # 刪除存在資料庫裡面的股票
     if re.match(r'刪除[0-9]{4,6}',msg):
-        content = mongodb.delete_my_stock(user_name, msg[2:])
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(content))
+        stock_code = msg[2:]
+        stock_name = get_stock_name(stock_code)
+        mongodb.delete_my_stock(user_name, stock_code)
+        my_flex = build_my_stock_flex(uid, user_name)
+        if my_flex:
+            line_bot_api.reply_message(event.reply_token, [
+                TextSendMessage(f"✓ 已刪除 {stock_name}({stock_code})"),
+                my_flex
+            ])
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage("股票清單已清空"))
         return 0
     # 清空存在資料庫裡面的股票
     if re.match('清空股票',msg):
