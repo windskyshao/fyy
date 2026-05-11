@@ -31,11 +31,27 @@ def get_stock_name(code):
             return info.name
     except:
         pass
-    try:
-        ticker = yf.Ticker(f"{code}.TW")
-        return ticker.info.get('shortName', code)
-    except:
-        return code
+    for suffix in ('.TW', '.TWO'):
+        try:
+            ticker = yf.Ticker(f"{code}{suffix}")
+            name = ticker.info.get('shortName')
+            if name:
+                return name
+        except:
+            pass
+    return code
+
+def get_stock_history(code, period="1d"):
+    """取得股票歷史價，先試上市(.TW)再試上櫃(.TWO)。回傳 hist 或 None"""
+    for suffix in ('.TW', '.TWO'):
+        try:
+            ticker = yf.Ticker(f"{code}{suffix}")
+            hist = ticker.history(period=period)
+            if hist is not None and not hist.empty:
+                return hist
+        except Exception:
+            pass
+    return None
 
 def is_trading_hours():
     """判斷現在是否為台股盤中時段（週一至週五 09:00-13:30 Asia/Taipei）
@@ -331,12 +347,11 @@ def cron_check_stock():
                 notified_before = bool(entry.get('notified', False))
                 if not stock_code:
                     continue
-                # 取得現價
+                # 取得現價（自動 fallback 上櫃 .TWO）
                 price_now = None
                 try:
-                    ticker = yf.Ticker(f"{stock_code}.TW")
-                    hist = ticker.history(period="1d")
-                    if not hist.empty:
+                    hist = get_stock_history(stock_code, "1d")
+                    if hist is not None:
                         price_now = float(hist.iloc[-1]['Close'])
                 except Exception as e:
                     print(f"[cron_stock] Error fetching {stock_code}: {e}")
@@ -398,9 +413,8 @@ def build_my_stock_flex(uid, user_name):
         condition = entry.get('condition', '>')
         price_str = entry.get('price', '0')
         try:
-            ticker = yf.Ticker(f"{code}.TW")
-            hist = ticker.history(period="1d")
-            price_now = float(hist.iloc[-1]['Close']) if not hist.empty else None
+            hist = get_stock_history(code, "1d")
+            price_now = float(hist.iloc[-1]['Close']) if hist is not None else None
         except:
             price_now = None
         stock_name = get_stock_name(code)
@@ -1470,16 +1484,13 @@ def handle_message(event):
         if '@' in text:
             text, search_keyword = text.split('@', 1)
         try:
-            # 重試機制：yfinance 首次查詢有時會失敗
+            # 重試機制：yfinance 首次查詢有時會失敗。helper 內部已 fallback 上櫃
             hist = pd.DataFrame()
             for attempt in range(2):
-                try:
-                    ticker = yf.Ticker(f"{text}.TW")
-                    hist = ticker.history(period="7d")
-                    if hist is not None and not hist.empty:
-                        break
-                except Exception:
-                    pass
+                got = get_stock_history(text, "7d")
+                if got is not None:
+                    hist = got
+                    break
                 if attempt == 0:
                     time.sleep(1)
 
@@ -1768,36 +1779,14 @@ def handle_message(event):
         return 0
     if re.match("股價提醒", msg):
         try:
-            dataList = cache_users_stock()
-            result = ""
-            for user_stocks in dataList:
-                for stock_data in user_stocks:
-                    if stock_data.get('userID') != uid:
-                        continue
-                    stock_code = stock_data['favorite_stock']
-                    condition = stock_data['condition']
-                    price = stock_data['price']
-                    try:
-                        ticker = yf.Ticker(f"{stock_code}.TW")
-                        hist = ticker.history(period="1d")
-                        if not hist.empty:
-                            current_price = f"{hist.iloc[-1]['Close']:.2f}"
-                            result += f"{stock_code} 現價: {current_price}"
-                            if condition == '<' and float(current_price) < float(price):
-                                result += f" >>> 符合 < {price}"
-                            elif condition == '>' and float(current_price) > float(price):
-                                result += f" >>> 符合 > {price}"
-                            else:
-                                result += f" (條件: {condition}{price})"
-                            result += "\n"
-                        else:
-                            result += f"{stock_code} 查無資料\n"
-                    except Exception as e:
-                        result += f"{stock_code} 查詢失敗\n"
-            if result:
-                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result.strip()))
+            my_flex = build_my_stock_flex(uid, user_name)
+            if my_flex:
+                line_bot_api.reply_message(event.reply_token, [
+                    TextSendMessage('稍等一下, 條件檢查中...'),
+                    my_flex
+                ])
             else:
-                line_bot_api.reply_message(event.reply_token, TextSendMessage(text="您的股票清單為空，請先透過「關注」指令新增股票"))
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text="您的股票清單為空，請先透過「關注」按鈕加入"))
         except Exception as e:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"股價查詢發生錯誤: {str(e)}"))
         return 0
