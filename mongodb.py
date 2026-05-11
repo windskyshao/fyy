@@ -105,6 +105,7 @@ def write_my_stock(userID, user_name, stockNumber, condition, target_price):
             "condition": condition,
             "price": target_price,
             "tag": "stock",
+            "notified": False,
             "date_info": datetime.datetime.now()
         })
     return f"{stockNumber}已新增至您的股票清單"
@@ -112,9 +113,19 @@ def write_my_stock(userID, user_name, stockNumber, condition, target_price):
 def update_my_stock(user_name, stockNumber, condition, target_price):
     db=constructor_stock()
     collect = db[user_name]
-    collect.update_many({"favorite_stock": stockNumber}, {'$set': {'condition':condition, "price":target_price}})
+    # 條件變了就重置 notified，讓下次達標時還能發新通知
+    collect.update_many(
+        {"favorite_stock": stockNumber},
+        {'$set': {'condition':condition, "price":target_price, "notified": False}}
+    )
     content = f"股票{stockNumber}更新成功"
     return content
+
+def update_stock_notified(user_name, stockNumber, notified):
+    """更新某筆關注股票的 notified 旗標（cron 用：達標通知後標記，鬆開時清除）"""
+    db = constructor_stock()
+    collect = db[user_name]
+    collect.update_many({"favorite_stock": stockNumber}, {'$set': {'notified': bool(notified)}})
 # --------------------- 秀出使用者的股票條件 ---------------------
 def show_stock_setting(user_name, userID):
     db = constructor_stock()

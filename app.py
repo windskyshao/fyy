@@ -223,9 +223,77 @@ def cron_check_currency():
     except Exception as e:
         return f"Error: {e}", 500
 
+def build_stock_alert_flex(stock_data, new_trigger_count, currently_triggered):
+    """組裝股票通知 flex：列出所有關注股票，區分「剛達標」與「持續達標」"""
+    rows = []
+    for d in stock_data:
+        if d['price_now'] is not None:
+            rate_text = f"{d['price_now']:.2f}"
+        else:
+            rate_text = '無資料'
+        condition = d['condition']
+        target = d['target']
+        if d.get('is_new'):
+            status_text = f"🔔 剛達標！{'低於' if condition == '<' else '高於'} {target}"
+            status_color = "#FF5252"
+            status_weight = "bold"
+        elif d['triggered']:
+            status_text = f"✅ 持續{'低於' if condition == '<' else '高於'} {target}"
+            status_color = "#1DB446"
+            status_weight = "regular"
+        elif target is None:
+            status_text = "未設定條件"
+            status_color = "#888888"
+            status_weight = "regular"
+        else:
+            status_text = f"條件：{condition}{target}（未達）"
+            status_color = "#FF9800"
+            status_weight = "regular"
+        rows.append({
+            "type": "box", "layout": "horizontal", "margin": "lg",
+            "contents": [
+                {"type": "text", "text": f"{d['stock_name']} {d['stock_code']}", "size": "sm", "color": "#333333", "flex": 3},
+                {"type": "text", "text": rate_text, "size": "sm", "weight": "bold", "align": "end", "flex": 2, "color": "#2196F3"},
+            ]
+        })
+        rows.append({"type": "text", "text": status_text, "size": "xxs", "color": status_color, "weight": status_weight, "margin": "sm"})
+    subtitle = f"剛有 {new_trigger_count} 檔達成條件"
+    if currently_triggered > new_trigger_count:
+        subtitle += f"（另有 {currently_triggered - new_trigger_count} 檔持續達標中）"
+    return FlexSendMessage(
+        alt_text=f"📢 股票通知（{new_trigger_count} 檔剛達標）",
+        contents={
+            "type": "bubble",
+            "header": {
+                "type": "box", "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": "📢 股票通知", "weight": "bold", "size": "lg", "color": "#FF5252"},
+                    {"type": "text", "text": subtitle, "size": "xs", "color": "#888888", "margin": "sm", "wrap": True}
+                ], "paddingAll": "15px"
+            },
+            "body": {
+                "type": "box", "layout": "vertical",
+                "contents": rows,
+                "paddingAll": "15px"
+            },
+            "footer": {
+                "type": "box", "layout": "vertical",
+                "contents": [
+                    {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm",
+                     "action": {"type": "message", "label": "查看股票清單", "text": "股票清單"}}
+                ], "paddingAll": "10px"
+            }
+        }
+    )
+
 @app.route('/cron/check_stock')
 def cron_check_stock():
-    """排程自動檢查股票條件並推播通知"""
+    """排程自動檢查股票條件並推播通知
+
+    交叉觸發 + 一次性失效：只在「從未達 → 剛達標」當次推播。
+    達標期間每天檢查但不重複推；條件鬆開（價格跨回）後 notified 重置，
+    下次再達標時又會推一次。
+    """
     try:
         db = mongodb.constructor_stock()
         nameList = db.list_collection_names()
@@ -233,33 +301,69 @@ def cron_check_stock():
         for col_name in nameList:
             collect = db[col_name]
             entries = list(collect.find({"tag": "stock"}))
+            stock_data = []
+            new_trigger_count = 0
+            currently_triggered = 0
+            uid = None
             for entry in entries:
-                uid = entry.get('userID')
+                if uid is None:
+                    uid = entry.get('userID')
                 stock_code = entry.get('favorite_stock')
                 condition = entry.get('condition', '>')
-                price = entry.get('price', '0')
-                if not uid or not stock_code or price == '0':
+                price_str = entry.get('price', '0')
+                notified_before = bool(entry.get('notified', False))
+                if not stock_code:
                     continue
+                # 取得現價
+                price_now = None
                 try:
                     ticker = yf.Ticker(f"{stock_code}.TW")
                     hist = ticker.history(period="1d")
-                    if hist.empty:
-                        continue
-                    current = hist.iloc[-1]['Close']
-                    target = float(price)
-                    stock_name = get_stock_name(stock_code)
-                    triggered = False
-                    if condition == '<' and current < target:
-                        triggered = True
-                    elif condition == '>' and current > target:
-                        triggered = True
-                    if triggered:
-                        arrow = "低於" if condition == '<' else "高於"
-                        msg = f"📢 股票通知\n{stock_name}({stock_code}) 現價：{current:.2f}\n已{arrow}您設定的 {target}！"
-                        line_bot_api.push_message(uid, TextSendMessage(text=msg))
-                        notified += 1
+                    if not hist.empty:
+                        price_now = float(hist.iloc[-1]['Close'])
                 except Exception as e:
-                    print(f"[cron_stock] Error checking {stock_code}: {e}")
+                    print(f"[cron_stock] Error fetching {stock_code}: {e}")
+                # 計算 target / triggered
+                target = None
+                triggered = False
+                if price_str and price_str != '0':
+                    try:
+                        target = float(price_str)
+                        if price_now is not None:
+                            if condition == '<' and price_now < target:
+                                triggered = True
+                            elif condition == '>' and price_now > target:
+                                triggered = True
+                    except ValueError:
+                        pass
+                # 同步 notified 狀態
+                if triggered != notified_before:
+                    try:
+                        mongodb.update_stock_notified(col_name, stock_code, triggered)
+                    except Exception as e:
+                        print(f"[cron_stock] Update notified failed {col_name}/{stock_code}: {e}")
+                is_new_trigger = triggered and not notified_before
+                if triggered:
+                    currently_triggered += 1
+                if is_new_trigger:
+                    new_trigger_count += 1
+                stock_data.append({
+                    'stock_code': stock_code,
+                    'stock_name': get_stock_name(stock_code),
+                    'price_now': price_now,
+                    'condition': condition,
+                    'target': target,
+                    'triggered': triggered,
+                    'is_new': is_new_trigger,
+                })
+            if not uid or new_trigger_count == 0 or not stock_data:
+                continue
+            try:
+                flex = build_stock_alert_flex(stock_data, new_trigger_count, currently_triggered)
+                line_bot_api.push_message(uid, flex)
+                notified += 1
+            except Exception as e:
+                print(f"[cron_stock] Error pushing alert to {uid}: {e}")
         return f"OK, notified={notified}", 200
     except Exception as e:
         return f"Error: {e}", 500
