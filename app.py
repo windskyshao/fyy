@@ -400,8 +400,11 @@ def cron_check_stock():
     except Exception as e:
         return f"Error: {e}", 500
 
-def build_my_stock_flex(uid, user_name):
-    """組裝「我的關注股票」flex，與 build_my_currency_flex 風格一致"""
+def build_my_stock_flex(uid, user_name, title=None, subtitle=None):
+    """組裝「我的關注股票」flex，與 build_my_currency_flex 風格一致
+
+    title/subtitle 可選，用於每日報告等場景客製標題。
+    """
     db = mongodb.constructor_stock()
     collect = db[user_name]
     dataList = list(collect.find({"userID": uid}))
@@ -459,8 +462,8 @@ def build_my_stock_flex(uid, user_name):
             "header": {
                 "type": "box", "layout": "vertical",
                 "contents": [
-                    {"type": "text", "text": "📈 我的關注股票", "weight": "bold", "size": "lg", "color": "#1DB446"},
-                    {"type": "text", "text": f"共 {len(dataList)} 檔（上限 {mongodb.MAX_STOCKS_PER_USER}）", "size": "xs", "color": "#888888", "margin": "sm"}
+                    {"type": "text", "text": title or "📈 我的關注股票", "weight": "bold", "size": "lg", "color": "#1DB446"},
+                    {"type": "text", "text": subtitle or f"共 {len(dataList)} 檔（上限 {mongodb.MAX_STOCKS_PER_USER}）", "size": "xs", "color": "#888888", "margin": "sm", "wrap": True}
                 ], "paddingAll": "15px"
             },
             "body": {
@@ -486,6 +489,43 @@ def build_my_stock_flex(uid, user_name):
             }
         }
     )
+
+@app.route('/cron/daily_stock_report')
+def cron_daily_stock_report():
+    """每個交易日早上推播一份關注股報告，列出所有關注的股票現況。
+    無論是否達標都會推；冪等保護避免同日重複推。
+    """
+    now_tw = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+    # 週末不推（沒新資料）
+    if now_tw.weekday() >= 5:
+        return "OK, skipped (weekend)", 200
+    today_str = now_tw.strftime('%Y-%m-%d')
+    if mongodb.get_cron_last_run('daily_stock_report') == today_str:
+        return f"OK, already sent today ({today_str})", 200
+    try:
+        db = mongodb.constructor_stock()
+        sent = 0
+        subtitle = f"{now_tw.strftime('%m/%d')} 早安！您的關注股現況"
+        for col_name in db.list_collection_names():
+            collect = db[col_name]
+            sample = collect.find_one({"tag": "stock"})
+            if not sample:
+                continue
+            uid = sample.get('userID')
+            if not uid:
+                continue
+            flex = build_my_stock_flex(uid, col_name, title="📈 早安股報告", subtitle=subtitle)
+            if not flex:
+                continue
+            try:
+                line_bot_api.push_message(uid, flex)
+                sent += 1
+            except Exception as e:
+                print(f"[daily_stock_report] Push failed for {uid}: {e}")
+        mongodb.set_cron_last_run('daily_stock_report', today_str)
+        return f"OK, sent={sent}", 200
+    except Exception as e:
+        return f"Error: {e}", 500
 
 @app.route('/cron/oil_price')
 def cron_oil_price():
