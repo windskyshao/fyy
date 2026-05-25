@@ -87,6 +87,19 @@ def build_stock_detail_flex(text, user_name, search_keyword=None):
             ]
         })
     is_followed = mongodb.is_stock_followed(user_name, text)
+    # 查使用者目前對這檔的條件設定，在 footer 顯示
+    current_condition_text = None
+    try:
+        db = mongodb.constructor_stock()
+        entry = db[user_name].find_one({"favorite_stock": text})
+        if entry:
+            cond = entry.get('condition', '')
+            tgt = entry.get('price', '0')
+            if tgt and tgt != '0' and cond in ('<', '>'):
+                cond_word = '低於' if cond == '<' else '高於'
+                current_condition_text = f"📌 目前條件：{cond_word} {tgt}"
+    except Exception:
+        pass
     stock_quick_reply = None
     if search_keyword:
         other_results = [(c, n) for c, n in search_stock_by_name(search_keyword) if c != text]
@@ -178,8 +191,10 @@ def build_stock_detail_flex(text, user_name, search_keyword=None):
             },
             "footer": {
                 "type": "box", "layout": "vertical",
-                "contents": [
-                    {"type": "text", "text": "📌 通知條件", "size": "xs", "color": "#888888", "align": "center", "weight": "bold"},
+                "contents": ([
+                    {"type": "text", "text": current_condition_text, "size": "sm", "color": "#1DB446", "align": "center", "weight": "bold", "margin": "sm"}
+                ] if current_condition_text else []) + [
+                    {"type": "text", "text": "📌 設定通知條件", "size": "xs", "color": "#888888", "align": "center", "weight": "bold", "margin": "md"},
                     {
                         "type": "box", "layout": "horizontal",
                         "contents": [
@@ -1648,7 +1663,16 @@ def handle_message(event):
         m = re.match(r'關注([0-9]{4,6})([<>])(.*)', msg)
         stockNumber = m.group(1)
         content = mongodb.write_my_stock(uid, user_name, stockNumber, m.group(2), m.group(3))
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(content))
+        # 上限訊息以 ❌ 開頭，只回文字
+        if isinstance(content, str) and content.startswith('❌'):
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(content))
+            return 0
+        # 一般情況：回文字 + 重發詳情頁 flex，讓使用者立刻看到「目前條件」更新
+        msgs = [TextSendMessage(content)]
+        detail = build_stock_detail_flex(stockNumber, user_name)
+        if detail is not None:
+            msgs.append(detail)
+        line_bot_api.reply_message(event.reply_token, msgs)
         return 0
     if re.match(r'自訂股條[0-9]{4,6}[<>]', msg):
         m = re.match(r'自訂股條([0-9]{4,6})([<>])', msg)
