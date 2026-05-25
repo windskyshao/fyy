@@ -54,17 +54,17 @@ def get_stock_history(code, period="1d"):
     return None
 
 def is_trading_hours():
-    """判斷現在是否為台股盤中時段（週一至週五 09:00-13:30 Asia/Taipei）
+    """判斷現在是否為台股盤中時段（週一至週五 09:00-14:00 Asia/Taipei）
 
-    Render 在 UTC 跑，台灣沒有日光節約時間，所以固定 +8 即可。
-    沒處理盤中休市的國定假日，假日盤資料源回的就是前一交易日，
-    cron 雖然會跑但不會誤觸發。
+    台股正規盤 9:00-13:30，這裡上界放寬到 14:00 給 30 分鐘緩衝，
+    讓設在 13:35 / 13:45 的 cron 也能正常執行（盤後幾分鐘的價格與收盤相同）。
+    Render 在 UTC 跑，台灣沒有日光節約時間，固定 +8 即可。
     """
     now_tw = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
     if now_tw.weekday() >= 5:  # 5=週六, 6=週日
         return False
     minutes = now_tw.hour * 60 + now_tw.minute
-    return 9 * 60 <= minutes <= 13 * 60 + 30
+    return 9 * 60 <= minutes <= 14 * 60
 
 def get_sell_rate(currency):
     """取得賣出匯率，優先即期、fallback 到現金（韓元/泰銖等弱勢貨幣無即期資料時使用）
@@ -574,6 +574,21 @@ def cron_oil_price():
 def keep_alive():
     """保持服務清醒用，供 cron-job.org 等監控服務定期 ping"""
     return "alive", 200
+
+@app.route('/cron/status')
+def cron_status():
+    """診斷端點：顯示伺服器時間、盤中判斷、各 cron 上次成功執行日"""
+    now_tw = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+    keys = ['oil_price', 'daily_stock_report']
+    last_runs = {k: mongodb.get_cron_last_run(k) for k in keys}
+    weekday_zh = ['一', '二', '三', '四', '五', '六', '日']
+    info = {
+        "現在時間 (台北)": now_tw.strftime('%Y-%m-%d %H:%M:%S') + f" 週{weekday_zh[now_tw.weekday()]}",
+        "是否盤中時段": is_trading_hours(),
+        "上次推播": last_runs,
+    }
+    lines = [f"{k}: {v}" for k, v in info.items()]
+    return "\n".join(lines), 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 @app.route('/register_me/<user_id>')
 def register_me(user_id):
