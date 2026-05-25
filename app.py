@@ -53,6 +53,180 @@ def get_stock_history(code, period="1d"):
             pass
     return None
 
+def build_stock_detail_flex(text, user_name, search_keyword=None):
+    """組裝股票詳情 flex，含關注按鈕與設定條件按鈕。
+    text: 股票代號（4-6 位數字）
+    回傳 FlexSendMessage 或 None（查無資料）
+    """
+    hist = pd.DataFrame()
+    for attempt in range(2):
+        got = get_stock_history(text, "7d")
+        if got is not None:
+            hist = got
+            break
+        if attempt == 0:
+            time.sleep(1)
+    if hist.empty:
+        return None
+    latest = hist.iloc[-1]
+    prev_close = hist.iloc[-2]["Close"] if len(hist) >= 2 else latest["Open"]
+    change = latest["Close"] - prev_close
+    change_pct = (change / prev_close) * 100 if prev_close != 0 else 0
+    arrow = "▲" if change >= 0 else "▼"
+    change_color = "#FF3B30" if change >= 0 else "#34C759"
+    stock_name = get_stock_name(text)
+    current_price = f"{latest['Close']:.2f}"
+    history_items = []
+    for date, row in hist.iloc[::-1].iterrows():
+        history_items.append({
+            "type": "box", "layout": "horizontal",
+            "contents": [
+                {"type": "text", "text": date.strftime("%m/%d"), "size": "sm", "color": "#888888", "flex": 3},
+                {"type": "text", "text": f"{row['Close']:.2f}", "size": "sm", "align": "end", "flex": 3},
+                {"type": "text", "text": f"{int(row['Volume']):,}", "size": "xxs", "align": "end", "color": "#aaaaaa", "flex": 4}
+            ]
+        })
+    is_followed = mongodb.is_stock_followed(user_name, text)
+    stock_quick_reply = None
+    if search_keyword:
+        other_results = [(c, n) for c, n in search_stock_by_name(search_keyword) if c != text]
+        if other_results:
+            stock_quick_reply = QuickReply(items=[
+                QuickReplyButton(action=MessageAction(label=f"{n} {c}", text=f"#{c}@{search_keyword}"))
+                for c, n in other_results[:8]
+            ])
+    return FlexSendMessage(
+        alt_text=f"{text} 股價查詢",
+        contents={
+            "type": "bubble",
+            "header": {
+                "type": "box", "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "box", "layout": "horizontal",
+                        "contents": [
+                            {"type": "text", "text": stock_name, "weight": "bold", "size": "xl", "color": "#333333", "flex": 0},
+                            {"type": "text", "text": text, "size": "md", "color": "#888888", "gravity": "center", "flex": 1, "margin": "md"},
+                            {"type": "box", "layout": "vertical", "flex": 0, "width": "70px", "height": "30px",
+                             "contents": [
+                                 {"type": "text", "align": "center", "gravity": "center", "size": "xs", "weight": "bold",
+                                  "text": "★已關注" if is_followed else "☆關注",
+                                  "color": "#FFFFFF" if is_followed else "#888888"}
+                             ],
+                             "backgroundColor": "#FF5252" if is_followed else "#EEEEEE",
+                             "cornerRadius": "15px", "justifyContent": "center", "alignItems": "center",
+                             "action": {
+                                 "type": "postback",
+                                 "label": "★已關注" if is_followed else "☆關注",
+                                 "data": f"action=unfollow&stock={text}" if is_followed else f"action=follow&stock={text}"
+                             }}
+                        ]
+                    },
+                    {
+                        "type": "box", "layout": "horizontal", "margin": "md",
+                        "contents": [
+                            {"type": "text", "text": current_price, "size": "xxl", "weight": "bold", "color": change_color},
+                            {
+                                "type": "box", "layout": "vertical", "margin": "md",
+                                "contents": [
+                                    {"type": "text", "text": f"{arrow} {abs(change):.2f} ({abs(change_pct):.2f}%)", "size": "sm", "color": change_color, "align": "end"}
+                                ],
+                                "justifyContent": "center"
+                            }
+                        ]
+                    }
+                ],
+                "paddingAll": "15px",
+                "backgroundColor": "#FAFAFA"
+            },
+            "body": {
+                "type": "box", "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "box", "layout": "horizontal",
+                        "contents": [
+                            {"type": "box", "layout": "vertical", "contents": [
+                                {"type": "text", "text": "開盤", "size": "xs", "color": "#888888"},
+                                {"type": "text", "text": f"{latest['Open']:.2f}", "size": "sm", "weight": "bold"}
+                            ], "flex": 1},
+                            {"type": "box", "layout": "vertical", "contents": [
+                                {"type": "text", "text": "最高", "size": "xs", "color": "#888888"},
+                                {"type": "text", "text": f"{latest['High']:.2f}", "size": "sm", "weight": "bold", "color": "#FF3B30"}
+                            ], "flex": 1},
+                            {"type": "box", "layout": "vertical", "contents": [
+                                {"type": "text", "text": "最低", "size": "xs", "color": "#888888"},
+                                {"type": "text", "text": f"{latest['Low']:.2f}", "size": "sm", "weight": "bold", "color": "#34C759"}
+                            ], "flex": 1},
+                            {"type": "box", "layout": "vertical", "contents": [
+                                {"type": "text", "text": "成交量", "size": "xs", "color": "#888888"},
+                                {"type": "text", "text": f"{int(latest['Volume']):,}", "size": "sm", "weight": "bold"}
+                            ], "flex": 1}
+                        ]
+                    },
+                    {"type": "separator", "margin": "lg"},
+                    {
+                        "type": "box", "layout": "horizontal", "margin": "lg",
+                        "contents": [
+                            {"type": "text", "text": "日期", "size": "xs", "color": "#888888", "weight": "bold", "flex": 3},
+                            {"type": "text", "text": "收盤價", "size": "xs", "color": "#888888", "weight": "bold", "align": "end", "flex": 3},
+                            {"type": "text", "text": "成交量", "size": "xs", "color": "#888888", "weight": "bold", "align": "end", "flex": 4}
+                        ]
+                    }
+                ] + history_items,
+                "paddingAll": "15px",
+                "spacing": "sm"
+            },
+            "footer": {
+                "type": "box", "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": "📌 通知條件", "size": "xs", "color": "#888888", "align": "center", "weight": "bold"},
+                    {
+                        "type": "box", "layout": "horizontal",
+                        "contents": [
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": f"📈 高於 {current_price}", "text": f"關注{text}>{current_price}"}},
+                            {"type": "button", "style": "secondary", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": f"📉 低於 {current_price}", "text": f"關注{text}<{current_price}"}}
+                        ], "spacing": "sm"
+                    },
+                    {
+                        "type": "box", "layout": "horizontal",
+                        "contents": [
+                            {"type": "button", "style": "link", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "✏️ 自訂高於", "text": f"自訂股條{text}>"}},
+                            {"type": "button", "style": "link", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "✏️ 自訂低於", "text": f"自訂股條{text}<"}}
+                        ], "spacing": "sm"
+                    },
+                    {"type": "separator", "margin": "sm"},
+                    {"type": "text", "text": "📊 K線圖", "size": "xs", "color": "#888888", "align": "center", "weight": "bold", "margin": "sm"},
+                    {
+                        "type": "box", "layout": "horizontal",
+                        "contents": [
+                            {"type": "button", "style": "primary", "color": "#1DB446", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "3個月", "text": f"@K{text} 3m"}},
+                            {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "半年", "text": f"@K{text} 6m"}}
+                        ], "spacing": "sm"
+                    },
+                    {
+                        "type": "box", "layout": "horizontal",
+                        "contents": [
+                            {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "1年", "text": f"@K{text} 1y"}},
+                            {"type": "button", "style": "primary", "color": "#9C27B0", "height": "sm", "flex": 1,
+                             "action": {"type": "message", "label": "2年", "text": f"@K{text} 2y"}}
+                        ], "spacing": "sm"
+                    },
+                    {"type": "button", "style": "link", "height": "sm",
+                     "action": {"type": "message", "label": "↩ 返回股價查詢", "text": "股價查詢"}}
+                ],
+                "spacing": "sm", "paddingAll": "10px"
+            }
+        },
+        quick_reply=stock_quick_reply
+    )
+
 def is_trading_hours():
     """判斷現在是否為台股盤中時段（週一至週五 09:00-14:00 Asia/Taipei）
 
@@ -895,7 +1069,7 @@ def handle_message(event):
         ])
         return 0
 
-    # 用戶輸入數字 → 接續自訂換匯或自訂關注外幣（優先於股票查詢）
+    # 用戶輸入數字 → 接續自訂換匯/關注外幣/關注股票（優先於股票查詢）
     if uid in mat_d and re.match(r'^[\d,.]+$', msg):
         state = mat_d[uid]
         amount_str = msg.replace(',', '')
@@ -903,6 +1077,10 @@ def handle_message(event):
             float(amount_str)
             if state.startswith('換匯'):
                 msg = f"{state}/{amount_str}".upper()
+                del mat_d[uid]
+            elif state.startswith('關注股'):
+                # 例：state='關注股1784<' → msg='關注1784<31.5'
+                msg = f"關注{state[3:]}{amount_str}"
                 del mat_d[uid]
             elif state.startswith('關注'):
                 # 例：state='關注USD<' → msg='新增外幣USD<31.5'
@@ -1472,6 +1650,24 @@ def handle_message(event):
         content = mongodb.write_my_stock(uid, user_name, stockNumber, m.group(2), m.group(3))
         line_bot_api.reply_message(event.reply_token, TextSendMessage(content))
         return 0
+    if re.match(r'自訂股條[0-9]{4,6}[<>]', msg):
+        m = re.match(r'自訂股條([0-9]{4,6})([<>])', msg)
+        stock_code = m.group(1)
+        op = m.group(2)
+        stock_name = get_stock_name(stock_code)
+        mat_d[uid] = f"關注股{stock_code}{op}"
+        cond_word = "低於" if op == '<' else "高於"
+        hint_buttons = [
+            QuickReplyButton(action=MessageAction(label="↩ 返回詳情", text=f"#{stock_code}")),
+        ]
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=f"請輸入 {stock_name}({stock_code}) 要{cond_word}多少時通知（數字），例如 100",
+                quick_reply=QuickReply(items=hint_buttons)
+            )
+        )
+        return 0
     # 查詢股票篩選條件清單
     if re.match('股票清單',msg):
         my_flex = build_my_stock_flex(uid, user_name)
@@ -1539,175 +1735,13 @@ def handle_message(event):
         if '@' in text:
             text, search_keyword = text.split('@', 1)
         try:
-            # 重試機制：yfinance 首次查詢有時會失敗。helper 內部已 fallback 上櫃
-            hist = pd.DataFrame()
-            for attempt in range(2):
-                got = get_stock_history(text, "7d")
-                if got is not None:
-                    hist = got
-                    break
-                if attempt == 0:
-                    time.sleep(1)
-
-            if hist.empty:
+            stock_flex = build_stock_detail_flex(text, user_name, search_keyword)
+            if stock_flex is None:
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(text=f'股票 {text} 查無資料，請確認代號是否正確')
                 )
                 return 0
-
-            latest = hist.iloc[-1]
-            prev_close = hist.iloc[-2]["Close"] if len(hist) >= 2 else latest["Open"]
-            change = latest["Close"] - prev_close
-            change_pct = (change / prev_close) * 100 if prev_close != 0 else 0
-            arrow = "▲" if change >= 0 else "▼"
-            change_color = "#FF3B30" if change >= 0 else "#34C759"
-            stock_name = get_stock_name(text)
-
-            history_items = []
-            for date, row in hist.iloc[::-1].iterrows():
-                history_items.append({
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": date.strftime("%m/%d"), "size": "sm", "color": "#888888", "flex": 3},
-                        {"type": "text", "text": f"{row['Close']:.2f}", "size": "sm", "align": "end", "flex": 3},
-                        {"type": "text", "text": f"{int(row['Volume']):,}", "size": "xxs", "align": "end", "color": "#aaaaaa", "flex": 4}
-                    ]
-                })
-
-            is_followed = mongodb.is_stock_followed(user_name, text)
-            # 若從中文搜尋點進來，附上其他搜尋結果的快速回覆，讓使用者不用重新搜尋
-            stock_quick_reply = None
-            if search_keyword:
-                other_results = [(c, n) for c, n in search_stock_by_name(search_keyword) if c != text]
-                if other_results:
-                    stock_quick_reply = QuickReply(items=[
-                        QuickReplyButton(action=MessageAction(label=f"{n} {c}", text=f"#{c}@{search_keyword}"))
-                        for c, n in other_results[:8]
-                    ])
-            stock_flex = FlexSendMessage(
-                alt_text=f"{text} 股價查詢",
-                contents={
-                    "type": "bubble",
-                    "header": {
-                        "type": "box", "layout": "vertical",
-                        "contents": [
-                            {
-                                "type": "box", "layout": "horizontal",
-                                "contents": [
-                                    {"type": "text", "text": stock_name, "weight": "bold", "size": "xl", "color": "#333333", "flex": 0},
-                                    {"type": "text", "text": text, "size": "md", "color": "#888888", "gravity": "center", "flex": 1, "margin": "md"},
-                                    {"type": "box", "layout": "vertical", "flex": 0, "width": "70px", "height": "30px",
-                                     "contents": [
-                                         {"type": "text", "align": "center", "gravity": "center", "size": "xs", "weight": "bold",
-                                          "text": "★已關注" if is_followed else "☆關注",
-                                          "color": "#FFFFFF" if is_followed else "#888888"}
-                                     ],
-                                     "backgroundColor": "#FF5252" if is_followed else "#EEEEEE",
-                                     "cornerRadius": "15px", "justifyContent": "center", "alignItems": "center",
-                                     "action": {
-                                         "type": "postback",
-                                         "label": "★已關注" if is_followed else "☆關注",
-                                         "data": f"action=unfollow&stock={text}" if is_followed else f"action=follow&stock={text}"
-                                     }}
-                                ]
-                            },
-                            {
-                                "type": "box", "layout": "horizontal", "margin": "md",
-                                "contents": [
-                                    {"type": "text", "text": f"{latest['Close']:.2f}", "size": "xxl", "weight": "bold", "color": change_color},
-                                    {
-                                        "type": "box", "layout": "vertical", "margin": "md",
-                                        "contents": [
-                                            {"type": "text", "text": f"{arrow} {abs(change):.2f} ({abs(change_pct):.2f}%)", "size": "sm", "color": change_color, "align": "end"}
-                                        ],
-                                        "justifyContent": "center"
-                                    }
-                                ]
-                            }
-                        ],
-                        "paddingAll": "15px",
-                        "backgroundColor": "#FAFAFA"
-                    },
-                    "body": {
-                        "type": "box", "layout": "vertical",
-                        "contents": [
-                            {
-                                "type": "box", "layout": "horizontal",
-                                "contents": [
-                                    {
-                                        "type": "box", "layout": "vertical",
-                                        "contents": [
-                                            {"type": "text", "text": "開盤", "size": "xs", "color": "#888888"},
-                                            {"type": "text", "text": f"{latest['Open']:.2f}", "size": "sm", "weight": "bold"}
-                                        ], "flex": 1
-                                    },
-                                    {
-                                        "type": "box", "layout": "vertical",
-                                        "contents": [
-                                            {"type": "text", "text": "最高", "size": "xs", "color": "#888888"},
-                                            {"type": "text", "text": f"{latest['High']:.2f}", "size": "sm", "weight": "bold", "color": "#FF3B30"}
-                                        ], "flex": 1
-                                    },
-                                    {
-                                        "type": "box", "layout": "vertical",
-                                        "contents": [
-                                            {"type": "text", "text": "最低", "size": "xs", "color": "#888888"},
-                                            {"type": "text", "text": f"{latest['Low']:.2f}", "size": "sm", "weight": "bold", "color": "#34C759"}
-                                        ], "flex": 1
-                                    },
-                                    {
-                                        "type": "box", "layout": "vertical",
-                                        "contents": [
-                                            {"type": "text", "text": "成交量", "size": "xs", "color": "#888888"},
-                                            {"type": "text", "text": f"{int(latest['Volume']):,}", "size": "sm", "weight": "bold"}
-                                        ], "flex": 1
-                                    }
-                                ]
-                            },
-                            {"type": "separator", "margin": "lg"},
-                            {
-                                "type": "box", "layout": "horizontal", "margin": "lg",
-                                "contents": [
-                                    {"type": "text", "text": "日期", "size": "xs", "color": "#888888", "weight": "bold", "flex": 3},
-                                    {"type": "text", "text": "收盤價", "size": "xs", "color": "#888888", "weight": "bold", "align": "end", "flex": 3},
-                                    {"type": "text", "text": "成交量", "size": "xs", "color": "#888888", "weight": "bold", "align": "end", "flex": 4}
-                                ]
-                            }
-                        ] + history_items,
-                        "paddingAll": "15px",
-                        "spacing": "sm"
-                    },
-                    "footer": {
-                        "type": "box", "layout": "vertical",
-                        "contents": [
-                            {"type": "text", "text": "K線圖", "size": "xs", "color": "#888888", "align": "center", "weight": "bold"},
-                            {
-                                "type": "box", "layout": "horizontal",
-                                "contents": [
-                                    {"type": "button", "style": "primary", "color": "#1DB446", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "3個月", "text": f"@K{text} 3m"}},
-                                    {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "半年", "text": f"@K{text} 6m"}}
-                                ], "spacing": "sm"
-                            },
-                            {
-                                "type": "box", "layout": "horizontal",
-                                "contents": [
-                                    {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "1年", "text": f"@K{text} 1y"}},
-                                    {"type": "button", "style": "primary", "color": "#9C27B0", "height": "sm", "flex": 1,
-                                     "action": {"type": "message", "label": "2年", "text": f"@K{text} 2y"}}
-                                ], "spacing": "sm"
-                            },
-                            {"type": "button", "style": "link", "height": "sm",
-                             "action": {"type": "message", "label": "↩ 返回股價查詢", "text": "股價查詢"}}
-                        ],
-                        "spacing": "sm", "paddingAll": "10px"
-                    }
-                },
-                quick_reply=stock_quick_reply
-            )
             line_bot_api.reply_message(event.reply_token, stock_flex)
         except Exception as e:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f'股票查詢發生錯誤: {str(e)}'))
@@ -2011,10 +2045,19 @@ def handle_postback(event):
         if isinstance(result, str) and result.startswith('❌'):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result))
         else:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"✓ 已關注 {stock}"))
+            # 重新組詳情頁 flex，按鈕狀態會變成「★已關注」
+            msgs = [TextSendMessage(text=f"✓ 已關注 {stock}")]
+            detail = build_stock_detail_flex(stock, user_name)
+            if detail is not None:
+                msgs.append(detail)
+            line_bot_api.reply_message(event.reply_token, msgs)
     elif action == 'unfollow' and stock:
         mongodb.delete_my_stock(user_name, stock)
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"✓ 已取消關注 {stock}"))
+        msgs = [TextSendMessage(text=f"✓ 已取消關注 {stock}")]
+        detail = build_stock_detail_flex(stock, user_name)
+        if detail is not None:
+            msgs.append(detail)
+        line_bot_api.reply_message(event.reply_token, msgs)
 
 @handler.add(FollowEvent)
 def handle_follow(event):
