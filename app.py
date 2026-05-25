@@ -1073,9 +1073,10 @@ def handle_message(event):
 
     # 管理員查推播用量
     if original_msg in ('用量', '額度', '配額'):
-        admin_uid = os.environ.get('ADMIN_UID', '')
-        if not admin_uid or uid != admin_uid:
-            return 0  # 非管理員：靜默不回，避免洩漏
+        # 管理員白名單；若想多加管理員直接附在 tuple 內即可
+        ADMIN_UIDS = ('U60ff9aa248221639d7717bf54d1db609',)
+        if uid not in ADMIN_UIDS:
+            return 0  # 非管理員：靜默不回，避免洩漏 bot 額度資訊
         try:
             headers = {'Authorization': f'Bearer {access_token}'}
             quota = requests.get('https://api.line.me/v2/bot/message/quota', headers=headers, timeout=8).json()
