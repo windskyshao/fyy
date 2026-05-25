@@ -1063,6 +1063,77 @@ def handle_message(event):
     uid = profile.user_id #使用者ID
     user_name = profile.display_name #使用者名稱
 
+    # 取得自己的 LINE userID（任何人可用，方便取得 ID 給管理員設定 ADMIN_UID）
+    if original_msg in ('我的id', '我的ID', '我的Id'):
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=f"您的 LINE userID：\n{uid}\n\n（請完整複製，包含開頭的 U）")
+        )
+        return 0
+
+    # 管理員查推播用量
+    if original_msg in ('用量', '額度', '配額'):
+        admin_uid = os.environ.get('ADMIN_UID', '')
+        if not admin_uid or uid != admin_uid:
+            return 0  # 非管理員：靜默不回，避免洩漏
+        try:
+            headers = {'Authorization': f'Bearer {access_token}'}
+            quota = requests.get('https://api.line.me/v2/bot/message/quota', headers=headers, timeout=8).json()
+            usage = requests.get('https://api.line.me/v2/bot/message/quota/consumption', headers=headers, timeout=8).json()
+            total = int(quota.get('value', 0)) if quota.get('type') == 'limited' else 0
+            used = int(usage.get('totalUsage', 0))
+            remaining = total - used if total else None
+            pct = (used / total * 100) if total else 0
+            # 進度條 20 格
+            filled = int(pct / 5)
+            bar = '█' * filled + '░' * (20 - filled)
+            now_tw = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+            # 預估月底用量（線性外推）
+            day = now_tw.day
+            from calendar import monthrange
+            days_in_month = monthrange(now_tw.year, now_tw.month)[1]
+            projected = int(used / day * days_in_month) if day else used
+            color = "#1DB446" if pct < 70 else ("#FF9800" if pct < 90 else "#FF5252")
+            flex = FlexSendMessage(
+                alt_text=f"推播用量 {used}/{total}",
+                contents={
+                    "type": "bubble",
+                    "header": {
+                        "type": "box", "layout": "vertical",
+                        "contents": [
+                            {"type": "text", "text": "📊 LINE 推播用量", "weight": "bold", "size": "lg", "color": color},
+                            {"type": "text", "text": now_tw.strftime('%Y-%m 第 %d 天'), "size": "xs", "color": "#888888", "margin": "sm"}
+                        ], "paddingAll": "15px"
+                    },
+                    "body": {
+                        "type": "box", "layout": "vertical", "spacing": "md",
+                        "contents": [
+                            {"type": "text", "text": f"{used} / {total if total else '∞'}", "weight": "bold", "size": "xxl", "align": "center", "color": color},
+                            {"type": "text", "text": f"已用 {pct:.1f}%", "size": "sm", "align": "center", "color": "#888888"},
+                            {"type": "text", "text": bar, "size": "xs", "align": "center", "color": color},
+                            {"type": "separator", "margin": "md"},
+                            {"type": "box", "layout": "horizontal", "contents": [
+                                {"type": "text", "text": "剩餘額度", "size": "sm", "color": "#555555", "flex": 2},
+                                {"type": "text", "text": f"{remaining}" if remaining is not None else "∞", "size": "sm", "weight": "bold", "align": "end", "flex": 2}
+                            ]},
+                            {"type": "box", "layout": "horizontal", "contents": [
+                                {"type": "text", "text": "月底預估", "size": "sm", "color": "#555555", "flex": 2},
+                                {"type": "text", "text": f"{projected}", "size": "sm", "weight": "bold", "align": "end", "flex": 2,
+                                 "color": "#FF5252" if total and projected > total else "#333333"}
+                            ]},
+                            {"type": "box", "layout": "horizontal", "contents": [
+                                {"type": "text", "text": "今日第幾天", "size": "sm", "color": "#555555", "flex": 2},
+                                {"type": "text", "text": f"{day}/{days_in_month}", "size": "sm", "align": "end", "flex": 2}
+                            ]},
+                        ], "paddingAll": "15px"
+                    }
+                }
+            )
+            line_bot_api.reply_message(event.reply_token, flex)
+        except Exception as e:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"查詢用量失敗：{e}"))
+        return 0
+
     # 中文幣別名稱對照表
     currency_alias = {
         '美元': 'USD', '美金': 'USD', '日圓': 'JPY', '日幣': 'JPY', '日元': 'JPY',
