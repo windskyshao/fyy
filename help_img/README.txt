@@ -17,6 +17,7 @@
   deed_struct_tool.png          → 電子謄本結構化工具（不動產登記謄本智慧處理工具 v1.6）
   load_json_prompt.png          → 關閉結構化程式後「是否載入此結構化 JSON」對話框
   telereport_struct_startup.png → 電傳謄本結構化程式啟動時「配合主程式」詢問
+  telereport_struct_full.png    → 電傳謄本結構化程式主畫面（全展開）
 
 存好後 commit + push，help.html 裡的圖片就會顯示。
 網址格式：https://fyy-l8a3.onrender.com/help_img/main_page.png
