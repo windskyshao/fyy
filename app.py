@@ -21,6 +21,7 @@ import time
 import place
 import os
 import uuid
+import base64
 from urllib.parse import quote_plus
 
 def get_stock_name(code):
@@ -307,6 +308,78 @@ RENDER_URL = 'https://fyy-l8a3.onrender.com'
 @app.route('/charts/<filename>')
 def serve_chart(filename):
     return send_from_directory(CHART_DIR, filename)
+
+
+# 🔧 意見回饋：推播對象預設＝管理員本人（已知 userId），可用環境變數覆蓋
+ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', 'U60ff9aa248221639d7717bf54d1db609')
+# 🔧 意見回饋端點的簡單權杖；未設定環境變數時不檢查（方便先測，要鎖再設）
+FEEDBACK_TOKEN = os.environ.get('FEEDBACK_TOKEN', '')
+
+
+# 🔧 意見回饋接收端點：主程式(main.py)把「截圖+版本+訊息」POST 到這裡，
+#    伺服器存截圖取得網址後，推播到管理員的 LINE（阿生生聊天室）。
+@app.route('/feedback', methods=['POST'])
+def feedback():
+    # 同時支援 JSON(截圖用 base64，主程式走這條) 與 multipart(用 curl 測試)
+    if request.is_json:
+        d = request.get_json(silent=True) or {}
+        token = request.headers.get('X-Feedback-Token', '') or d.get('token', '')
+        version = (d.get('version') or '未知').strip()
+        name = (d.get('name') or '匿名').strip()
+        category = (d.get('category') or '').strip()
+        message = (d.get('message') or '(無內容)').strip()
+        b64 = d.get('screenshot_b64') or ''
+    else:
+        token = request.headers.get('X-Feedback-Token', '') or request.form.get('token', '')
+        version = (request.form.get('version') or '未知').strip()
+        name = (request.form.get('name') or '匿名').strip()
+        category = (request.form.get('category') or '').strip()
+        message = (request.form.get('message') or '(無內容)').strip()
+        b64 = ''
+
+    # 1) 權杖驗證（擋亂打）；未設定 FEEDBACK_TOKEN 時不檢查
+    if FEEDBACK_TOKEN and token != FEEDBACK_TOKEN:
+        return ('forbidden', 403)
+    if not ADMIN_USER_ID:
+        return ('admin not set', 500)
+
+    # 2) 組文字訊息
+    lines = ['📩 新意見回饋', f'版本：{version}']
+    if category:
+        lines.append(f'類型：{category}')
+    lines.append(f'來自：{name}')
+    lines.append(f'內容：{message}')
+    messages = [TextSendMessage(text='\n'.join(lines))]
+
+    # 3) 截圖（選填）：取得 bytes（base64 或 multipart 檔），存進 charts/ 取得公開網址
+    img_bytes = None
+    if b64:
+        try:
+            img_bytes = base64.b64decode(b64)
+        except Exception as e:
+            print(f'[feedback] base64 解碼失敗: {e}')
+    elif not request.is_json:
+        fileobj = request.files.get('screenshot')
+        if fileobj and fileobj.filename:
+            img_bytes = fileobj.read()
+    if img_bytes:
+        fname = f'feedback_{uuid.uuid4().hex[:10]}.png'
+        try:
+            with open(os.path.join(CHART_DIR, fname), 'wb') as f:
+                f.write(img_bytes)
+            url = f'{RENDER_URL}/charts/{fname}'
+            messages.append(ImageSendMessage(original_content_url=url, preview_image_url=url))
+        except Exception as e:
+            print(f'[feedback] 存截圖失敗: {e}')
+
+    # 4) 推播給管理員
+    try:
+        line_bot_api.push_message(ADMIN_USER_ID, messages)
+        return ('ok', 200)
+    except Exception as e:
+        print(f'[feedback] push 失敗: {e}')
+        return ('push failed', 500)
+
 
 def build_currency_alert_flex(currency_data, new_trigger_count, currently_triggered):
     """組裝匯率通知 flex：列出所有關注幣別，區分「剛達標」與「持續達標」"""
