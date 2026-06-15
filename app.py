@@ -317,6 +317,13 @@ def help_page():
     return send_from_directory(_here, 'help.html')
 
 
+# 📷 使用說明裡的介面截圖（help_img 資料夾）
+@app.route('/help_img/<filename>')
+def help_img(filename):
+    _img_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'help_img')
+    return send_from_directory(_img_dir, filename)
+
+
 # 🔧 意見回饋：推播對象預設＝管理員本人（已知 userId），可用環境變數覆蓋
 ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', 'U60ff9aa248221639d7717bf54d1db609')
 # 🔧 意見回饋端點的簡單權杖；未設定環境變數時不檢查（方便先測，要鎖再設）
