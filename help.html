@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>電子謄本處理系統 - 使用說明文檔</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", "微軟正黑體", Arial, sans-serif;
+            line-height: 1.8;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            color: #333;
+            background-color: #fff;
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #bdc3c7;
+            padding-bottom: 8px;
+            margin-top: 40px;
+            font-size: 2em;
+        }
+
+        h3 {
+            color: #555;
+            margin-top: 30px;
+            font-size: 1.5em;
+        }
+
+        h4 {
+            color: #666;
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #e8f4f8;
+        }
+
+        blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 20px;
+            color: #666;
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* 🔥 平滑滾動 */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* 🔥 錨點偏移（避免標題被遮住） */
+        h1, h2, h3, h4 {
+            scroll-margin-top: 20px;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid #ecf0f1;
+            margin: 40px 0;
+        }
+
+        .toc {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 30px 0;
+        }
+
+        @media print {
+            body {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            h1, h2, h3, h4 {
+                page-break-after: avoid;
+            }
+
+            pre, table, img {
+                page-break-inside: avoid;
+            }
+
+            a {
+                color: #000;
+                text-decoration: none;
+            }
+        }
+
+        @page {
+            margin: 2cm;
+        }
+    </style>
+</head>
+<body>
+<h1 id="地籍資料查詢系統---使用手冊">地籍資料查詢系統 - 使用手冊</h1>
+<h2 id="目錄">目錄</h2>
+<ol>
+<li><a href="#系統簡介">系統簡介</a></li>
+<li><a href="#安裝說明">安裝與更新說明</a></li>
+<li><a href="#主介面介紹">主介面介紹</a></li>
+<li><a href="#買賣案件完整操作流程">買賣案件完整操作流程</a></li>
+<li><a href="#租賃案件操作流程">租賃案件操作流程</a></li>
+<li><a href="#各功能詳細說明">各功能詳細說明</a></li>
+<li><a href="#常見問題">常見問題</a></li>
+<li><a href="#注意事項">注意事項</a></li>
+</ol>
+<hr />
+<h2 id="系統簡介">系統簡介</h2>
+<p><strong>地籍資料查詢系統</strong>是專為不動產從業人員設計的整合工具，將原本需要在多個網站查詢、下載、整理的工作，整合為半自動化流程。</p>
+<h3 id="主要功能">主要功能</h3>
+<ul>
+<li>自動建立案件資料夾結構</li>
+<li>電子謄本下載與結構化處理</li>
+<li>土地增值稅自動估算</li>
+<li>整合多個查詢系統（V523、使用執照、實價登錄等）</li>
+<li>物件資料表自動生成</li>
+<li>連續模式批次執行</li>
+</ul>
+<h3 id="系統優勢">系統優勢</h3>
+<ul>
+<li><strong>省時</strong>：原本需要1-2小時的查詢工作，縮短至15-30分鐘</li>
+<li><strong>自動化</strong>：減少手動操作，降低錯誤率</li>
+<li><strong>整合性</strong>：一個系統完成所有查詢工作</li>
+<li><strong>結構化</strong>：自動整理檔案，方便後續使用</li>
+</ul>
+<hr />
+<h2 id="安裝說明">安裝與更新說明</h2>
+<div style="background-color:#fff3cd; border-left:5px solid #f0ad4e; padding:12px 16px; margin:12px 0; border-radius:4px;">
+<p><strong>📦 重要：本系統分「完整安裝包」與「程式更新檔」兩種</strong></p>
+<p>GitHub 上提供的是「程式更新檔」，<strong>不含執行環境（python_embedded）與 chromedriver</strong>，單獨無法運作。完整執行需要：</p>
+<ol>
+<li><strong>程式本體</strong>（GitHub 下載，或由程式內右上角「🔄」自動更新）</li>
+<li><strong>python_embedded 執行環境</strong>（內含 selenium、Pillow、PyMuPDF、easyocr 等所有必要模組，因檔案大未放 GitHub）</li>
+<li><strong>chromedriver</strong>（需配合您電腦的 Chrome 版本）</li>
+</ol>
+</div>
+<h3 id="首次安裝">首次安裝（含所有模組）</h3>
+<p>請下載並解壓縮「<strong>完整安裝包</strong>」，它已包含 python_embedded 與 chromedriver，解壓後即可使用，不需另外安裝任何模組：</p>
+<ul>
+<li>完整安裝包（v1.1.7a）：<a href="https://www.dropbox.com/scl/fi/cc4cfo3gufikbjtsotx66/v1.1.7a.rar?rlkey=fk9r4typfo31flfx2q31z1mue&amp;dl=0">點此下載（Dropbox）</a></li>
+</ul>
+<h3 id="後續更新">後續更新</h3>
+<p>安裝過一次後<strong>不需重裝 python_embedded</strong>。程式啟動時會自動檢查新版，右上角「🔄」變紅即代表有更新，點擊即可自動下載並更新程式本體。</p>
+<hr />
+<h2 id="主介面介紹">主介面介紹</h2>
+<p>系統主介面分為<strong>三個頁面</strong>，可以隨時切換：</p>
+<h3 id="1-主頁預設頁面">1. 主頁（預設頁面）</h3>
+<p>主頁包含所有主要查詢功能，分為三欄排列：</p>
+<h4 id="左欄---地籍查詢功能">左欄 - 地籍查詢功能</h4>
+<ul>
+<li><strong>地籍便民系統</strong>（橙色按鈕）：建立案件資料夾</li>
+<li><strong>使用執照查詢</strong>：查詢建物使用執照（僅限高雄市）</li>
+<li><strong>重要設施查詢</strong>：查詢周邊重要設施</li>
+<li><strong>V523 系統</strong>：查詢 V523 資料（僅限高雄市）</li>
+</ul>
+<h4 id="中欄---圖資查詢功能">中欄 - 圖資查詢功能</h4>
+<ul>
+<li><strong>國土測繪圖資</strong>：查詢國土測繪圖資</li>
+<li><strong>高雄都市計畫</strong>：查詢都市計畫分區</li>
+<li><strong>國土分區查詢</strong>：查詢國土功能分區</li>
+<li><strong>地質雲查詢</strong>：查詢地質資訊</li>
+</ul>
+<h4 id="右欄---整合功能">右欄 - 整合功能</h4>
+<ul>
+<li><strong>實價登錄</strong>：切換到實價登錄頁面</li>
+<li><strong>謄本與土增稅</strong>：切換到謄本與土增稅頁面</li>
+<li><strong>連續模式</strong>（淺藍色）：批次執行多個查詢</li>
+<li><strong>匯入封存</strong>（淺綠色）：匯入先前封存的案件</li>
+</ul>
+<h3 id="2-實價登錄頁面">2. 實價登錄頁面</h3>
+<p>專門處理實價登錄查詢：</p>
+<ul>
+<li><strong>內政部</strong>：使用內政部實價登錄系統</li>
+<li><strong>104實價網</strong>：使用104實價網查詢</li>
+<li><strong>回至主頁</strong>：返回主頁面</li>
+</ul>
+<h3 id="3-謄本與土增稅頁面">3. 謄本與土增稅頁面</h3>
+<p>專門處理謄本下載、結構化與土地增值稅計算：</p>
+<h4 id="左欄---資料來源">左欄 - 資料來源</h4>
+<ul>
+<li><strong>全國地政電子謄本</strong>：下載電子謄本（PDF格式）</li>
+<li><strong>全功能地籍資料查詢</strong>：全功能地籍查詢</li>
+<li><strong>電子謄本結構化</strong>：將PDF謄本轉換為結構化資料</li>
+</ul>
+<h4 id="中欄---資料處理與土增稅">中欄 - 資料處理與土增稅</h4>
+<ul>
+<li><strong>讀取結構化JSON</strong>：讀取謄本資料並轉換為物件調查表</li>
+<li><strong>財政部土增稅</strong>：使用財政部系統計算土地增值稅</li>
+<li><strong>高雄土增稅估算</strong>：使用高雄市系統自動估算</li>
+</ul>
+<h4 id="右欄---設定編輯返回">右欄 - 設定/編輯/返回</h4>
+<ul>
+<li><strong>載入案件 data.json</strong>：切換不同案件</li>
+<li><strong>編輯物件資料</strong>：編輯物件調查表資料</li>
+<li><strong>回至主頁</strong>：返回主頁面</li>
+</ul>
+<hr />
+<h2 id="買賣案件完整操作流程">買賣案件完整操作流程</h2>
+<h3 id="步驟-1建立案件資料夾">步驟 1：建立案件資料夾</h3>
+<ol>
+<li>點擊主頁左上角的「<strong>地籍便民系統</strong>」按鈕（橙色）</li>
+<li>在彈出視窗中輸入：</li>
+<li><strong>縣市</strong>：選擇縣市（例如：高雄市）</li>
+<li><strong>行政區</strong>：選擇行政區（例如：大寮區）</li>
+<li><strong>地段</strong>：輸入地段名稱（例如：義堂段）</li>
+<li><strong>地號</strong>：輸入地號（例如：358-21）</li>
+<li>點擊「確定」</li>
+</ol>
+<p><strong>系統會自動建立：</strong>
+- 案件資料夾：「大寮區義堂段-358-21」
+- 7個子資料夾：
+  - 0.謄本
+  - 1.基本資料
+  - 2.照片
+  - 3.行情
+  - 4.其他相關
+  - 5.委託
+  - 6.成交
+- data.json 檔案（記錄地段地號資訊）</p>
+<h3 id="步驟-2下載電子謄本">步驟 2：下載電子謄本</h3>
+<ol>
+<li>點擊右欄的「<strong>謄本與土增稅</strong>」按鈕，切換到謄本頁面</li>
+<li>點擊左上角的「<strong>全國地政電子謄本</strong>」按鈕</li>
+<li>系統會開啟電子謄本下載網站</li>
+<li><strong>手動操作</strong>：</li>
+<li>登入帳號</li>
+<li>輸入地段地號</li>
+<li>選擇謄本類型（土地謄本、建物謄本）</li>
+<li>下載謄本PDF檔案</li>
+<li>將下載的PDF檔案移動到案件資料夾的「<strong>0.謄本</strong>」子資料夾中</li>
+</ol>
+<h3 id="步驟-3謄本結構化處理">步驟 3：謄本結構化處理</h3>
+<ol>
+<li>點擊左側的「<strong>電子謄本結構化</strong>」按鈕</li>
+<li>選擇剛才下載的PDF謄本檔案（可一次選擇多個）</li>
+<li>系統會自動：</li>
+<li>讀取PDF內容</li>
+<li>辨識文字（使用OCR技術）</li>
+<li>解析謄本結構</li>
+<li>提取重要資訊（地號、面積、所有權人、權利範圍等）</li>
+<li>產生結構化資料檔案</li>
+<li>處理完成後，會產生三種格式的檔案，儲存在「<strong>output</strong>」資料夾中：</li>
+<li><strong>JSON 格式</strong>：機器可讀的結構化資料（用於後續程式處理）</li>
+<li><strong>TXT 格式</strong>：詳細的文字分析報告（方便人工閱讀）</li>
+<li><strong>Excel 格式</strong>：結構化的表格資料（方便檢視和編輯）</li>
+</ol>
+<p><strong>處理時間</strong>：每個謄本約需 30-60 秒，視複雜度而定</p>
+<h3 id="步驟-4讀取結構化資料">步驟 4：讀取結構化資料</h3>
+<ol>
+<li>點擊中間的「<strong>讀取結構化JSON</strong>」按鈕</li>
+<li>選擇剛才產生的JSON檔案（可一次選擇多個）</li>
+<li>系統會自動：</li>
+<li>讀取結構化資料</li>
+<li>轉換為「物件調查表」格式</li>
+<li>檢查資料一致性（地號是否與 data.json 相符）</li>
+<li>儲存為 data_final.json（位於「<strong>4.其他相關</strong>」資料夾）</li>
+</ol>
+<p><strong>資料一致性檢查</strong>：
+- 如果地號順序與 data.json 不一致，系統會提示：
+  - <strong>選項 1</strong>：調整 data.json 順序
+  - <strong>選項 2</strong>：調整謄本JSON順序（建議）
+  - <strong>選項 3</strong>：暫不處理</p>
+<h3 id="步驟-5執行其他查詢可使用連續模式">步驟 5：執行其他查詢（可使用連續模式）</h3>
+<h4 id="方法-A手動逐一執行">方法 A：手動逐一執行</h4>
+<p>回到主頁，依序點擊各功能按鈕：
+- 使用執照查詢
+- 重要設施查詢
+- V523 系統
+- 國土測繪圖資
+- 高雄都市計畫
+- 國土分區查詢
+- 地質雲查詢
+- 實價登錄</p>
+<h4 id="方法-B使用連續模式建議">方法 B：使用連續模式（建議）</h4>
+<ol>
+<li>點擊主頁右欄的「<strong>連續模式</strong>」按鈕（淺藍色）</li>
+<li>選擇「<strong>買賣</strong>」快速選項（自動勾選所有相關功能）</li>
+<li>或手動勾選需要的功能</li>
+<li>點擊「開始執行」</li>
+<li>系統會依序自動開啟各查詢網站</li>
+<li><strong>手動操作</strong>：在每個網站完成查詢後，截圖或儲存結果</li>
+</ol>
+<p><strong>連續模式優點</strong>：
+- 自動排隊執行
+- 節省時間
+- 不會遺漏任何項目</p>
+<h3 id="步驟-6計算土地增值稅">步驟 6：計算土地增值稅</h3>
+<p>回到「謄本與土增稅」頁面：</p>
+<h4 id="方法-A使用財政部系統官方計算">方法 A：使用財政部系統（官方計算）</h4>
+<ol>
+<li>點擊「<strong>財政部土增稅</strong>」按鈕</li>
+<li>系統會自動開啟財政部土地增值稅試算系統</li>
+<li>系統會自動填入地段地號（從 data.json 讀取）</li>
+<li><strong>手動操作</strong>：補充其他資訊（前次移轉現值、本次移轉現值等）</li>
+<li>查看計算結果，並截圖儲存</li>
+</ol>
+<h4 id="方法-B使用高雄市系統快速估算">方法 B：使用高雄市系統（快速估算）</h4>
+<ol>
+<li>點擊「<strong>高雄土增稅估算</strong>」按鈕</li>
+<li>系統會自動開啟高雄市土地增值稅估算系統</li>
+<li>系統會自動填入地段地號</li>
+<li><strong>手動操作</strong>：補充移轉資訊</li>
+<li>查看估算結果，並截圖儲存</li>
+</ol>
+<h3 id="步驟-7編輯物件資料補充資訊">步驟 7：編輯物件資料（補充資訊）</h3>
+<ol>
+<li>點擊右側的「<strong>編輯物件資料</strong>」按鈕</li>
+<li>在彈出的編輯視窗中補充資訊：</li>
+</ol>
+<p><strong>基本資訊</strong>
+- 案件編號
+- 案件名稱
+- 物件地址</p>
+<p><strong>價格資訊</strong>
+- 總價
+- 土地單價
+- 建物單價</p>
+<p><strong>坪數資訊</strong>
+- 土地坪數
+- 建物坪數
+- 主建物坪數
+- 附屬建物坪數
+- 公共設施坪數</p>
+<p><strong>格局資訊</strong>
+- 房間數
+- 廳數
+- 衛浴數</p>
+<p><strong>設備與現況</strong>
+- 屋況（新成屋/中古屋）
+- 裝潢（精裝/簡裝/毛胚）
+- 車位（有/無，平面/機械）
+- 其他設備</p>
+<p><strong>稅賦資訊</strong>
+- 地價稅
+- 房屋稅
+- 管理費</p>
+<ol>
+<li>編輯完成後，點擊「儲存」</li>
+</ol>
+<h3 id="步驟-8檢查與整理">步驟 8：檢查與整理</h3>
+<ol>
+<li>開啟案件資料夾，確認所有子資料夾都有檔案：</li>
+<li><strong>0.謄本</strong>：PDF謄本檔案</li>
+<li><strong>1.基本資料</strong>：查詢截圖（V523、使用執照等）</li>
+<li><strong>2.照片</strong>：物件照片（手動放入）</li>
+<li><strong>3.行情</strong>：實價登錄截圖</li>
+<li><strong>4.其他相關</strong>：data.json、data_final.json</li>
+<li><strong>5.委託</strong>：委託書等文件（手動放入）</li>
+<li>
+<p><strong>6.成交</strong>：成交文件（手動放入）</p>
+</li>
+<li>
+<p>檢查 data_final.json 是否完整</p>
+</li>
+</ol>
+<h3 id="最終輸出">最終輸出</h3>
+<p>完成以上步驟後，您會獲得：
+- <strong>完整的案件資料夾</strong>：包含所有查詢結果和文件
+- <strong>data.json</strong>：地段地號基礎資料
+- <strong>data_final.json</strong>：完整的物件調查表資料（可用於報告生成）
+- <strong>結構化謄本資料</strong>：儲存在 output 資料夾（可重複使用）</p>
+<hr />
+<h2 id="租賃案件操作流程">租賃案件操作流程</h2>
+<p>租賃案件的流程較簡單，因為<strong>不需要謄本資料和土地增值稅計算</strong>。</p>
+<h3 id="步驟-1建立案件資料夾_1">步驟 1：建立案件資料夾</h3>
+<p>同買賣案件步驟 1</p>
+<h3 id="步驟-2執行查詢使用連續模式">步驟 2：執行查詢（使用連續模式）</h3>
+<ol>
+<li>點擊主頁右欄的「<strong>連續模式</strong>」按鈕</li>
+<li>選擇「<strong>租賃</strong>」快速選項</li>
+<li>點擊「開始執行」</li>
+<li>系統會依序執行以下查詢：</li>
+<li>使用執照查詢</li>
+<li>重要設施查詢</li>
+<li>V523 系統</li>
+<li>國土測繪圖資</li>
+<li>高雄都市計畫</li>
+<li>國土分區查詢</li>
+<li>地質雲查詢</li>
+<li>實價登錄</li>
+</ol>
+<p><strong>注意</strong>：租賃模式會自動跳過土地增值稅相關功能</p>
+<h3 id="步驟-3編輯物件資料">步驟 3：編輯物件資料</h3>
+<p>同買賣案件步驟 7，但只需填寫租賃相關資訊：
+- 租金（月租金、押金）
+- 坪數
+- 格局
+- 設備與現況</p>
+<h3 id="步驟-4檢查與整理">步驟 4：檢查與整理</h3>
+<p>同買賣案件步驟 8</p>
+<hr />
+<h2 id="各功能詳細說明">各功能詳細說明</h2>
+<h3 id="1-地籍便民系統">1. 地籍便民系統</h3>
+<p><strong>功能</strong>：建立案件資料夾結構</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「地籍便民系統」按鈕
+2. 輸入縣市、行政區、地段、地號
+3. 點擊「確定」</p>
+<p><strong>自動建立</strong>：
+- 案件資料夾：「區段-地號」
+- 7個子資料夾
+- data.json 檔案</p>
+<p><strong>適用時機</strong>：每個新案件的第一步</p>
+<h3 id="2-使用執照查詢僅限高雄市">2. 使用執照查詢（僅限高雄市）</h3>
+<p><strong>功能</strong>：查詢建物使用執照資訊</p>
+<p><strong>查詢內容</strong>：
+- 使用執照字號
+- 核發日期
+- 建築面積
+- 建築用途
+- 樓層數</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「使用執照查詢」按鈕
+2. 系統開啟高雄市使用執照查詢系統
+3. 系統會自動填入地址或地號
+4. <strong>手動操作</strong>：查看結果並截圖</p>
+<p><strong>注意事項</strong>：
+- 僅適用於高雄市建物
+- 需要建物門牌地址</p>
+<h3 id="3-重要設施查詢">3. 重要設施查詢</h3>
+<p><strong>功能</strong>：查詢周邊重要設施</p>
+<p><strong>查詢內容</strong>：
+- 學校（國小、國中、高中）
+- 公園綠地
+- 市場
+- 醫院
+- 交通設施</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「重要設施查詢」按鈕
+2. 系統開啟查詢網站
+3. 系統會自動定位到物件位置
+4. <strong>手動操作</strong>：查看結果並截圖</p>
+<h3 id="4-V523-系統僅限高雄市">4. V523 系統（僅限高雄市）</h3>
+<p><strong>功能</strong>：查詢 V523 相關資料</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「V523 系統」按鈕
+2. 系統開啟 V523 查詢系統
+3. 系統會自動填入地段地號
+4. <strong>手動操作</strong>：查看結果並截圖</p>
+<p><strong>注意事項</strong>：僅適用於高雄市</p>
+<h3 id="5-國土測繪圖資">5. 國土測繪圖資</h3>
+<p><strong>功能</strong>：查詢國土測繪相關圖資</p>
+<p><strong>查詢內容</strong>：
+- 地籍圖
+- 航照圖
+- 地形圖
+- 土地使用分區</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「國土測繪圖資」按鈕
+2. 系統開啟國土測繪圖資服務系統
+3. 系統會自動定位到物件位置
+4. <strong>手動操作</strong>：查看圖資並截圖</p>
+<h3 id="6-高雄都市計畫">6. 高雄都市計畫</h3>
+<p><strong>功能</strong>：查詢高雄市都市計畫分區</p>
+<p><strong>查詢內容</strong>：
+- 都市計畫分區
+- 使用分區（住宅區、商業區等）
+- 建蔽率、容積率
+- 都市計畫說明</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「高雄都市計畫」按鈕
+2. 系統開啟高雄市都市計畫查詢系統
+3. 系統會自動定位到物件位置
+4. <strong>手動操作</strong>：查看分區資訊並截圖</p>
+<p><strong>注意事項</strong>：僅適用於高雄市</p>
+<h3 id="7-國土分區查詢">7. 國土分區查詢</h3>
+<p><strong>功能</strong>：查詢國土功能分區</p>
+<p><strong>查詢內容</strong>：
+- 國土功能分區分類
+- 使用地類別
+- 管制事項</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「國土分區查詢」按鈕
+2. 系統開啟國土功能分區查詢系統
+3. 系統會自動定位到物件位置
+4. <strong>手動操作</strong>：查看分區資訊並截圖</p>
+<h3 id="8-地質雲查詢">8. 地質雲查詢</h3>
+<p><strong>功能</strong>：查詢地質相關資訊</p>
+<p><strong>查詢內容</strong>：
+- 地質資料
+- 土壤液化潛勢
+- 順向坡
+- 斷層帶</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「地質雲查詢」按鈕
+2. 系統開啟地質雲查詢系統
+3. 系統會自動定位到物件位置
+4. <strong>手動操作</strong>：查看地質資訊並截圖</p>
+<h3 id="9-實價登錄查詢">9. 實價登錄查詢</h3>
+<p><strong>功能</strong>：查詢實價登錄資料</p>
+<h4 id="內政部實價登錄">內政部實價登錄</h4>
+<p><strong>查詢內容</strong>：
+- 官方實價登錄資料
+- 成交價格
+- 成交日期
+- 坪數、格局</p>
+<p><strong>操作步驟</strong>：
+1. 切換到「實價登錄頁面」
+2. 點擊「內政部」按鈕
+3. 系統開啟內政部實價登錄查詢系統
+4. 系統會自動填入地址或地段
+5. <strong>手動操作</strong>：查看實價資料並截圖</p>
+<h4 id="104實價網">104實價網</h4>
+<p><strong>查詢內容</strong>：
+- 實價登錄資料（整合顯示）
+- 價格走勢圖
+- 周邊成交行情</p>
+<p><strong>操作步驟</strong>：
+1. 切換到「實價登錄頁面」
+2. 點擊「104實價網」按鈕
+3. 系統開啟104實價網查詢系統
+4. 系統會自動填入地址
+5. <strong>手動操作</strong>：查看實價資料並截圖</p>
+<h3 id="10-全國地政電子謄本">10. 全國地政電子謄本</h3>
+<p><strong>功能</strong>：下載電子謄本（PDF格式）</p>
+<p><strong>下載項目</strong>：
+- 土地登記第一類謄本
+- 土地登記第二類謄本
+- 建物登記第一類謄本
+- 建物登記第二類謄本</p>
+<p><strong>操作步驟</strong>：
+1. 切換到「謄本與土增稅頁面」
+2. 點擊「全國地政電子謄本」按鈕
+3. 系統開啟電子謄本下載網站
+4. <strong>手動操作</strong>：
+   - 登入帳號（需先註冊）
+   - 輸入地段地號
+   - 選擇謄本類型
+   - 付費下載（電子謄本20元起、電傳謄本10元起）
+5. 將下載的PDF移動到「0.謄本」資料夾</p>
+<p><strong>注意事項</strong>：
+- 需先註冊帳號
+- 需付費下載（電子謄本20元起、電傳謄本10元起）
+- 建議同時下載土地和建物謄本</p>
+<h3 id="11-電子謄本結構化">11. 電子謄本結構化</h3>
+<p><strong>功能</strong>：將PDF謄本轉換為結構化資料</p>
+<p><strong>處理內容</strong>：
+- 讀取PDF文字
+- OCR辨識（處理掃描檔）
+- 解析謄本結構
+- 提取重要欄位
+- 產生結構化資料檔案</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「電子謄本結構化」按鈕
+2. 選擇PDF謄本檔案（可多選）
+3. 等待處理完成
+4. 結構化檔案會自動儲存到「output」資料夾</p>
+<p><strong>處理時間</strong>：
+- 每個謄本約 30-60 秒
+- 視謄本頁數和複雜度而定</p>
+<p><strong>輸出檔案（三種格式）</strong>：
+1. <strong>JSON 格式</strong>：segment_地段-地號.json
+   - 例如：segment_大寮區義堂段-358-21.json
+   - 機器可讀的結構化資料</p>
+<ol>
+<li><strong>TXT 格式</strong>：segment_地段-地號.txt</li>
+<li>例如：segment_大寮區義堂段-358-21.txt</li>
+<li>
+<p>詳細的文字分析報告</p>
+</li>
+<li>
+<p><strong>Excel 格式</strong>：segment_地段-地號.xlsx</p>
+</li>
+<li>例如：segment_大寮區義堂段-358-21.xlsx</li>
+<li>結構化的表格資料</li>
+</ol>
+<h3 id="12-讀取結構化JSON">12. 讀取結構化JSON</h3>
+<p><strong>功能</strong>：讀取謄本資料並轉換為物件調查表格式</p>
+<p><strong>處理內容</strong>：
+- 讀取JSON檔案
+- 轉換為物件調查表格式
+- 與 data.json 整合
+- 資料一致性檢查
+- 產生 data_final.json</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「讀取結構化JSON」按鈕
+2. 選擇JSON檔案（從 output 資料夾）
+3. 如有資料不一致，選擇處理方式：
+   - 調整 data.json 順序
+   - 調整謄本JSON順序（建議）
+   - 暫不處理
+4. 確認後，系統會產生 data_final.json</p>
+<p><strong>輸出位置</strong>：
+- 案件資料夾/4.其他相關/data_final.json</p>
+<p><strong>資料一致性檢查</strong>：
+- 檢查地號順序是否與 data.json 相符
+- 如不一致會影響後續報告生成</p>
+<h3 id="13-財政部土增稅">13. 財政部土增稅</h3>
+<p><strong>功能</strong>：使用財政部系統計算土地增值稅</p>
+<p><strong>計算內容</strong>：
+- 土地增值稅稅額
+- 一般稅率
+- 自用住宅優惠稅率
+- 重購退稅試算</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「財政部土增稅」按鈕
+2. 系統開啟財政部土地增值稅試算系統
+3. 系統會自動填入地段地號（從 data.json 讀取）
+4. <strong>手動操作</strong>：
+   - 輸入前次移轉現值
+   - 輸入本次移轉現值
+   - 選擇稅率（一般/自用）
+   - 查看計算結果
+   - 截圖儲存</p>
+<p><strong>注意事項</strong>：
+- 需要前次移轉資料（從謄本查詢）
+- 需要本次移轉現值（估算或實際成交價）</p>
+<h3 id="14-高雄土增稅估算">14. 高雄土增稅估算</h3>
+<p><strong>功能</strong>：使用高雄市系統快速估算土地增值稅</p>
+<p><strong>估算內容</strong>：
+- 土地增值稅估算稅額
+- 自動帶入公告現值
+- 快速試算</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「高雄土增稅估算」按鈕
+2. 系統開啟高雄市土地增值稅估算系統
+3. 系統會自動填入地段地號
+4. <strong>手動操作</strong>：
+   - 確認公告現值
+   - 輸入移轉資訊
+   - 查看估算結果
+   - 截圖儲存</p>
+<p><strong>注意事項</strong>：
+- 僅適用於高雄市
+- 估算結果僅供參考，實際稅額以地政事務所核算為準</p>
+<h3 id="15-編輯物件資料">15. 編輯物件資料</h3>
+<p><strong>功能</strong>：編輯物件調查表完整資料</p>
+<p><strong>可編輯欄位</strong>：</p>
+<p><strong>基本資訊</strong>
+- 案件編號
+- 案件名稱
+- 物件地址
+- 地段地號</p>
+<p><strong>價格資訊</strong>
+- 總價（萬元）
+- 土地單價（元/坪）
+- 建物單價（元/坪）</p>
+<p><strong>坪數資訊</strong>
+- 土地坪數
+- 建物坪數
+- 主建物坪數
+- 附屬建物坪數
+- 公共設施坪數
+- 陽台坪數</p>
+<p><strong>格局資訊</strong>
+- 房間數
+- 廳數
+- 衛浴數
+- 樓層（所在樓層/總樓層）</p>
+<p><strong>設備與現況</strong>
+- 屋況（新成屋/中古屋）
+- 屋齡（年）
+- 裝潢（精裝/簡裝/毛胚）
+- 車位（有/無）
+- 車位類型（平面/機械/坡道）
+- 電梯（有/無）
+- 陽台（有/無）
+- 其他設備（冷氣、熱水器等）</p>
+<p><strong>稅賦資訊</strong>
+- 地價稅（元/年）
+- 房屋稅（元/年）
+- 管理費（元/月）</p>
+<p><strong>其他資訊</strong>
+- 學區（國小、國中）
+- 周邊環境
+- 備註</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「編輯物件資料」按鈕
+2. 在編輯視窗中填寫或修改資料
+3. 點擊「儲存」</p>
+<p><strong>輸出檔案（兩種格式）</strong>：
+1. <strong>物件個案調查表(售)</strong>
+   - 適用於買賣案件
+   - 包含完整的價格、稅賦、土地增值稅等資訊</p>
+<ol>
+<li><strong>物件個案調查表(租)</strong></li>
+<li>適用於租賃案件</li>
+<li>包含租金、押金、格局、設備等資訊</li>
+</ol>
+<p><strong>注意事項</strong>：
+- 部分資料會從謄本自動帶入（需先執行「讀取結構化JSON」）
+- 建議定期儲存，避免資料遺失
+- 儲存後會自動產生對應的物件個案調查表</p>
+<h3 id="16-連續模式">16. 連續模式</h3>
+<p><strong>功能</strong>：批次執行多個查詢程式</p>
+<p><strong>兩種模式</strong>：</p>
+<h4 id="買賣模式">買賣模式</h4>
+<p>自動勾選以下功能：
+- 使用執照查詢
+- 重要設施查詢
+- V523 系統
+- 國土測繪圖資
+- 高雄都市計畫
+- 國土分區查詢
+- 地質雲查詢
+- 實價登錄（內政部、104實價網）
+- 財政部土增稅
+- 高雄土增稅估算</p>
+<h4 id="租賃模式">租賃模式</h4>
+<p>自動勾選以下功能（不含土增稅）：
+- 使用執照查詢
+- 重要設施查詢
+- V523 系統
+- 國土測繪圖資
+- 高雄都市計畫
+- 國土分區查詢
+- 地質雲查詢
+- 實價登錄（內政部、104實價網）</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「連續模式」按鈕
+2. 選擇「買賣」或「租賃」快速選項
+3. 或手動勾選需要的功能
+4. 點擊「開始執行」
+5. 系統會依序自動開啟各查詢網站
+6. <strong>手動操作</strong>：在每個網站完成查詢後，點擊「下一步」繼續</p>
+<p><strong>優點</strong>：
+- 自動排隊執行
+- 不會遺漏任何項目
+- 節省時間</p>
+<p><strong>注意事項</strong>：
+- 可隨時點擊「停止」中斷執行
+- 每個網站仍需手動查詢和截圖</p>
+<h3 id="17-匯入封存">17. 匯入封存</h3>
+<p><strong>功能</strong>：匯入先前封存的案件資料夾</p>
+<p><strong>支援格式</strong>：
+- 資料夾（直接複製）
+- ZIP壓縮檔（自動解壓縮）</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「匯入封存」按鈕
+2. 選擇要匯入的資料夾或ZIP檔案
+3. 系統會自動：
+   - 檢查資料夾結構
+   - 解壓縮ZIP檔案（如適用）
+   - 複製到目前的工作目錄
+   - 載入 data.json</p>
+<p><strong>適用時機</strong>：
+- 從其他電腦轉移案件
+- 復原備份的案件
+- 重新處理舊案件</p>
+<h3 id="18-載入案件-datajson">18. 載入案件 data.json</h3>
+<p><strong>功能</strong>：切換不同案件</p>
+<p><strong>操作步驟</strong>：
+1. 點擊「載入案件 data.json」按鈕
+2. 選擇要載入的 data.json 檔案
+3. 系統會將該檔案複製到程式目錄
+4. 後續操作會使用新載入的案件資料</p>
+<p><strong>適用時機</strong>：
+- 同時處理多個案件時切換
+- 重新處理舊案件</p>
+<hr />
+<h2 id="常見問題">常見問題</h2>
+<h3 id="Q1建立案件資料夾時如何輸入地段地號">Q1：建立案件資料夾時，如何輸入地段地號？</h3>
+<p><strong>A</strong>：
+- <strong>縣市</strong>：從下拉選單選擇（例如：高雄市）
+- <strong>行政區</strong>：從下拉選單選擇（例如：大寮區）
+- <strong>地段</strong>：直接輸入地段名稱（例如：義堂段）
+  - 不需要輸入「段」字
+  - 例如：義堂段 → 輸入「義堂」即可
+- <strong>地號</strong>：直接輸入地號（例如：358-21）
+  - 如有子號，用「-」連接
+  - 例如：358地號21小段 → 輸入「358-21」</p>
+<h3 id="Q2下載謄本需要付費嗎">Q2：下載謄本需要付費嗎？</h3>
+<p><strong>A</strong>：是的，從「全國地政電子謄本」下載需要付費：
+- <strong>電子謄本</strong>：20元起計價
+- <strong>電傳謄本</strong>：10元起計價
+- 需先註冊帳號並儲值
+- 建議一次下載土地和建物謄本</p>
+<h3 id="Q3電子謄本結構化需要多久時間">Q3：電子謄本結構化需要多久時間？</h3>
+<p><strong>A</strong>：
+- 每個謄本約 30-60 秒
+- 處理時間視謄本頁數和複雜度而定
+- 如謄本是掃描檔（圖片），需要使用OCR辨識，時間會較長</p>
+<h3 id="Q4連續模式執行時可以中斷嗎">Q4：連續模式執行時可以中斷嗎？</h3>
+<p><strong>A</strong>：可以，隨時點擊「停止」按鈕即可中斷執行。</p>
+<h3 id="Q5資料一致性檢查是什麼">Q5：資料一致性檢查是什麼？</h3>
+<p><strong>A</strong>：
+系統會檢查 data.json 中的地號順序，是否與謄本JSON的地號順序一致。</p>
+<p><strong>範例</strong>：
+- data.json：358-21（土地）、358-21（建物）
+- 謄本JSON：建物謄本、土地謄本</p>
+<p>順序不一致時，系統會提示三種處理方式：
+1. <strong>調整 data.json 順序</strong>：修改 data.json 中的地號排列
+2. <strong>調整謄本JSON順序</strong>（建議）：重新排列選擇的謄本檔案
+3. <strong>暫不處理</strong>：跳過檢查，繼續處理</p>
+<p><strong>建議</strong>：選擇「調整謄本JSON順序」，確保資料正確對應。</p>
+<h3 id="Q6為什麼有些功能只能在高雄市使用">Q6：為什麼有些功能只能在高雄市使用？</h3>
+<p><strong>A</strong>：
+部分功能（如V523、使用執照查詢、高雄土增稅估算）是使用高雄市政府的專屬系統，因此只能查詢高雄市的物件。</p>
+<p>其他縣市請使用對應的縣市系統（需手動查詢）。</p>
+<h3 id="Q7如何備份案件資料">Q7：如何備份案件資料？</h3>
+<p><strong>A</strong>：
+- <strong>方法 1</strong>：直接複製整個案件資料夾
+- <strong>方法 2</strong>：壓縮案件資料夾為ZIP檔案
+- <strong>方法 3</strong>：使用系統的「封存」功能（如有提供）</p>
+<p>建議定期備份到雲端硬碟（如 Dropbox、Google Drive）。</p>
+<h3 id="Q8datajson-和-data_finaljson-有什麼差別">Q8：data.json 和 data_final.json 有什麼差別？</h3>
+<p><strong>A</strong>：
+- <strong>data.json</strong>：
+  - 只記錄地段地號基礎資料
+  - 由「地籍便民系統」自動建立
+  - 用於查詢時自動填入地號</p>
+<ul>
+<li><strong>data_final.json</strong>：</li>
+<li>包含完整的物件調查表資料</li>
+<li>由「讀取結構化JSON」和「編輯物件資料」產生</li>
+<li>用於報告生成（如有對應功能）</li>
+</ul>
+<h3 id="Q9如果謄本PDF無法結構化怎麼辦">Q9：如果謄本PDF無法結構化怎麼辦？</h3>
+<p><strong>A</strong>：
+可能原因：
+1. <strong>PDF檔案損壞</strong>：重新下載謄本
+2. <strong>PDF為掃描檔（圖片）</strong>：
+   - 系統會自動使用OCR辨識
+   - 處理時間會較長
+   - 辨識準確度視謄本清晰度而定
+3. <strong>謄本格式特殊</strong>：手動檢查並補充資料</p>
+<p>如無法處理，可以手動將謄本資料輸入到「編輯物件資料」中。</p>
+<h3 id="Q10連續模式執行時每個網站都要手動操作嗎">Q10：連續模式執行時，每個網站都要手動操作嗎？</h3>
+<p><strong>A</strong>：
+是的。連續模式只是自動依序開啟各查詢網站，但每個網站的查詢和截圖仍需要手動操作。</p>
+<p>系統無法完全自動化的原因：
+- 各網站有驗證碼或登入要求
+- 需要人工判斷查詢結果是否正確
+- 截圖位置和內容需要人工選擇</p>
+<h3 id="Q11如何查看某個案件的所有資料">Q11：如何查看某個案件的所有資料？</h3>
+<p><strong>A</strong>：
+開啟案件資料夾，檢查各子資料夾：
+- <strong>0.謄本</strong>：PDF謄本檔案
+- <strong>1.基本資料</strong>：查詢截圖（V523、使用執照等）
+- <strong>2.照片</strong>：物件照片
+- <strong>3.行情</strong>：實價登錄截圖
+- <strong>4.其他相關</strong>：data.json、data_final.json
+- <strong>5.委託</strong>：委託書等文件
+- <strong>6.成交</strong>：成交文件</p>
+<p>或開啟 data_final.json 查看結構化資料。</p>
+<h3 id="Q12土地增值稅試算結果為什麼與實際不同">Q12：土地增值稅試算結果為什麼與實際不同？</h3>
+<p><strong>A</strong>：
+土地增值稅試算僅供參考，實際稅額會受以下因素影響：
+- 前次移轉現值的準確性
+- 本次移轉現值的估算
+- 稅率選擇（一般/自用住宅優惠）
+- 其他加減項（如重購退稅、土地改良費用等）</p>
+<p><strong>建議</strong>：試算後，向地政事務所確認實際稅額。</p>
+<h3 id="Q13如何新增其他縣市的功能">Q13：如何新增其他縣市的功能？</h3>
+<p><strong>A</strong>：
+目前系統主要支援高雄市，其他縣市可以：
+1. 使用通用功能（如國土測繪圖資、實價登錄等）
+2. 手動開啟該縣市的查詢網站
+3. 將查詢結果截圖儲存到案件資料夾</p>
+<p>如需新增特定縣市的自動化功能，請聯繫系統開發人員。</p>
+<h3 id="Q14編輯物件資料時資料會自動儲存嗎">Q14：編輯物件資料時，資料會自動儲存嗎？</h3>
+<p><strong>A</strong>：
+不會自動儲存，需要點擊「儲存」按鈕才會寫入 data_final.json。</p>
+<p><strong>建議</strong>：填寫過程中定期點擊儲存，避免資料遺失。</p>
+<h3 id="Q15如果忘記輸入某項查詢怎麼辦">Q15：如果忘記輸入某項查詢怎麼辦？</h3>
+<p><strong>A</strong>：
+可以隨時回到主頁，點擊該功能按鈕重新執行。</p>
+<p>或使用「連續模式」，只勾選遺漏的項目，系統會依序執行。</p>
+<h3 id="Q16案件資料夾可以改名嗎">Q16：案件資料夾可以改名嗎？</h3>
+<p><strong>A</strong>：
+可以，但建議不要更改資料夾名稱，以免影響系統識別。</p>
+<p>如需更改，請同步修改 data.json 中的相關資訊。</p>
+<h3 id="Q17如何同時處理多個案件">Q17：如何同時處理多個案件？</h3>
+<p><strong>A</strong>：
+1. 依序為每個案件建立資料夾
+2. 使用「載入案件 data.json」切換不同案件
+3. 或開啟多個系統視窗，分別處理不同案件</p>
+<hr />
+<h2 id="注意事項">注意事項</h2>
+<h3 id="1-系統環境">1. 系統環境</h3>
+<ul>
+<li><strong>作業系統</strong>：Windows 10 或以上</li>
+<li><strong>瀏覽器</strong>：建議使用 Google Chrome 或 Microsoft Edge</li>
+<li><strong>網路連線</strong>：需要穩定的網路連線（查詢功能需要連網）</li>
+<li><strong>硬碟空間</strong>：建議保留至少 10GB 空間（儲存案件資料）</li>
+</ul>
+<h3 id="2-帳號準備">2. 帳號準備</h3>
+<p>使用系統前，建議先註冊以下帳號：
+- <strong>全國地政電子謄本</strong>：用於下載謄本（需付費）
+- <strong>內政部實價登錄</strong>：用於查詢實價登錄（免費）
+- <strong>各縣市查詢系統</strong>：依需求註冊（如高雄市V523等）</p>
+<h3 id="3-資料夾管理">3. 資料夾管理</h3>
+<ul>
+<li><strong>不要手動修改資料夾結構</strong>：系統會自動建立7個子資料夾，請勿刪除或改名</li>
+<li><strong>定期備份</strong>：建議每週備份案件資料夾到雲端硬碟</li>
+<li><strong>清理舊案件</strong>：完成的案件可以封存或移到其他位置，釋放硬碟空間</li>
+</ul>
+<h3 id="4-檔案命名">4. 檔案命名</h3>
+<ul>
+<li><strong>謄本檔案</strong>：建議命名為「地段-地號_謄本類型.pdf」</li>
+<li>例如：義堂段-358-21_土地謄本.pdf</li>
+<li><strong>截圖檔案</strong>：建議命名為「查詢項目_日期.png」</li>
+<li>例如：V523_20231201.png</li>
+<li><strong>避免使用特殊字元</strong>：檔名不要包含 <code>/ \ : * ? " &lt; &gt; |</code> 等字元</li>
+</ul>
+<h3 id="5-查詢順序建議">5. 查詢順序建議</h3>
+<p>建議依照以下順序執行查詢，效率最高：
+1. 地籍便民系統（建立資料夾）
+2. 全國地政電子謄本（下載謄本）
+3. 電子謄本結構化
+4. 讀取結構化JSON
+5. 使用連續模式執行其他查詢
+6. 計算土地增值稅
+7. 編輯物件資料</p>
+<h3 id="6-資料準確性">6. 資料準確性</h3>
+<ul>
+<li><strong>謄本資料</strong>：以地政事務所核發的謄本為準</li>
+<li><strong>實價登錄</strong>：僅供參考，實際成交價可能不同</li>
+<li><strong>土地增值稅</strong>：試算結果僅供參考，實際稅額以地政事務所核算為準</li>
+<li><strong>都市計畫</strong>：都市計畫可能變更，請以最新公告為準</li>
+</ul>
+<h3 id="7-隱私保護">7. 隱私保護</h3>
+<ul>
+<li><strong>不要分享帳號密碼</strong>：各查詢系統的帳號密碼請妥善保管</li>
+<li><strong>注意個資保護</strong>：案件資料包含個人資訊，請勿外洩</li>
+<li><strong>定期更改密碼</strong>：建議每3個月更改一次密碼</li>
+</ul>
+<h3 id="8-系統更新">8. 系統更新</h3>
+<ul>
+<li><strong>定期檢查更新</strong>：系統會不定期更新，請注意更新通知</li>
+<li><strong>備份後再更新</strong>：更新前請先備份重要案件資料</li>
+<li><strong>閱讀更新說明</strong>：更新後請閱讀更新說明，了解新功能</li>
+</ul>
+<h3 id="9-疑難排解">9. 疑難排解</h3>
+<p>如遇到問題：
+1. <strong>重新啟動系統</strong>：關閉系統後重新開啟
+2. <strong>檢查網路連線</strong>：確認網路連線正常
+3. <strong>清除快取</strong>：清除瀏覽器快取
+4. <strong>重新登入</strong>：登出後重新登入查詢系統
+5. <strong>聯繫技術支援</strong>：如問題持續，請聯繫技術支援</p>
+<h3 id="10-效能最佳化">10. 效能最佳化</h3>
+<ul>
+<li><strong>關閉不必要的程式</strong>：處理謄本時關閉其他程式，提升效能</li>
+<li><strong>定期清理暫存檔</strong>：清理系統暫存檔，釋放硬碟空間</li>
+<li><strong>不要同時處理太多謄本</strong>：建議一次處理不超過10個謄本</li>
+</ul>
+<hr />
+<h2 id="附錄資料夾結構說明">附錄：資料夾結構說明</h2>
+<p>完整的案件資料夾結構如下：</p>
+<pre><code>案件資料夾（例如：大寮區義堂段-358-21）
+│
+├── 0.謄本
+│   ├── 土地謄本.pdf
+│   ├── 建物謄本.pdf
+│   └── ...
+│
+├── 1.基本資料
+│   ├── V523查詢結果.png
+│   ├── 使用執照.png
+│   ├── 重要設施.png
+│   └── ...
+│
+├── 2.照片
+│   ├── 外觀照片.jpg
+│   ├── 室內照片.jpg
+│   └── ...
+│
+├── 3.行情
+│   ├── 內政部實價登錄.png
+│   ├── 104實價網.png
+│   └── ...
+│
+├── 4.其他相關
+│   ├── data.json（地段地號基礎資料）
+│   ├── data_final.json（完整物件調查表）
+│   ├── 國土測繪圖資.png
+│   ├── 都市計畫.png
+│   ├── 土地增值稅試算.png
+│   └── ...
+│
+├── 5.委託
+│   ├── 委託書.pdf
+│   ├── 身分證影本.pdf
+│   └── ...
+│
+└── 6.成交
+    ├── 買賣契約.pdf
+    ├── 過戶文件.pdf
+    └── ...
+</code></pre>
+<p><strong>資料夾用途說明</strong>：</p>
+<ul>
+<li><strong>0.謄本</strong>：存放從地政事務所下載的PDF謄本</li>
+<li><strong>1.基本資料</strong>：存放各項查詢的截圖（V523、使用執照、重要設施等）</li>
+<li><strong>2.照片</strong>：存放物件照片（外觀、室內、周邊環境等）</li>
+<li><strong>3.行情</strong>：存放實價登錄查詢截圖</li>
+<li><strong>4.其他相關</strong>：存放結構化資料（JSON）和其他圖資</li>
+<li><strong>5.委託</strong>：存放委託相關文件（委託書、身分證影本等）</li>
+<li><strong>6.成交</strong>：存放成交相關文件（買賣契約、過戶文件等）</li>
+</ul>
+<hr />
+<h2 id="聯絡資訊">聯絡資訊</h2>
+<p>如有任何問題或建議，請聯繫：</p>
+<ul>
+<li><strong>聯絡電話</strong>：0937-282-733</li>
+<li>可搜尋電話加 LINE</li>
+<li>加入前請先電話聯絡通知</li>
+<li><strong>使用說明</strong>：請參考本手冊或點擊系統中的「說明」按鈕</li>
+<li><strong>系統更新</strong>：請定期檢查系統更新通知</li>
+</ul>
+<hr />
+<p><strong>版本資訊</strong>：V1.03 | 2025年11月</p>
+<p><strong>編寫日期</strong>：2025年11月21日</p>
+<p><strong>適用系統</strong>：
+- Windows 10
+- Windows 11</p>
+</body>
+</html>

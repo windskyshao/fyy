@@ -310,6 +310,13 @@ def serve_chart(filename):
     return send_from_directory(CHART_DIR, filename)
 
 
+# 📖 地籍資料查詢系統使用說明（給 LINE「使用說明」按鈕連結用）
+@app.route('/help')
+def help_page():
+    _here = os.path.dirname(os.path.abspath(__file__))
+    return send_from_directory(_here, 'help.html')
+
+
 # 🔧 意見回饋：推播對象預設＝管理員本人（已知 userId），可用環境變數覆蓋
 ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', 'U60ff9aa248221639d7717bf54d1db609')
 # 🔧 意見回饋端點的簡單權杖；未設定環境變數時不檢查（方便先測，要鎖再設）
@@ -1755,7 +1762,7 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token,
             TextSendMessage(text="此功能暫待推出，敬請見諒～～"))
         return 0
-    if re.match('房地資訊|房地產',msg):
+    if re.match('房地資訊|房地產|地籍',msg):
         def house_bubble(title, links):
             btns = []
             colors = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0", "#E91E63"]
@@ -1796,9 +1803,14 @@ def handle_message(event):
             ("工商登記查詢", "https://findbiz.nat.gov.tw/fts/query/QueryBar/queryInit.do"),
             ("捷運離你多遠", "https://mrtexit.com/"),
         ])
+        b6 = house_bubble("📋 地籍資料查詢系統（軟體）", [
+            ("📦 完整安裝包(首次/含模組)", "https://www.dropbox.com/scl/fi/cc4cfo3gufikbjtsotx66/v1.1.7a.rar?rlkey=fk9r4typfo31flfx2q31z1mue&dl=0"),
+            ("🔄 程式更新檔(GitHub)", "https://github.com/windskyshao/tw-land-tools/releases/latest"),
+            ("📖 使用說明 / 教學", "https://fyy-l8a3.onrender.com/help"),
+        ])
         house_flex = FlexSendMessage(
             alt_text="房地資訊",
-            contents={"type": "carousel", "contents": [b1, b2, b3, b4, b5]}
+            contents={"type": "carousel", "contents": [b1, b2, b3, b4, b5, b6]}
         )
         line_bot_api.reply_message(event.reply_token, house_flex)
         return 0
