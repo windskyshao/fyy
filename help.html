@@ -502,6 +502,9 @@
 <p>同買賣案件步驟 8</p>
 <hr />
 <h2 id="各功能詳細說明">各功能詳細說明</h2>
+<div style="background-color:#e8f4f8; border-left:5px solid #3498db; padding:12px 16px; margin:12px 0; border-radius:4px;">
+<p><strong>📌 共通說明：</strong>多數查詢功能（使用執照、重要設施、V523、國土測繪、都市計畫、國土分區、地質雲、土地使用分區、實價登錄等）現在都會<strong>自動定位、倒數後自動截圖並存成 PDF</strong>（一般存入案件的「1.基本資料」，實價登錄存「3.行情」），<strong>不需手動截圖</strong>；倒數期間可自行調整網頁畫面位置。下方各功能若仍提到「手動截圖」，以此自動流程為準。</p>
+</div>
 <h3 id="1-地籍便民系統">1. 地籍便民系統</h3>
 <p><strong>功能</strong>：建立案件資料夾結構</p>
 <p><strong>操作步驟</strong>：
@@ -523,9 +526,9 @@
 - 樓層數</p>
 <p><strong>操作步驟</strong>：
 1. 點擊「使用執照查詢」按鈕
-2. 系統開啟高雄市使用執照查詢系統
+2. 進入後先選縣市（高雄市／屏東縣／台南市），系統開啟對應的查詢系統
 3. 系統會自動填入地址或地號
-4. <strong>手動操作</strong>：查看結果並截圖</p>
+4. 系統會自動截圖並存成 PDF（存入 1.基本資料）；倒數期間可自行調整畫面</p>
 <p><strong>注意事項</strong>：
 - 支援高雄市、屏東縣、台南市（進入後先選縣市）
 - 需要建物門牌地址</p>
@@ -542,14 +545,13 @@
 2. 系統開啟查詢網站
 3. 系統會自動定位到物件位置
 4. <strong>手動操作</strong>：查看結果並截圖</p>
-<h3 id="4-V523-系統僅限高雄市">4. V523 系統（僅限高雄市）</h3>
-<p><strong>功能</strong>：查詢 V523 相關資料</p>
+<h3 id="4-V523-系統僅限高雄市">4. V523 系統（高雄市／屏東縣）</h3>
+<p><strong>功能</strong>：查詢 V523 地產資訊網資料</p>
 <p><strong>操作步驟</strong>：
-1. 點擊「V523 系統」按鈕
-2. 系統開啟 V523 查詢系統
-3. 系統會自動填入地段地號
-4. <strong>手動操作</strong>：查看結果並截圖</p>
-<p><strong>注意事項</strong>：僅適用於高雄市</p>
+1. 點擊「V523 系統」按鈕（多筆地號時可勾選要執行哪幾筆）
+2. 系統開啟 V523 查詢系統並自動填入地段地號
+3. 系統會自動截圖並存成 PDF（存入 1.基本資料），同時將資料存成 JSON（4.其他相關）</p>
+<p><strong>注意事項</strong>：僅支援高雄市、屏東縣</p>
 <h3 id="5-國土測繪圖資">5. 國土測繪圖資</h3>
 <p><strong>功能</strong>：查詢國土測繪相關圖資</p>
 <p><strong>查詢內容</strong>：
@@ -1096,72 +1098,82 @@
 <hr />
 <h2 id="附錄資料夾結構說明">附錄：資料夾結構說明</h2>
 <p>完整的案件資料夾結構如下：</p>
-<pre><code>案件資料夾（例如：大寮區義堂段-358-21）
+<pre><code>案件資料夾（例如：苓雅區林興段-399）
 │
-├── 0.謄本
-│   ├── 土地謄本.pdf
-│   ├── 建物謄本.pdf
-│   └── ...
+├── 0.謄本                         （下載的謄本 PDF）
+│   ├── 土地登記第二類謄本-….pdf
+│   ├── 地籍圖謄本-….pdf
+│   ├── 建物測量成果圖-….pdf
+│   └── 建物登記第二類謄本-….pdf
 │
-├── 1.基本資料
-│   ├── V523查詢結果.png
-│   ├── 使用執照.png
-│   ├── 重要設施.png
-│   └── ...
+├── 1.基本資料                     （各項查詢結果 PDF）
+│   ├── 01_土地增值稅_財政部版_….pdf / .xlsx
+│   ├── 02_使用執照-….pdf
+│   ├── 03_重要設施-….pdf
+│   ├── 04_V523-….pdf
+│   ├── 05_地籍便民-….pdf
+│   ├── 06_國土測繪-….pdf
+│   ├── 07_全國土地使用分區-….pdf
+│   ├── 07_都市計畫使用分區-….pdf
+│   ├── 08_國土分區-….pdf
+│   ├── 09_地質雲-….pdf
+│   └── png/                       （上述查詢的截圖）
 │
-├── 2.照片
-│   ├── 外觀照片.jpg
-│   ├── 室內照片.jpg
-│   └── ...
+├── 2.照片                         （物件照片，手動放入）
 │
-├── 3.行情
-│   ├── 內政部實價登錄.png
-│   ├── 104實價網.png
-│   └── ...
+├── 3.行情                         （實價登錄結果）
+│   ├── 內政部實價登錄-….pdf
+│   └── 內政部實價登錄-….png
 │
-├── 4.其他相關
-│   ├── data.json（地段地號基礎資料）
-│   ├── data_final.json（完整物件調查表）
-│   ├── 國土測繪圖資.png
-│   ├── 都市計畫.png
-│   ├── 土地增值稅試算.png
-│   └── ...
-│
-├── 5.委託
-│   ├── 委託書.pdf
-│   ├── 身分證影本.pdf
-│   └── ...
-│
-└── 6.成交
-    ├── 買賣契約.pdf
-    ├── 過戶文件.pdf
-    └── ...
+└── 4.其他相關                     （各種 JSON 資料檔）
+    ├── data.json（地號清單）
+    ├── data_final.json（物件調查表）
+    ├── trans_….json（謄本結構化）
+    ├── V523資料-….json
+    ├── 財政部_tax_result.json
+    └── 都市計畫資料彙整.json
 </code></pre>
-<p><strong>資料夾用途說明</strong>：</p>
+<p><strong>資料夾用途說明</strong>（自動建立的共 5 個子資料夾）：</p>
 <ul>
-<li><strong>0.謄本</strong>：存放從地政事務所下載的PDF謄本</li>
-<li><strong>1.基本資料</strong>：存放各項查詢的截圖（V523、使用執照、重要設施等）</li>
-<li><strong>2.照片</strong>：存放物件照片（外觀、室內、周邊環境等）</li>
-<li><strong>3.行情</strong>：存放實價登錄查詢截圖</li>
-<li><strong>4.其他相關</strong>：存放結構化資料（JSON）和其他圖資</li>
-<li><strong>5.委託</strong>：存放委託相關文件（委託書、身分證影本等）</li>
-<li><strong>6.成交</strong>：存放成交相關文件（買賣契約、過戶文件等）</li>
+<li><strong>0.謄本</strong>：下載的謄本 PDF（土地登記、地籍圖、建物測量成果圖、建物登記）</li>
+<li><strong>1.基本資料</strong>：各項查詢結果 PDF（01 土增稅～09 地質雲）；其中 <strong>png</strong> 子資料夾存放對應截圖</li>
+<li><strong>2.照片</strong>：物件照片（外觀、室內、周邊環境等，手動放入）</li>
+<li><strong>3.行情</strong>：實價登錄查詢結果（PDF 與截圖 PNG）</li>
+<li><strong>4.其他相關</strong>：各種 JSON 資料檔（data.json、data_final.json、謄本結構化 trans_*、V523資料、財政部土增稅、都市計畫彙整等）</li>
 </ul>
 <hr />
-<h2 id="聯絡資訊">聯絡資訊</h2>
-<p>如有任何問題或建議，請聯繫：</p>
+<h2 id="聯絡資訊">意見回饋與更新</h2>
+<p>如有任何問題或建議，<strong>最方便的方式是直接用程式內的「意見回饋」</strong>：</p>
 <ul>
-<li><strong>聯絡電話</strong>：0937-282-733</li>
-<li>可搜尋電話加 LINE</li>
-<li>加入前請先電話聯絡通知</li>
-<li><strong>使用說明</strong>：請參考本手冊或點擊系統中的「說明」按鈕</li>
-<li><strong>系統更新</strong>：請定期檢查系統更新通知</li>
+<li><strong>💬 意見回饋</strong>：點主程式右上角的「💬」圖示按鈕，填寫後送出即可。系統會<strong>自動附上目前畫面截圖與版本資訊</strong>，直接傳達給開發者，方便快速了解並改善問題（也可改用您自己的截圖）。使用者端不需安裝或登入任何額外服務。</li>
+<li><strong>系統更新</strong>：程式啟動時會<strong>自動檢查更新</strong>，偵測到新版會主動跳出對話框提示；也可點右上角的「🔄」手動檢查。</li>
+<li><strong>使用說明</strong>：請參考本手冊，或點擊系統中的「說明」按鈕。</li>
 </ul>
 <hr />
-<p><strong>版本資訊</strong>：V1.03 | 2025年11月</p>
-<p><strong>編寫日期</strong>：2025年11月21日</p>
+<p><strong>對應程式版本</strong>：v1.1.7d（2026年6月）</p>
+<p><strong>手冊更新日期</strong>：2026年6月15日</p>
 <p><strong>適用系統</strong>：
 - Windows 10
 - Windows 11</p>
+
+<!-- 圖片點擊放大（lightbox） -->
+<style>
+  img { cursor: zoom-in; }
+  #imgLightbox { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:99999; cursor:zoom-out; }
+  #imgLightbox img { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); max-width:96%; max-height:96%; cursor:zoom-out; box-shadow:0 0 24px rgba(0,0,0,0.6); }
+</style>
+<div id="imgLightbox" onclick="this.style.display='none'"><img id="imgLightboxImg" src="" alt="放大圖"></div>
+<script>
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (t && t.tagName === 'IMG' && t.id !== 'imgLightboxImg') {
+      document.getElementById('imgLightboxImg').src = t.src;
+      document.getElementById('imgLightbox').style.display = 'block';
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') { document.getElementById('imgLightbox').style.display = 'none'; }
+  });
+</script>
 </body>
 </html>
