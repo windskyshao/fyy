@@ -506,16 +506,30 @@
 <p><strong>📌 共通說明：</strong>多數查詢功能（使用執照、重要設施、V523、國土測繪、都市計畫、國土分區、地質雲、土地使用分區、實價登錄等）現在都會<strong>自動定位、倒數後自動截圖並存成 PDF</strong>（一般存入案件的「1.基本資料」，實價登錄存「3.行情」），<strong>不需手動截圖</strong>；倒數期間可自行調整網頁畫面位置。下方各功能若仍提到「手動截圖」，以此自動流程為準。</p>
 </div>
 <h3 id="1-地籍便民系統">1. 地籍便民系統</h3>
-<p><strong>功能</strong>：建立案件資料夾結構</p>
-<p><strong>操作步驟</strong>：
-1. 點擊「地籍便民系統」按鈕
-2. 輸入縣市、行政區、地段、地號
-3. 點擊「確定」</p>
-<p><strong>自動建立</strong>：
-- 案件資料夾：「區段-地號」
-- 5 個子資料夾：0.謄本、1.基本資料、2.照片、3.行情、4.其他相關
-- data.json 檔案（存於 4.其他相關）</p>
-<p><strong>適用時機</strong>：每個新案件的第一步</p>
+<p><strong>功能</strong>：依您手動選擇的「縣市、行政區、地段、地號」<strong>建立案件資料夾</strong>並寫入 data.json。後續所有查詢都會以這個 data.json 為基準，<strong>所以每個案件一定要先執行這一步。</strong></p>
+<div style="background-color:#fff3cd; border-left:5px solid #f0ad4e; padding:12px 16px; margin:12px 0; border-radius:4px;">
+<p><strong>⚠️ 一定要先執行「地籍便民系統」</strong>，它會建立資料夾、寫入地號清單；沒有這一步，後續功能沒有 data.json 可用。</p>
+</div>
+<p><strong>操作步驟</strong>：</p>
+<ol>
+<li>點擊「地籍便民系統」按鈕</li>
+<li>在開啟的地籍圖資便民系統網頁上，<strong>手動選擇縣市、行政區、地段、地號</strong></li>
+<li>系統會依您的選擇建立資料夾、寫入 data.json，並截圖存檔</li>
+</ol>
+<p><strong>📌 若 data.json 已有先前查詢紀錄</strong>，點擊時會先跳出「接續之前的查詢？」對話框：</p>
+<p><img src="https://fyy-l8a3.onrender.com/help_img/continue_query_prompt.png" alt="接續之前的查詢對話框" style="max-width:380px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
+<ul>
+<li><strong>接續查詢（綠）</strong>：<strong>同一案件要再加地號</strong>時選此，新資料會加在最後一筆之後（資料夾名稱仍依第一筆）。</li>
+<li><strong>重新開始（紅）</strong>：<strong>全新案件</strong>選此，data.json 會被新的第一筆取代（等於開新案件）。</li>
+<li><strong>取消操作（灰）</strong>：不啟動地籍便民系統。</li>
+</ul>
+<p><strong>自動建立</strong>：</p>
+<ul>
+<li>案件資料夾：「區段-地號」（以第一筆為名）</li>
+<li>5 個子資料夾：0.謄本、1.基本資料、2.照片、3.行情、4.其他相關</li>
+<li>data.json 檔案（存於 4.其他相關）</li>
+</ul>
+<p><strong>適用時機</strong>：每個新案件的第一步。</p>
 <h3 id="2-使用執照查詢僅限高雄市">2. 使用執照查詢（高雄市／屏東縣／台南市）</h3>
 <p><strong>功能</strong>：查詢建物使用執照資訊</p>
 <p><strong>查詢內容</strong>：

@@ -20,6 +20,7 @@
   telereport_struct_full.png    → 電傳謄本結構化程式主畫面（全展開）
   cadastral_map_tool.png        → 地籍圖處理工具主畫面
   cadastral_map_result.png      → 地籍圖處理工具：標註結果（紅框+尺寸）
+  continue_query_prompt.png     → 地籍便民系統「接續之前的查詢？」對話框
 
 存好後 commit + push，help.html 裡的圖片就會顯示。
 網址格式：https://fyy-l8a3.onrender.com/help_img/main_page.png
