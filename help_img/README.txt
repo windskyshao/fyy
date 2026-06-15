@@ -18,6 +18,8 @@
   load_json_prompt.png          → 關閉結構化程式後「是否載入此結構化 JSON」對話框
   telereport_struct_startup.png → 電傳謄本結構化程式啟動時「配合主程式」詢問
   telereport_struct_full.png    → 電傳謄本結構化程式主畫面（全展開）
+  cadastral_map_tool.png        → 地籍圖處理工具主畫面
+  cadastral_map_result.png      → 地籍圖處理工具：標註結果（紅框+尺寸）
 
 存好後 commit + push，help.html 裡的圖片就會顯示。
 網址格式：https://fyy-l8a3.onrender.com/help_img/main_page.png
