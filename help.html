@@ -173,6 +173,7 @@
 <li><a href="#安裝說明">安裝與更新說明</a></li>
 <li><a href="#主介面介紹">主介面介紹</a></li>
 <li><a href="#標題列與檔案位置">標題列與檔案位置說明</a></li>
+<li><a href="#子程式運作方式">子程式的運作方式</a></li>
 <li><a href="#買賣案件完整操作流程">買賣案件完整操作流程</a></li>
 <li><a href="#租賃案件操作流程">租賃案件操作流程</a></li>
 <li><a href="#各功能詳細說明">各功能詳細說明</a></li>
@@ -325,6 +326,18 @@
 <ul>
 <li>可<strong>選擇您習慣的目的資料夾</strong>（程式會記住上次的位置）。</li>
 <li>程式會<strong>自動在資料夾名稱前加上「民國日期」</strong>，格式為 <code>民國年.月.日</code>＋地段地號（＋門牌），例如 <code>115.06.15苓雅區林興段-399</code>，方便依日期歸檔。</li>
+</ul>
+<hr />
+<h2 id="子程式運作方式">子程式的運作方式（畫面配置與操作）</h2>
+<p>啟動「地籍便民系統」及其他查詢功能後，畫面會自動分成左右兩塊，方便您邊看邊操作：</p>
+<p><img src="https://fyy-l8a3.onrender.com/help_img/runtime_layout.png" alt="主程式與子程式畫面配置" style="max-width:560px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
+<ul>
+<li><strong>畫面配置</strong>：主程式固定在螢幕<strong>右側約 1/3</strong>，子程式（瀏覽器）佔<strong>左側約 2/3</strong>，兩者並排不重疊。</li>
+<li><strong>全程可見、可介入</strong>：各查詢子程式是以「<strong>自動化（網頁爬蟲）</strong>」方式操作網站——自動開啟網頁、填入地段地號、定位到目標位置；整個過程畫面都看得見，您可隨時用滑鼠介入、調整。</li>
+<li><strong>截圖前倒數 10 秒</strong>：在擷取瀏覽器畫面前，程式會<strong>倒數 10 秒</strong>，讓您把地圖<strong>縮放、移動到最理想的位置</strong>；倒數結束會自動截圖並轉存。</li>
+<li><strong>自動轉存</strong>：各筆查詢結果會自動轉存為 JSON／PNG／PDF（PDF 存入案件「1.基本資料」、截圖存其 png 子資料夾）。</li>
+<li><strong>地理位置權限</strong>：若瀏覽器左上角跳出「存取您的位置資訊」，請點最上面的「<strong>造訪這個網站時允許</strong>」即可繼續（程式已盡量自動授權）。</li>
+<li><strong>中途退出</strong>：長按鍵盤 <strong>ESC</strong> 鍵可退出目前的子程式。</li>
 </ul>
 <hr />
 <h2 id="買賣案件完整操作流程">買賣案件完整操作流程</h2>

@@ -21,6 +21,7 @@
   cadastral_map_tool.png        → 地籍圖處理工具主畫面
   cadastral_map_result.png      → 地籍圖處理工具：標註結果（紅框+尺寸）
   continue_query_prompt.png     → 地籍便民系統「接續之前的查詢？」對話框
+  runtime_layout.png            → 子程式運作畫面配置（主程式右1/3、瀏覽器左2/3）
 
 存好後 commit + push，help.html 裡的圖片就會顯示。
 網址格式：https://fyy-l8a3.onrender.com/help_img/main_page.png
