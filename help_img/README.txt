@@ -23,5 +23,10 @@
   continue_query_prompt.png     → 地籍便民系統「接續之前的查詢？」對話框
   runtime_layout.png            → 子程式運作畫面配置（主程式右1/3、瀏覽器左2/3）
 
+【使用執照查詢流程】
+  license_query_form.png        → 建築執照存根查詢：自動帶入地段地號+驗證碼的查詢表單畫面
+  license_query_results.png     → 查詢結果清單（含「使」字者藍色標示那張）
+  license_detail.png            → 選定後跳轉的「建築執照存根」詳細頁（會存成PDF的那頁）
+
 存好後 commit + push，help.html 裡的圖片就會顯示。
 網址格式：https://fyy-l8a3.onrender.com/help_img/main_page.png
