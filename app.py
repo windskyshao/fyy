@@ -885,17 +885,25 @@ import pyimgur
 
 def plot_stock_k_chart(IMGUR_CLIENT_ID, stock="0050", date_from='2020-01-01'):
     """
-    進行個股k線繪製。優先上傳 Imgur，失敗時改用本地圖片路由。
+    進行個股k線繪製。優先嘗試 .TW（上市），失敗則 fallback .TWO（上櫃）。
     """
-    ticker_symbol = str(stock) + ".TW"
+    df = None
+    ticker_symbol = None
+    for suffix in ('.TW', '.TWO'):
+        try:
+            candidate = str(stock) + suffix
+            print(f"正在獲取股票數據: {candidate}")
+            tmp = yf.download(candidate, start=date_from)
+            if tmp is not None and not tmp.empty:
+                df = tmp
+                ticker_symbol = candidate
+                break
+        except Exception as e:
+            print(f"K線下載失敗 {candidate}: {e}")
+    if df is None or df.empty:
+        print(f"未能獲取到股票數據（已試 .TW / .TWO）")
+        return None
     try:
-        print(f"正在獲取股票數據: {ticker_symbol}")
-        df = yf.download(ticker_symbol, start=date_from)
-
-        if df is None or df.empty:
-            print(f"未能獲取到股票數據")
-            return None
-
         # 新版 yfinance 回傳多層欄位，需要攤平
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
