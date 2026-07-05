@@ -809,8 +809,10 @@ def cron_oil_price():
     try:
         # 冪等保護：cron-job.org 若超時重試，會多次呼叫此 endpoint，
         # 用「今天是否已成功推播」擋掉重複，避免使用者收到多則一樣的通知。
+        # 加 ?force=1 可跳過冪等，供資料源修正後手動重推
+        force = request.args.get('force') == '1'
         today_str = datetime.datetime.utcnow().strftime('%Y-%m-%d')
-        if mongodb.get_cron_last_run('oil_price') == today_str:
+        if not force and mongodb.get_cron_last_run('oil_price') == today_str:
             return f"OK, already sent today ({today_str})", 200
         data = oil_price()
         prices = data['prices']
