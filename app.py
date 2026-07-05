@@ -1058,8 +1058,83 @@ def cache_users_stock():
     return users
 
 # 油價報你知
+def _fetch_moea_oil():
+    """從經濟部能源署抓中油官方公告的油價（含吸收補貼後的實際價格）。
+    goodlife.tw 是「公式預估」不含中油自行吸收/貨物稅減徵，會與實際公告不符，
+    因此優先用 MOEA 這個權威來源，goodlife.tw 只作 fallback。
+    回傳 {'prices': {...}, 'forecast': {...}} 或 None（抓取失敗時）。
+    """
+    try:
+        # MOEA 會擋預設的 python-requests UA，帶瀏覽器 UA 才會回完整頁面
+        ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'
+        r = requests.get('https://www2.moeaea.gov.tw/oil111',
+                         headers={'User-Agent': ua}, timeout=10, verify=False)
+        r.encoding = 'utf-8'
+        html = r.text
+    except Exception:
+        return None
+    start = html.find('最新油品參考零售價格')
+    if start < 0:
+        return None
+    section = html[start:start + 10000]
+    group_re = re.compile(
+        r'(92 無鉛汽油[\s\S]*?超級柴油[\s\S]*?)開始實施時間：自(\d{4}/\d{2}/\d{2})',
+        re.S,
+    )
+    groups = group_re.findall(section)
+    if not groups:
+        return None
+    item_re = re.compile(
+        r'(92 無鉛汽油|95 無鉛汽油|98 無鉛汽油|超級柴油)\s*</div>\s*'
+        r'<div class="col-5 text-center">\s*<strong>([\d.]+)</strong>[\s\S]*?'
+        r'(south|north)[\s\S]{0,80}?([\d.]+)',
+        re.S,
+    )
+    label_map = {'92 無鉛汽油': '92', '95 無鉛汽油': '95', '98 無鉛汽油': '98', '超級柴油': '柴油'}
+    parsed = []
+    for content, date_str in groups[:3]:
+        items = item_re.findall(content)
+        if len(items) < 4:
+            continue
+        prices = {}
+        deltas = {}
+        for name, price, direction, delta in items:
+            k = label_map.get(name)
+            if not k:
+                continue
+            prices[k] = float(price)
+            sign = -1 if direction == 'south' else 1
+            deltas[k] = sign * float(delta)
+        parsed.append({'date': date_str, 'prices': prices, 'deltas': deltas})
+    if not parsed:
+        return None
+    latest = parsed[0]
+    prices_out = {
+        '92': str(latest['prices'].get('92', '')),
+        '95': str(latest['prices'].get('95', '')),
+        '98': str(latest['prices'].get('98', '')),
+        '柴油': str(latest['prices'].get('柴油', '')),
+    }
+    def fmt_delta(k):
+        d = latest['deltas'].get(k)
+        if d is None:
+            return None
+        if abs(d) < 0.001:
+            return '不調整'
+        return f"{'降' if d < 0 else '漲'} {abs(d):.1f} 元"
+    forecast = {
+        '日期': f"自 {latest['date']} 起",
+        '汽油調整': fmt_delta('92') or '',
+        '柴油預計調整': fmt_delta('柴油') or '',
+        '變動幅度': '',
+    }
+    return {'prices': prices_out, 'forecast': forecast, '_source': 'moea'}
+
 def oil_price():
-    """回傳結構化油價資料 dict"""
+    """回傳結構化油價資料 dict；優先用 MOEA 官方，失敗才用 goodlife.tw 公式預估"""
+    data = _fetch_moea_oil()
+    if data:
+        return data
     target_url = 'https://gas.goodlife.tw/'
     rs = requests.session()
     res = rs.get(target_url, verify=False)
