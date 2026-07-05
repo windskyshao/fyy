@@ -1153,7 +1153,7 @@ def build_oil_price_flex(data):
     deltas = data.get('deltas', {})
     eff = data.get('effective_date', '')
     has_fpc = bool(fpc)
-    def _row_num(text, color="#333333", size="sm", weight=None, align="end", flex=2):
+    def _row_num(text, color="#333333", size="lg", weight="bold", align="end", flex=2):
         c = {"type": "text", "text": text, "size": size, "color": color, "align": align, "flex": flex}
         if weight:
             c["weight"] = weight
@@ -1164,54 +1164,55 @@ def build_oil_price_flex(data):
         if abs(d) < 0.001:
             return "持平", "#888888"
         return (f"▼ {abs(d):.1f}", "#1DB446") if d < 0 else (f"▲ {abs(d):.1f}", "#FF3B30")
-    # 表頭
+    # 表頭：欄位標籤放大到 md
     header_cols = [
-        {"type": "text", "text": "油品", "size": "xs", "color": "#888888", "weight": "bold", "flex": 3},
-        {"type": "text", "text": "中油", "size": "xs", "color": "#FF6600", "weight": "bold", "align": "end", "flex": 2},
+        {"type": "text", "text": "油品", "size": "md", "color": "#888888", "weight": "bold", "flex": 3},
+        {"type": "text", "text": "中油", "size": "md", "color": "#FF6600", "weight": "bold", "align": "end", "flex": 2},
     ]
     if has_fpc:
-        header_cols.append({"type": "text", "text": "台塑", "size": "xs", "color": "#2196F3", "weight": "bold", "align": "end", "flex": 2})
-    header_cols.append({"type": "text", "text": "變動", "size": "xs", "color": "#888888", "weight": "bold", "align": "end", "flex": 2})
+        header_cols.append({"type": "text", "text": "台塑", "size": "md", "color": "#2196F3", "weight": "bold", "align": "end", "flex": 2})
+    header_cols.append({"type": "text", "text": "變動", "size": "md", "color": "#888888", "weight": "bold", "align": "end", "flex": 2})
     rows = [{"type": "box", "layout": "horizontal", "contents": header_cols, "margin": "sm"}]
-    rows.append({"type": "separator", "margin": "sm"})
+    rows.append({"type": "separator", "margin": "md"})
     fuels = [('92', '92無鉛'), ('95', '95無鉛'), ('98', '98無鉛'), ('柴油', '柴油')]
     for key, label in fuels:
         d_txt, d_color = _delta_text(deltas.get(key))
         cpc_price = cpc_next.get(key) or cpc.get(key)
         cols = [
-            {"type": "text", "text": label, "size": "sm", "color": "#333333", "weight": "bold", "flex": 3},
-            _row_num(f"{cpc_price:.2f}" if cpc_price is not None else "—", color="#FF6600", weight="bold"),
+            {"type": "text", "text": label, "size": "lg", "color": "#333333", "weight": "bold", "flex": 3},
+            _row_num(f"{cpc_price:.2f}" if cpc_price is not None else "—", color="#FF6600"),
         ]
         if has_fpc:
             fpc_price = fpc_next.get(key) or fpc.get(key)
-            cols.append(_row_num(f"{fpc_price:.2f}" if fpc_price is not None else "—", color="#2196F3", weight="bold"))
-        cols.append({"type": "text", "text": d_txt, "size": "sm", "color": d_color, "align": "end", "weight": "bold", "flex": 2})
-        rows.append({"type": "box", "layout": "horizontal", "contents": cols, "margin": "md"})
+            cols.append(_row_num(f"{fpc_price:.2f}" if fpc_price is not None else "—", color="#2196F3"))
+        cols.append({"type": "text", "text": d_txt, "size": "lg", "color": d_color, "align": "end", "weight": "bold", "flex": 2})
+        rows.append({"type": "box", "layout": "horizontal", "contents": cols, "margin": "lg"})
     subtitle = f"下週油價（{eff} 起）" if eff else "下週油價"
     return FlexSendMessage(
         alt_text=f"油價週報 - {eff}" if eff else "油價週報",
         contents={
             "type": "bubble",
+            "size": "mega",
             "header": {
                 "type": "box", "layout": "vertical",
                 "contents": [
-                    {"type": "text", "text": "⛽ 油價週報", "weight": "bold", "size": "lg", "color": "#FF6600"},
-                    {"type": "text", "text": subtitle, "size": "xs", "color": "#888888", "margin": "sm"}
+                    {"type": "text", "text": "⛽ 油價週報", "weight": "bold", "size": "xl", "color": "#FF6600"},
+                    {"type": "text", "text": subtitle, "size": "md", "color": "#888888", "margin": "sm"}
                 ],
-                "paddingAll": "15px"
+                "paddingAll": "16px"
             },
             "body": {
                 "type": "box", "layout": "vertical",
                 "contents": rows,
-                "paddingAll": "15px",
+                "paddingAll": "16px",
                 "spacing": "sm"
             },
             "footer": {
                 "type": "box", "layout": "vertical",
                 "contents": [
-                    {"type": "text", "text": "資料來源：中油官方公告", "size": "xxs", "color": "#aaaaaa", "align": "center"}
+                    {"type": "text", "text": "資料來源：中油官方公告", "size": "xs", "color": "#aaaaaa", "align": "center"}
                 ],
-                "paddingAll": "8px"
+                "paddingAll": "10px"
             }
         }
     )
