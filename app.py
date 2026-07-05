@@ -810,14 +810,19 @@ def cron_oil_price():
         # 冪等保護：cron-job.org 若超時重試，會多次呼叫此 endpoint，
         # 用「今天是否已成功推播」擋掉重複，避免使用者收到多則一樣的通知。
         # 加 ?force=1 可跳過冪等，供資料源修正後手動重推
+        # 加 ?test=1 只推給管理員白名單（不打擾其他人），且不寫入當日冪等
         force = request.args.get('force') == '1'
+        test_mode = request.args.get('test') == '1'
         today_str = datetime.datetime.utcnow().strftime('%Y-%m-%d')
-        if not force and mongodb.get_cron_last_run('oil_price') == today_str:
+        if not force and not test_mode and mongodb.get_cron_last_run('oil_price') == today_str:
             return f"OK, already sent today ({today_str})", 200
         data = oil_price()
         # 若拿到 transmit 結構（含 cpc/fpc），用 flex；否則 fallback 純文字
         use_flex = bool(data.get('cpc'))
-        followers = mongodb.get_all_followers()
+        if test_mode:
+            followers = ['U60ff9aa248221639d7717bf54d1db609']
+        else:
+            followers = mongodb.get_all_followers()
         sent = 0
         if use_flex:
             oil_flex = build_oil_price_flex(data)
@@ -854,8 +859,11 @@ def cron_oil_price():
                 except Exception as e:
                     print(f"[cron_oil] Failed to push to {uid}: {e}")
         # 推播完成才標記「今日已執行」，避免推播失敗時被誤鎖
-        mongodb.set_cron_last_run('oil_price', today_str)
-        return f"OK, sent={sent}", 200
+        # 測試模式不寫入，避免擋住當日正式推播
+        if not test_mode:
+            mongodb.set_cron_last_run('oil_price', today_str)
+        tag = ' (test)' if test_mode else ''
+        return f"OK, sent={sent}{tag}", 200
     except Exception as e:
         return f"Error: {e}", 500
 
