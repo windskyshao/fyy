@@ -879,6 +879,36 @@ def cron_status():
     lines = [f"{k}: {v}" for k, v in info.items()]
     return "\n".join(lines), 200, {"Content-Type": "text/plain; charset=utf-8"}
 
+@app.route('/cron/oil_debug')
+def cron_oil_debug():
+    """診斷 oil_price 資料結構，看實際用了哪個來源，不推播"""
+    import json as _json
+    try:
+        data = oil_price()
+        has_cpc = bool(data.get('cpc'))
+        has_fpc = bool(data.get('fpc'))
+        summary = {
+            'source': data.get('_source', 'unknown'),
+            'has_cpc': has_cpc,
+            'has_fpc': has_fpc,
+            'effective_date': data.get('effective_date', ''),
+            'cpc_next': data.get('cpc_next', {}),
+            'fpc_next': data.get('fpc_next', {}),
+            'deltas': data.get('deltas', {}),
+            'prices': data.get('prices', {}),
+            'forecast': data.get('forecast', {}),
+            'will_use_flex': has_cpc,
+        }
+        # 也試單獨呼叫 transmit / MOEA 看誰壞了
+        t_res = _fetch_transmit_oil()
+        m_res = _fetch_moea_oil()
+        summary['transmit_ok'] = bool(t_res and t_res.get('cpc'))
+        summary['moea_ok'] = bool(m_res)
+        return _json.dumps(summary, ensure_ascii=False, indent=2, default=str), 200, {"Content-Type": "application/json; charset=utf-8"}
+    except Exception as e:
+        import traceback
+        return f"Error: {e}\n\n{traceback.format_exc()}", 500
+
 @app.route('/register_me/<user_id>')
 def register_me(user_id):
     """手動註冊現有用戶（用於已追蹤但未記錄的用戶）"""
