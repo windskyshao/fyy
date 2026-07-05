@@ -815,33 +815,44 @@ def cron_oil_price():
         if not force and mongodb.get_cron_last_run('oil_price') == today_str:
             return f"OK, already sent today ({today_str})", 200
         data = oil_price()
-        prices = data['prices']
-        forecast = data['forecast']
-        label_map = {'92': '92無鉛', '95': '95無鉛', '98': '98無鉛', '柴油': '超級柴油', '今日中油油價': None}
-        price_lines = ""
-        for key, val in prices.items():
-            label = label_map.get(key, key)
-            if label is None:
-                continue
-            price_lines += f"  {label}：${val}\n"
-        forecast_lines = ""
-        if forecast.get('日期'):
-            forecast_lines += f"{forecast['日期']}\n"
-        if forecast.get('汽油調整'):
-            forecast_lines += f"  汽油：{forecast['汽油調整']}\n"
-        if forecast.get('柴油預計調整'):
-            forecast_lines += f"  柴油：{forecast['柴油預計調整']}\n"
-        if forecast.get('變動幅度'):
-            forecast_lines += f"  變動幅度：{forecast['變動幅度']}\n"
-        msg = f"⛽ 油價週報\n\n本週油價：\n{price_lines}\n📊 下週預測：\n{forecast_lines}"
+        # 若拿到 transmit 結構（含 cpc/fpc），用 flex；否則 fallback 純文字
+        use_flex = bool(data.get('cpc'))
         followers = mongodb.get_all_followers()
         sent = 0
-        for uid in followers:
-            try:
-                line_bot_api.push_message(uid, TextSendMessage(text=msg.strip()))
-                sent += 1
-            except Exception as e:
-                print(f"[cron_oil] Failed to push to {uid}: {e}")
+        if use_flex:
+            oil_flex = build_oil_price_flex(data)
+            for uid in followers:
+                try:
+                    line_bot_api.push_message(uid, oil_flex)
+                    sent += 1
+                except Exception as e:
+                    print(f"[cron_oil] Failed to push to {uid}: {e}")
+        else:
+            prices = data.get('prices', {})
+            forecast = data.get('forecast', {})
+            label_map = {'92': '92無鉛', '95': '95無鉛', '98': '98無鉛', '柴油': '超級柴油', '今日中油油價': None}
+            price_lines = ""
+            for key, val in prices.items():
+                label = label_map.get(key, key)
+                if label is None:
+                    continue
+                price_lines += f"  {label}:${val}\n"
+            forecast_lines = ""
+            if forecast.get('日期'):
+                forecast_lines += f"{forecast['日期']}\n"
+            if forecast.get('汽油調整'):
+                forecast_lines += f"  汽油:{forecast['汽油調整']}\n"
+            if forecast.get('柴油預計調整'):
+                forecast_lines += f"  柴油:{forecast['柴油預計調整']}\n"
+            if forecast.get('變動幅度'):
+                forecast_lines += f"  變動幅度:{forecast['變動幅度']}\n"
+            msg = f"⛽ 油價週報\n\n本週油價:\n{price_lines}\n📊 下週預測:\n{forecast_lines}"
+            for uid in followers:
+                try:
+                    line_bot_api.push_message(uid, TextSendMessage(text=msg.strip()))
+                    sent += 1
+                except Exception as e:
+                    print(f"[cron_oil] Failed to push to {uid}: {e}")
         # 推播完成才標記「今日已執行」，避免推播失敗時被誤鎖
         mongodb.set_cron_last_run('oil_price', today_str)
         return f"OK, sent={sent}", 200
@@ -1060,6 +1071,121 @@ def cache_users_stock():
     return users
 
 # 油價報你知
+def _fetch_transmit_oil():
+    """從 gasoline.transmit-info.com 抓中油+台塑對照油價（本週/下週 + 變動）
+    回傳 dict：cpc/fpc 本週價、下週價、變動幅度、生效日期；抓不到回 None
+    """
+    try:
+        r = requests.get('https://gasoline.transmit-info.com/',
+                         headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, verify=False)
+        r.encoding = 'utf-8'
+        html = r.text
+    except Exception:
+        return None
+    row_re = re.compile(
+        r'<td>\s*(中油|台塑)\s*(98|95|92|柴油)(?:無鉛)?\s*</td>\s*'
+        r'<td>\s*([\d.]+)\s*</td>\s*'
+        r'<td>\s*([\d.]+)\s*</td>',
+        re.S,
+    )
+    rows = row_re.findall(html)
+    if len(rows) < 8:
+        return None
+    data = {'cpc': {}, 'fpc': {}, 'cpc_next': {}, 'fpc_next': {}, 'deltas': {}}
+    for company, fuel, cur, nxt in rows[:8]:
+        target = 'cpc' if company == '中油' else 'fpc'
+        data[target][fuel] = float(cur)
+        data[f'{target}_next'][fuel] = float(nxt)
+        d = round(float(nxt) - float(cur), 2)
+        data['deltas'].setdefault(fuel, d)
+    date_m = re.search(r'(\d{4}/\d{2}/\d{2})\s*~\s*(\d{4}/\d{2}/\d{2})', html)
+    if date_m:
+        try:
+            from datetime import datetime as _dt, timedelta as _td
+            end_of_this_week = _dt.strptime(date_m.group(2), '%Y/%m/%d')
+            data['effective_date'] = (end_of_this_week + _td(days=1)).strftime('%Y/%m/%d')
+        except Exception:
+            data['effective_date'] = ''
+    else:
+        data['effective_date'] = ''
+    data['_source'] = 'transmit'
+    return data
+
+def build_oil_price_flex(data):
+    """組裝油價週報 flex：中油 vs 台塑對照 + 下週變動。
+    data 需含 cpc/fpc/cpc_next/fpc_next/deltas/effective_date。
+    若無 fpc（例如 fallback MOEA 只有中油）則只顯示中油。
+    """
+    cpc = data.get('cpc', {})
+    fpc = data.get('fpc', {})
+    cpc_next = data.get('cpc_next', {})
+    fpc_next = data.get('fpc_next', {})
+    deltas = data.get('deltas', {})
+    eff = data.get('effective_date', '')
+    has_fpc = bool(fpc)
+    def _row_num(text, color="#333333", size="sm", weight=None, align="end", flex=2):
+        c = {"type": "text", "text": text, "size": size, "color": color, "align": align, "flex": flex}
+        if weight:
+            c["weight"] = weight
+        return c
+    def _delta_text(d):
+        if d is None:
+            return "—", "#888888"
+        if abs(d) < 0.001:
+            return "持平", "#888888"
+        return (f"▼ {abs(d):.1f}", "#1DB446") if d < 0 else (f"▲ {abs(d):.1f}", "#FF3B30")
+    # 表頭
+    header_cols = [
+        {"type": "text", "text": "油品", "size": "xs", "color": "#888888", "weight": "bold", "flex": 3},
+        {"type": "text", "text": "中油", "size": "xs", "color": "#FF6600", "weight": "bold", "align": "end", "flex": 2},
+    ]
+    if has_fpc:
+        header_cols.append({"type": "text", "text": "台塑", "size": "xs", "color": "#2196F3", "weight": "bold", "align": "end", "flex": 2})
+    header_cols.append({"type": "text", "text": "變動", "size": "xs", "color": "#888888", "weight": "bold", "align": "end", "flex": 2})
+    rows = [{"type": "box", "layout": "horizontal", "contents": header_cols, "margin": "sm"}]
+    rows.append({"type": "separator", "margin": "sm"})
+    fuels = [('92', '92無鉛'), ('95', '95無鉛'), ('98', '98無鉛'), ('柴油', '柴油')]
+    for key, label in fuels:
+        d_txt, d_color = _delta_text(deltas.get(key))
+        cpc_price = cpc_next.get(key) or cpc.get(key)
+        cols = [
+            {"type": "text", "text": label, "size": "sm", "color": "#333333", "weight": "bold", "flex": 3},
+            _row_num(f"{cpc_price:.2f}" if cpc_price is not None else "—", color="#FF6600", weight="bold"),
+        ]
+        if has_fpc:
+            fpc_price = fpc_next.get(key) or fpc.get(key)
+            cols.append(_row_num(f"{fpc_price:.2f}" if fpc_price is not None else "—", color="#2196F3", weight="bold"))
+        cols.append({"type": "text", "text": d_txt, "size": "sm", "color": d_color, "align": "end", "weight": "bold", "flex": 2})
+        rows.append({"type": "box", "layout": "horizontal", "contents": cols, "margin": "md"})
+    subtitle = f"下週油價（{eff} 起）" if eff else "下週油價"
+    return FlexSendMessage(
+        alt_text=f"油價週報 - {eff}" if eff else "油價週報",
+        contents={
+            "type": "bubble",
+            "header": {
+                "type": "box", "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": "⛽ 油價週報", "weight": "bold", "size": "lg", "color": "#FF6600"},
+                    {"type": "text", "text": subtitle, "size": "xs", "color": "#888888", "margin": "sm"}
+                ],
+                "paddingAll": "15px"
+            },
+            "body": {
+                "type": "box", "layout": "vertical",
+                "contents": rows,
+                "paddingAll": "15px",
+                "spacing": "sm"
+            },
+            "footer": {
+                "type": "box", "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": "資料來源：中油官方公告", "size": "xxs", "color": "#aaaaaa", "align": "center"}
+                ],
+                "paddingAll": "8px"
+            }
+        }
+    )
+
 def _fetch_moea_oil():
     """從經濟部能源署抓中油官方公告的油價（含吸收補貼後的實際價格）。
     goodlife.tw 是「公式預估」不含中油自行吸收/貨物稅減徵，會與實際公告不符，
@@ -1133,7 +1259,29 @@ def _fetch_moea_oil():
     return {'prices': prices_out, 'forecast': forecast, '_source': 'moea'}
 
 def oil_price():
-    """回傳結構化油價資料 dict；優先用 MOEA 官方，失敗才用 goodlife.tw 公式預估"""
+    """回傳結構化油價資料 dict。
+    優先序：transmit-info（中油+台塑對照）→ MOEA（僅中油）→ goodlife.tw（公式預估）
+    """
+    data = _fetch_transmit_oil()
+    if data:
+        # 為了與舊 caller 相容，同時填入 prices/forecast 兩個舊 key
+        cpc_next = data.get('cpc_next', {})
+        deltas = data.get('deltas', {})
+        data.setdefault('prices', {k: str(v) for k, v in cpc_next.items()})
+        def _fmt_delta(k):
+            d = deltas.get(k)
+            if d is None:
+                return ''
+            if abs(d) < 0.001:
+                return '不調整'
+            return f"{'降' if d < 0 else '漲'} {abs(d):.1f} 元"
+        data.setdefault('forecast', {
+            '日期': f"自 {data.get('effective_date', '')} 起",
+            '汽油調整': _fmt_delta('92'),
+            '柴油預計調整': _fmt_delta('柴油'),
+            '變動幅度': '',
+        })
+        return data
     data = _fetch_moea_oil()
     if data:
         return data
