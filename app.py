@@ -19,6 +19,7 @@ import twder
 import json
 import time
 import place
+import realestate
 import os
 import uuid
 import base64
@@ -2458,6 +2459,27 @@ def handle_message(event):
         )
         line_bot_api.reply_message(event.reply_token, radar_img)
         return 0
+    ######################## 房地查詢（直接打地址/地號 → 地籍＋周邊實價）########
+    # 放在中文股票搜尋之前，但條件很嚴（要像「…路N號」或「X區X段地號」）才觸發，不會誤撞一般詞/股票名。
+    if realestate.looks_like_realestate(original_msg):
+        try:
+            res = realestate.query(original_msg)
+        except Exception:
+            res = None
+        if res:
+            alt, contents = res
+            line_bot_api.reply_message(
+                event.reply_token,
+                FlexSendMessage(alt_text=alt[:60], contents=contents)
+            )
+            return 0
+        # 看起來像地址/地號但查無 → 友善提示，不再往下誤判成股票
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="查無這個地址／地號 😅\n可試更完整的寫法，例如：\n・高雄市鼓山區美術館路187號\n・鼓山區青海段326")
+        )
+        return 0
+
     ######################## 中文搜尋股票 ################################
     if len(original_msg) >= 2 and not re.match('^[A-Za-z0-9#@]', original_msg):
         results = search_stock_by_name(original_msg)
