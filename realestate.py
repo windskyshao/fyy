@@ -177,13 +177,14 @@ def query(text):
                 {"type": "text", "text": f"{row['ty']}　{row['ym']}", "size": "xs", "color": "#999999"},
             ]})
 
-    gmap = f"https://www.google.com/maps?q={lat},{lng}"
+    # 深連結回我們自己的地圖：帶座標+門牌 → 自動落點、帶出建號/周邊實價/使用分區
+    maplink = f"{LANDMAP}/?lat={lat}&lng={lng}&door={urllib.parse.quote(title)}"
     contents = {
         "type": "bubble",
         "body": {"type": "box", "layout": "vertical", "contents": body, "paddingAll": "16px"},
         "footer": {"type": "box", "layout": "vertical", "spacing": "sm", "contents": [
             {"type": "button", "style": "primary", "color": "#e67e22", "height": "sm",
-             "action": {"type": "uri", "label": "📍 在地圖上看", "uri": gmap}},
+             "action": {"type": "uri", "label": "📍 在地圖上看（建號/實價）", "uri": maplink}},
             {"type": "text", "text": "資料：內政部地籍/實價登錄 · landmap", "size": "xs", "color": "#aaaaaa", "align": "center", "wrap": True},
         ], "paddingAll": "12px"},
     }
