@@ -138,7 +138,7 @@ def _cat_of(p):
 
 
 def _zclass(s):
-    """使用分區字串 → 住/商/工/農/其他 大類。實價登錄只分到這五類（沒有第幾種層級），故只能大類配對。"""
+    """使用分區字串 → 住/商/工/農/其他 大類。"""
     s = s or ""
     if "商" in s:
         return "商"
@@ -149,6 +149,24 @@ def _zclass(s):
     if "農" in s:
         return "農"
     return "其他"
+
+
+_CN_NUM = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+_NUM_CN = {1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七"}
+
+
+def _zlevel(s):
+    """使用分區(取土地明細細分區 zd) → (大類, 層級)。層級抓「第X種」——住/商才有;工(甲乙丙)/農無層級→None。
+    例：'都市：其他:第五種住宅區'→('住',5)、'特定第五種住宅區（特定住5）'→('住',5)、'乙種工業區'→('工',None)。"""
+    cls = _zclass(s)
+    m = re.search(r"第([一二三四五六七八九十])(?:之[一二三四五六七八九十])?種", s or "")
+    return cls, (_CN_NUM.get(m.group(1)) if m else None)
+
+
+def _zshort(cls, lvl):
+    if cls in ("住", "商") and lvl in _NUM_CN:
+        return cls + _NUM_CN[lvl]          # 住五 / 商三
+    return {"住": "住宅區", "商": "商業區", "工": "工業區", "農": "農業區"}.get(cls, "其他分區")
 
 
 def query(text):
@@ -188,11 +206,20 @@ def query(text):
     total = nearby.get("total") or 0
 
     if is_land:
-        tz = _zclass(zone_txt or self_rec.get("zn") or self_rec.get("nz"))
+        # 目標分區：優先用標的自己土地明細的細分區(zd)，否則用 luzzone，再退主檔粗分
+        tcls, tlvl = _zlevel(self_rec.get("zd") or zone_txt or self_rec.get("zn") or self_rec.get("nz"))
         lands = [it for it in items if _cat_of(it) == "土地"]
-        same = [it for it in lands if _zclass(it.get("zn") or it.get("nz")) == tz]
-        picked = same + [it for it in lands if it not in same]
-        match_label = "土地／" + _ZNAME.get(tz, tz)
+
+        def _score(it):
+            icls, ilvl = _zlevel(it.get("zd") or it.get("zn") or it.get("nz"))
+            d = it.get("dist", 99999)
+            if icls != tcls:
+                return (2, 0, d)                       # 不同大類→最後(商不配住)
+            if tlvl and ilvl:
+                return (0, abs(ilvl - tlvl), d)         # 同大類：層級差越小越前(住五→住五=0,住四/六=1…遞減)
+            return (1 if (tlvl or ilvl) else 0, 0, d)   # 工/農無層級→同類即可;一邊有層級一邊無→次之
+        picked = sorted(lands, key=_score)
+        match_label = "土地／" + _zshort(tcls, tlvl)
     else:
         tgt = _cat_of(self_rec) if self_rec else ""
         blds = [it for it in items if _cat_of(it) != "土地"]
