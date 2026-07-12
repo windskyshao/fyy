@@ -17,8 +17,9 @@ _CITY_CODE = {"高雄": "E", "臺南": "D", "台南": "D", "屏東": "T"}
 # 地政事務所代碼前綴 → 縣市碼（parcel 回的 office 如 EA/EB…、DA…、TA…）
 _OFFICE_CITY = {"E": "E", "D": "D", "T": "T"}
 
-_RE_ADDR = re.compile(r"(路|街|大道|巷|弄)\s*[0-9０-９一二三四五六七八九十]{0,12}\s*[0-9０-９一二三四五六七八九十]+\s*號")
-_RE_LANDNO = re.compile(r"([一-龥]{1,4}[區鄉鎮市])?\s*([一-龥]{1,8}段)\s*([0-9０-９]+(?:[-‐－][0-9０-９]+)?)\s*(?:地號)?")
+_RE_ADDR = re.compile(r"(路|街|大道|巷|弄|段)\s*[0-9０-９一二三四五六七八九十]{0,12}\s*[0-9０-９一二三四五六七八九十]+\s*號")
+_RE_SECT = re.compile(r"[一-龥]{1,6}段\s*[0-9０-９]")                                      # 「X段+數字」= 地籍地號特徵
+_RE_LANDNO = re.compile(r"([一-龥]{1,4}[區鄉鎮市])?\s*([一-龥]{1,6}段)\s*([0-9０-９]+(?:[-‐－][0-9０-９]+)?)")
 _RE_CITY_TOWN = re.compile(r"[一-龥]{1,3}[縣市][一-龥]{1,4}[區鄉鎮市]")
 
 
@@ -31,10 +32,8 @@ def looks_like_realestate(text):
         return True
     if _RE_CITY_TOWN.search(t) and "號" in t:     # 有「X縣市X區…號」
         return True
-    if "地號" in t and "段" in t:                  # 明講地號
-        return True
-    m = _RE_LANDNO.search(t)
-    if m and m.group(1):                          # 「X區X段123」含行政區才夠明確
+    # 「X段+數字」且沒有建物門牌號（把「地號」二字排除後不含「號」）＝ 地號查詢（免打「地號」二字）
+    if _RE_SECT.search(t) and "號" not in t.replace("地號", ""):
         return True
     return False
 
@@ -80,28 +79,36 @@ def _roc_ym(dt):
     return ""
 
 
+def _parse_landno(t):
+    """從「(高雄市)大寮區山子頂段2442(地號)」抽出 (city, tn, sect, no)。先去縣市前綴，再抓行政區/段/號。"""
+    s = t.strip()
+    city = None
+    cm = re.match(r"^\s*([一-龥]{1,3}[縣市])", s)   # 先剝掉縣市，避免把「高雄市」的「市」誤當行政區
+    if cm:
+        city = _city_from_name(cm.group(1))
+        s = s[cm.end():]
+    m = _RE_LANDNO.search(s)
+    if not m:
+        return None
+    tn = (m.group(1) or "").strip()
+    sect = m.group(2)
+    no = _full2half(m.group(3)).replace("‐", "-").replace("－", "-")
+    return (city or "E", tn, sect, no)
+
+
 def _resolve(text):
-    """把使用者輸入轉成 (title, lat, lng, city_code)。地址走 /api/address；地號走 /api/landlocate。"""
+    """輸入 → (title, lat, lng, city_code)。地號（X段+數字）只走 landlocate；否則走地址。"""
     t = text.strip()
-    # 先試地號（含行政區才好定位）
-    m = _RE_LANDNO.search(t)
-    if ("地號" in t or (m and m.group(1))) and m and m.group(2):
-        tn = (m.group(1) or "").strip()
-        sect = m.group(2)
-        no = _full2half(m.group(3)).replace("‐", "-").replace("－", "-")
-        a = f"{sect}{no}地號"
-        # 縣市碼：輸入含縣市→用之，否則預設高雄 E（使用者主要在高雄）
-        city = None
-        cm = re.search(r"[一-龥]{1,3}[縣市]", t)
-        if cm:
-            city = _city_from_name(cm.group(0))
-        city = city or "E"
-        if not tn:
-            return None  # 沒行政區難定位→交回地址流程/或回無法定位
-        d = _get("/api/landlocate", city=city, tn=tn, a=a)
-        if d and d.get("status") == "OK" and d.get("lat"):
-            return (f"{tn}{sect}{no}", d["lat"], d["lng"], city)
-    # 地址流程
+    # 地號查詢：有「X段+數字」且沒有建物門牌號 → 只用地號定位，不 fallback 到地址（避免亂定位到不相干路口）
+    if _RE_SECT.search(t) and "號" not in t.replace("地號", ""):
+        p = _parse_landno(t)
+        if p and p[1]:                         # 必須有行政區才能定位（landlocate 需要鄉鎮市區）
+            city, tn, sect, no = p
+            d = _get("/api/landlocate", city=city, tn=tn, a=f"{sect}{no}地號")
+            if d and d.get("status") == "OK" and d.get("lat"):
+                return (f"{tn}{sect}{no}", d["lat"], d["lng"], city)
+        return None                            # 地號查無 / 缺行政區 → 交上層回提示，不改猜地址
+    # 地址查詢
     d = _get("/api/address", q=t)
     if d and d.get("results"):
         r = d["results"][0]

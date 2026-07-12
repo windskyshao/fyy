@@ -2476,7 +2476,7 @@ def handle_message(event):
         # 看起來像地址/地號但查無 → 友善提示，不再往下誤判成股票
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="查無這個地址／地號 😅\n可試更完整的寫法，例如：\n・高雄市鼓山區美術館路187號\n・鼓山區青海段326")
+            TextSendMessage(text="查無這個地址／地號 😅\n可試更完整的寫法：\n・地址：高雄市鼓山區美術館路187號\n・地號：要含「行政區」，例如 大寮區山子頂段2442")
         )
         return 0
 
