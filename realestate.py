@@ -125,6 +125,32 @@ def _line(label, value, vcolor="#333333"):
     ]}
 
 
+_ZNAME = {"住": "住宅區", "商": "商業區", "工": "工業區", "農": "農業區", "其他": "其他分區"}
+
+
+def _cat_of(p):
+    """實價登錄類別（同前端 lvrCatOf）：土地 / 住宅大樓 / 華廈 / 公寓 / 套房 / 透天厝 / 店面 /
+    辦公商業大樓 / 工廠 / 廠辦 / 倉庫 / 農舍 / 其他。"""
+    if (p.get("tg") or "") == "土地":
+        return "土地"
+    ty = p.get("ty") or ""
+    return re.split(r"[(（]", ty)[0] if ty else (p.get("tg") or "其他")
+
+
+def _zclass(s):
+    """使用分區字串 → 住/商/工/農/其他 大類。實價登錄只分到這五類（沒有第幾種層級），故只能大類配對。"""
+    s = s or ""
+    if "商" in s:
+        return "商"
+    if "工" in s:
+        return "工"
+    if "住" in s:
+        return "住"
+    if "農" in s:
+        return "農"
+    return "其他"
+
+
 def query(text):
     """回 (alt_text, flex_contents_dict) 或 None（查無/非房地）。"""
     got = _resolve(text)
@@ -144,16 +170,47 @@ def query(text):
     if z.get("status") == "OK" and z.get("zone"):
         zone_txt = z.get("zone") + (f"（{z.get('short')}）" if z.get("short") else "")
 
-    # 周邊實價（前 5 筆）
-    lvr_rows = []
-    nearby = _get("/api/lvr_nearby", city=city, lat=lat, lng=lng, r=400, n=5) or {}
+    # ── 周邊實價：依「查詢標的的類別」配對 ──
+    #   地號(土地) → 只配土地，且同分區大類(住/商/工/農/其他；實價登錄無「第幾種」層級)，非都市配使用分區
+    #   地址(建物) → 抓該門牌自己成交過的型態(self)，配同型態建物(住宅大樓/透天/…各別)；無成交可判→顯示各類建物
+    #   同類不足時，才以鄰近的其他墊底
+    is_land = bool(_RE_SECT.search(text)) and ("號" not in text.replace("地號", ""))
+    nb_params = dict(city=city, lat=lat, lng=lng, r=1000, grouped=1)
+    if is_land:
+        pp = _parse_landno(text)
+        if pp:
+            nb_params.update(kind="land", sect=pp[2], landno=pp[3])
+    else:
+        nb_params.update(kind="bldg", door=title)
+    nearby = _get("/api/lvr_nearby", **nb_params) or {}
+    items = nearby.get("items") or []
+    self_rec = nearby.get("self") or {}
     total = nearby.get("total") or 0
-    for it in (nearby.get("items") or [])[:5]:
+
+    if is_land:
+        tz = _zclass(zone_txt or self_rec.get("zn") or self_rec.get("nz"))
+        lands = [it for it in items if _cat_of(it) == "土地"]
+        same = [it for it in lands if _zclass(it.get("zn") or it.get("nz")) == tz]
+        picked = same + [it for it in lands if it not in same]
+        match_label = "土地／" + _ZNAME.get(tz, tz)
+    else:
+        tgt = _cat_of(self_rec) if self_rec else ""
+        blds = [it for it in items if _cat_of(it) != "土地"]
+        if tgt and tgt not in ("土地", "其他"):
+            same = [it for it in blds if _cat_of(it) == tgt]
+            picked = same + [it for it in blds if it not in same]
+            match_label = tgt
+        else:
+            picked = blds
+            match_label = "各類建物" + ("（該門牌無成交可判型態）" if not tgt else "")
+
+    lvr_rows = []
+    for it in picked[:5]:
         lvr_rows.append({
             "a": _short_addr(it.get("a", "")),
             "up": _unit_wan(it.get("up")),
             "ym": _roc_ym(it.get("dt")),
-            "ty": it.get("ty") or it.get("tg") or "",
+            "ty": _cat_of(it),
         })
 
     # ── 組 Flex ──
@@ -173,8 +230,8 @@ def query(text):
 
     if lvr_rows:
         body.append({"type": "separator", "margin": "lg"})
-        body.append({"type": "text", "text": f"📊 周邊實價（{min(len(lvr_rows),5)}／附近{total}筆）",
-                     "size": "sm", "color": "#8c4de6", "weight": "bold", "margin": "lg"})
+        body.append({"type": "text", "text": f"📊 周邊實價 · {match_label}", "size": "sm", "color": "#8c4de6", "weight": "bold", "margin": "lg"})
+        body.append({"type": "text", "text": f"（同類 {len(lvr_rows)} 筆，附近共 {total} 筆）", "size": "xs", "color": "#aaaaaa"})
         for row in lvr_rows:
             body.append({"type": "box", "layout": "vertical", "margin": "sm", "spacing": "none", "contents": [
                 {"type": "box", "layout": "baseline", "contents": [
