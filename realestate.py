@@ -8,6 +8,7 @@
 import re
 import requests
 import urllib.parse
+from collections import Counter
 
 LANDMAP = "https://map.windsky-sky.com"
 TIMEOUT = 12
@@ -70,6 +71,64 @@ def _short_addr(a):
 
 def _unit_wan(up):
     return (f"{up/10000:.1f} 萬/坪") if up else "單價—"
+
+
+def _total_wan(pr):
+    """總價元 → 『X,XXX萬』（同地圖卡片 lvrTotalWan）。"""
+    try:
+        pr = float(pr)
+    except (TypeError, ValueError):
+        return ""
+    return f"{round(pr/10000):,}萬" if pr else ""
+
+
+_FLOOR_IN_RE = re.compile(r"號\s*([0-9]+|[一二兩三四五六七八九十百]+)\s*樓(?:之\s*([0-9]+|[一二三四五六七八九十]+))?")
+_CN_F = {"一": 1, "二": 2, "兩": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+
+
+def _extract_floor(text):
+    """從輸入門牌抽『樓層』字串（如 7樓 / 五樓之3），供標題顯示。"""
+    m = _FLOOR_IN_RE.search(_full2half(text or ""))
+    if not m:
+        return ""
+    s = m.group(1) + "樓"
+    if m.group(2):
+        s += "之" + m.group(2)
+    return s
+
+
+def _floor_num(s):
+    """樓層字串(中文/阿拉伯、『樓』或『層』) → 樓層數，供比對本標的樓層。"""
+    s = _full2half(s or "")
+    m = re.search(r"([0-9]+|[一二兩三四五六七八九十]+)\s*[樓層]", s)
+    if not m:
+        return None
+    t = m.group(1)
+    if t.isdigit():
+        return int(t)
+    if t == "十":
+        return 10
+    if t.startswith("十"):
+        return 10 + _CN_F.get(t[1:], 0)
+    if "十" in t:
+        a, _, b = t.partition("十")
+        return _CN_F.get(a, 0) * 10 + (_CN_F.get(b, 0) if b else 0)
+    return _CN_F.get(t)
+
+
+def _bkey(a):
+    """門牌取到『號』為止＝同一棟(去樓層/之X)。"""
+    a = _short_addr(a)
+    m = re.match(r"^(.*?[0-9]+號)", a)
+    return m.group(1) if m else a
+
+
+def _dtnum(it):
+    return int(_full2half(str(it.get("dt") or "0")) or "0")
+
+
+def _latest(rows):
+    return max(rows, key=_dtnum) if rows else None
 
 
 def _roc_ym(dt):
@@ -183,6 +242,8 @@ def query(text):
     if not got:
         return None
     title, lat, lng, city = got
+    floor = _extract_floor(text)                       # 保留使用者輸入的樓層（地理編碼會丟樓層）
+    title_disp = (title + floor) if (floor and "樓" not in title) else title
 
     # 地號
     parcel = _get("/api/parcel", lat=lat, lng=lng) or {}
@@ -213,6 +274,7 @@ def query(text):
     self_rec = nearby.get("self") or {}
     total = nearby.get("total") or 0
 
+    subj_key = _bkey(title)
     if is_land:
         # 目標分區：優先用標的自己土地明細的細分區(zd)，否則用 luzzone，再退主檔粗分
         tcls, tlvl = _zlevel(self_rec.get("zd") or zone_txt or self_rec.get("zn") or self_rec.get("nz"))
@@ -226,33 +288,63 @@ def query(text):
             if tlvl and ilvl:
                 return (0, abs(ilvl - tlvl), d)         # 同大類：層級差越小越前(住五→住五=0,住四/六=1…遞減)
             return (1 if (tlvl or ilvl) else 0, 0, d)   # 工/農無層級→同類即可;一邊有層級一邊無→次之
-        picked = sorted(lands, key=_score)
+        pool = sorted(lands, key=_score)
         match_label = "土地／" + _zshort(tcls, tlvl)
+        # 本標的：同地號的土地成交（優先 API self），否則同地號最新一筆
+        selfrow = self_rec if (self_rec and _cat_of(self_rec) == "土地") else _latest([it for it in lands if _bkey(it.get("a")) == subj_key])
     else:
-        tgt = _cat_of(self_rec) if self_rec else ""
         blds = [it for it in items if _cat_of(it) != "土地"]
+        # 本標的門牌成交：同棟(同號)中，優先精準比對輸入樓層；無則同棟最新一筆；再退 API self
+        sameb = [it for it in blds if _bkey(it.get("a")) == subj_key]
+        selfrow = None
+        if floor and sameb:
+            fnum = _floor_num(floor)
+            selfrow = _latest([it for it in sameb if _floor_num(it.get("fl") or it.get("a")) == fnum])
+        if not selfrow and sameb:
+            # 無精準樓層 → 取同棟『最常見型態』(建物主型態，避開1樓店面把型態帶偏)最新一筆代表
+            modal = Counter(_cat_of(it) for it in sameb).most_common(1)[0][0]
+            selfrow = _latest([it for it in sameb if _cat_of(it) == modal]) or _latest(sameb)
+        if not selfrow and self_rec and _cat_of(self_rec) != "土地":
+            selfrow = self_rec
+        # 型態依「本標的」判斷（例：查7樓住宅→配住宅大樓，不會被1樓店面帶偏）
+        tgt = _cat_of(selfrow) if selfrow else (_cat_of(self_rec) if self_rec else "")
         if tgt and tgt not in ("土地", "其他"):
-            same = [it for it in blds if _cat_of(it) == tgt]
-            picked = same + [it for it in blds if it not in same]
+            pool = [it for it in blds if _cat_of(it) == tgt]
             match_label = tgt
         else:
-            picked = blds
+            pool = blds
             match_label = "各類建物" + ("（該門牌無成交可判型態）" if not tgt else "")
 
+    # 第一筆＝本標的門牌成交；其餘依成交日新→舊
+    def _samerec(x, y):
+        return bool(x) and bool(y) and x.get("a") == y.get("a") and x.get("dt") == y.get("dt") and x.get("up") == y.get("up")
+    rest = sorted([it for it in pool if not _samerec(it, selfrow)], key=_dtnum, reverse=True)
+    ordered = ([selfrow] if selfrow else []) + rest
+
     lvr_rows = []
-    for it in picked[:5]:
+    for i, it in enumerate(ordered[:6]):
+        flr = _full2half(it.get("fl") or "").strip()
+        ftt = _full2half(it.get("ft") or "").strip()
+        rm, hl, bt = it.get("rm"), it.get("hl"), it.get("bt")
         lvr_rows.append({
             "a": _short_addr(it.get("a", "")),
             "up": _unit_wan(it.get("up")),
+            "tot": _total_wan(it.get("pr")),                                          # 總價
+            "pg": (f"{_full2half(str(it.get('pg')))}坪" if it.get("pg") else ""),      # 坪數
+            "age": (f"屋齡{it.get('age')}" if it.get("age") not in (None, "") else ""),  # 屋齡
+            "fl": (flr + ("／" + ftt if ftt else "")) if flr else ftt,                 # 樓層/總樓
+            "layout": (f"{rm or 0}房{hl or 0}廳{bt or 0}衛" if (rm or hl or bt) else ""),  # 格局
+            "pk": (it.get("pk") or "").strip(),                                       # 車位
             "ym": _roc_ym(it.get("dt")),
             "ty": _cat_of(it),
             "sp": _is_special(it.get("nt")),      # 特殊交易(親友/員工/債務抵償…)→標紅
+            "self": bool(selfrow) and i == 0,     # 本標的門牌
         })
 
     # ── 組 Flex ──
     body = [
         {"type": "text", "text": "🏠 房地查詢", "size": "sm", "color": "#e67e22", "weight": "bold"},
-        {"type": "text", "text": title, "size": "lg", "weight": "bold", "wrap": True, "margin": "sm", "color": "#222222"},
+        {"type": "text", "text": title_disp, "size": "lg", "weight": "bold", "wrap": True, "margin": "sm", "color": "#222222"},
         {"type": "separator", "margin": "md"},
         {"type": "box", "layout": "vertical", "spacing": "sm", "margin": "md", "contents": []},
     ]
@@ -267,21 +359,29 @@ def query(text):
     if lvr_rows:
         body.append({"type": "separator", "margin": "lg"})
         body.append({"type": "text", "text": f"📊 周邊實價 · {match_label}", "size": "sm", "color": "#8c4de6", "weight": "bold", "margin": "lg"})
-        body.append({"type": "text", "text": f"（同類 {len(lvr_rows)} 筆，附近共 {total} 筆）", "size": "xs", "color": "#aaaaaa"})
+        body.append({"type": "text", "text": f"（同類 {len(lvr_rows)} 筆，附近共 {total} 筆；第一筆為本標的門牌）", "size": "xs", "color": "#aaaaaa", "wrap": True})
         for row in lvr_rows:
-            line2 = [{"type": "text", "text": f"{row['ty']}　{row['ym']}", "size": "xs", "color": "#999999", "flex": 5, "wrap": True}]
-            if row["sp"]:
-                line2.append({"type": "text", "text": "🔴特殊交易", "size": "xs", "color": "#e74c3c", "flex": 4, "align": "end", "weight": "bold"})
-            body.append({"type": "box", "layout": "vertical", "margin": "sm", "spacing": "none", "contents": [
-                {"type": "box", "layout": "baseline", "contents": [
-                    {"type": "text", "text": row["a"], "size": "sm", "color": "#333333", "flex": 5, "wrap": True},
-                    {"type": "text", "text": row["up"], "size": "sm", "color": "#e74c3c", "flex": 3, "align": "end", "weight": "bold"},
-                ]},
-                {"type": "box", "layout": "baseline", "contents": line2},
-            ]})
+            top = [
+                {"type": "text", "text": ("◉ " if row["self"] else "") + (row["a"] or "—"), "size": "sm", "color": ("#1558b0" if row["self"] else "#333333"), "flex": 6, "wrap": True, "weight": "bold"},
+                {"type": "text", "text": row["up"], "size": "sm", "color": "#e74c3c", "flex": 4, "align": "end", "weight": "bold"},
+            ]
+            midL = f"{row['ty']}　{row['ym']}" + ("　🔴特殊" if row["sp"] else "")
+            mid = [{"type": "text", "text": midL, "size": "xs", "color": ("#e74c3c" if row["sp"] else "#999999"), "flex": 6, "wrap": True}]
+            if row["tot"]:
+                mid.append({"type": "text", "text": "總價 " + row["tot"], "size": "xs", "color": "#555555", "flex": 4, "align": "end", "weight": "bold"})
+            meta = "　".join(x for x in [row["pg"], row["age"], row["fl"], row["layout"], ("🅿" + row["pk"] if row["pk"] else "")] if x)
+            rowbox = {"type": "box", "layout": "vertical", "margin": "md", "spacing": "xs", "contents": [
+                {"type": "box", "layout": "baseline", "contents": top},
+                {"type": "box", "layout": "baseline", "contents": mid},
+            ]}
+            if meta:
+                rowbox["contents"].append({"type": "text", "text": meta, "size": "xs", "color": "#aaaaaa", "wrap": True})
+            if row["self"]:
+                rowbox.update({"backgroundColor": "#eef4ff", "cornerRadius": "6px", "paddingAll": "8px"})
+            body.append(rowbox)
 
     # 深連結回我們自己的地圖：帶座標+門牌 → 自動落點；mode 讓地圖用「原查詢方式」呈現(地址→地址模式、地號→地籍模式)
-    maplink = f"{LANDMAP}/?lat={lat}&lng={lng}&door={urllib.parse.quote(title)}&mode={'sect' if is_land else 'addr'}"
+    maplink = f"{LANDMAP}/?lat={lat}&lng={lng}&door={urllib.parse.quote(title_disp)}&mode={'sect' if is_land else 'addr'}"
     contents = {
         "type": "bubble",
         "body": {"type": "box", "layout": "vertical", "contents": body, "paddingAll": "16px"},
@@ -291,4 +391,4 @@ def query(text):
             {"type": "text", "text": "資料：內政部地籍/實價登錄 · landmap", "size": "xs", "color": "#aaaaaa", "align": "center", "wrap": True},
         ], "paddingAll": "12px"},
     }
-    return (f"房地查詢：{title}", contents)
+    return (f"房地查詢：{title_disp}", contents)
