@@ -328,13 +328,15 @@ def query(text):
         rm, hl, bt = it.get("rm"), it.get("hl"), it.get("bt")
         lvr_rows.append({
             "a": _short_addr(it.get("a", "")),
+            "com": (it.get("com") or "").strip(),                                      # 社區名稱
             "up": _unit_wan(it.get("up")),
             "tot": _total_wan(it.get("pr")),                                          # 總價
             "pg": (f"{_full2half(str(it.get('pg')))}坪" if it.get("pg") else ""),      # 坪數
             "age": (f"屋齡{it.get('age')}" if it.get("age") not in (None, "") else ""),  # 屋齡
             "fl": (flr + ("／" + ftt if ftt else "")) if flr else ftt,                 # 樓層/總樓
             "layout": (f"{rm or 0}房{hl or 0}廳{bt or 0}衛" if (rm or hl or bt) else ""),  # 格局
-            "pk": (it.get("pk") or "").strip(),                                       # 車位
+            "pk": (it.get("pk") or "").strip(),                                       # 車位類別
+            "pkn": it.get("pkn"),                                                     # 車位數量(landmap 由「交易筆棟數」拆出)
             "ym": _roc_ym(it.get("dt")),
             "ty": _cat_of(it),
             "sp": _is_special(it.get("nt")),      # 特殊交易(親友/員工/債務抵償…)→標紅
@@ -349,10 +351,27 @@ def query(text):
         {"type": "box", "layout": "vertical", "spacing": "sm", "margin": "md", "contents": []},
     ]
     info = body[3]["contents"]
+    # 本標的：社區名稱／屋齡／總樓層（建物；來源＝本標的門牌成交，社區名再退社區API）
+    if not is_land:
+        s = selfrow or {}
+        subj_com = (s.get("com") or "").strip()
+        if not subj_com:
+            subj_com = ((_get("/api/lvr_community", city=city, lat=lat, lng=lng) or {}).get("com") or "").strip()
+        if subj_com:
+            info.append(_line("社區", subj_com, "#8c4de6"))
     if landno_txt:
         info.append(_line("地號", landno_txt, "#1558b0"))
     if zone_txt:
         info.append(_line("使用分區", zone_txt, "#0f7d55"))
+    if not is_land:
+        agft = []
+        if (selfrow or {}).get("age") not in (None, ""):
+            agft.append(f"約{selfrow['age']}年")
+        _ft = _full2half((selfrow or {}).get("ft") or "").strip()
+        if _ft:
+            agft.append(f"共{_ft}")
+        if agft:
+            info.append(_line("屋齡‧樓高", "　".join(agft), "#555555"))
     if not info:
         info.append({"type": "text", "text": "此點查無地號（可能在道路或範圍外）", "size": "sm", "color": "#999999", "wrap": True})
 
@@ -365,11 +384,17 @@ def query(text):
                 {"type": "text", "text": ("◉ " if row["self"] else "") + (row["a"] or "—"), "size": "sm", "color": ("#1558b0" if row["self"] else "#333333"), "flex": 6, "wrap": True, "weight": "bold"},
                 {"type": "text", "text": row["up"], "size": "sm", "color": "#e74c3c", "flex": 4, "align": "end", "weight": "bold"},
             ]
-            midL = f"{row['ty']}　{row['ym']}" + ("　🔴特殊" if row["sp"] else "")
+            midL = (row["com"] + "｜" if row["com"] else "") + f"{row['ty']}　{row['ym']}" + ("　🔴特殊" if row["sp"] else "")
             mid = [{"type": "text", "text": midL, "size": "xs", "color": ("#e74c3c" if row["sp"] else "#999999"), "flex": 6, "wrap": True}]
             if row["tot"]:
                 mid.append({"type": "text", "text": "總價 " + row["tot"], "size": "xs", "color": "#555555", "flex": 4, "align": "end", "weight": "bold"})
-            meta = "　".join(x for x in [row["pg"], row["age"], row["fl"], row["layout"], ("🅿" + row["pk"] if row["pk"] else "")] if x)
+            if row["pkn"]:
+                pk_disp = f"🅿{row['pkn']}位" + ("·" + row["pk"] if row["pk"] else "")   # 車位數量(+類別)
+            elif row["pk"]:
+                pk_disp = "🅿" + row["pk"]
+            else:
+                pk_disp = ""
+            meta = "　".join(x for x in [row["pg"], row["age"], row["fl"], row["layout"], pk_disp] if x)
             rowbox = {"type": "box", "layout": "vertical", "margin": "md", "spacing": "xs", "contents": [
                 {"type": "box", "layout": "baseline", "contents": top},
                 {"type": "box", "layout": "baseline", "contents": mid},
