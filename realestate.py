@@ -169,6 +169,14 @@ def _zshort(cls, lvl):
     return {"住": "住宅區", "商": "商業區", "工": "工業區", "農": "農業區"}.get(cls, "其他分區")
 
 
+# 特殊交易(與前端 LVR_SP_RE 一致)：備註含真正影響價格的關鍵字才算(排除中性的預售/分件登記)
+_SP_RE = re.compile(r"親友|員工|共有人|股東|特殊關係|債務|抵償|拍賣|法拍|增建|加蓋|夾層|未登記|外推|瑕疵|凶|事故|急買|急賣|贈與|交換|毛胚|清水|協議價購|標讓售|標售|僅車位|車位交易|農作物|地上權|保留地|傢俱|家俱|裝潢|設備費|家電")
+
+
+def _is_special(nt):
+    return bool(nt and _SP_RE.search(nt))
+
+
 def query(text):
     """回 (alt_text, flex_contents_dict) 或 None（查無/非房地）。"""
     got = _resolve(text)
@@ -238,6 +246,7 @@ def query(text):
             "up": _unit_wan(it.get("up")),
             "ym": _roc_ym(it.get("dt")),
             "ty": _cat_of(it),
+            "sp": _is_special(it.get("nt")),      # 特殊交易(親友/員工/債務抵償…)→標紅
         })
 
     # ── 組 Flex ──
@@ -260,16 +269,19 @@ def query(text):
         body.append({"type": "text", "text": f"📊 周邊實價 · {match_label}", "size": "sm", "color": "#8c4de6", "weight": "bold", "margin": "lg"})
         body.append({"type": "text", "text": f"（同類 {len(lvr_rows)} 筆，附近共 {total} 筆）", "size": "xs", "color": "#aaaaaa"})
         for row in lvr_rows:
+            line2 = [{"type": "text", "text": f"{row['ty']}　{row['ym']}", "size": "xs", "color": "#999999", "flex": 5, "wrap": True}]
+            if row["sp"]:
+                line2.append({"type": "text", "text": "🔴特殊交易", "size": "xs", "color": "#e74c3c", "flex": 4, "align": "end", "weight": "bold"})
             body.append({"type": "box", "layout": "vertical", "margin": "sm", "spacing": "none", "contents": [
                 {"type": "box", "layout": "baseline", "contents": [
                     {"type": "text", "text": row["a"], "size": "sm", "color": "#333333", "flex": 5, "wrap": True},
                     {"type": "text", "text": row["up"], "size": "sm", "color": "#e74c3c", "flex": 3, "align": "end", "weight": "bold"},
                 ]},
-                {"type": "text", "text": f"{row['ty']}　{row['ym']}", "size": "xs", "color": "#999999"},
+                {"type": "box", "layout": "baseline", "contents": line2},
             ]})
 
-    # 深連結回我們自己的地圖：帶座標+門牌 → 自動落點、帶出建號/周邊實價/使用分區
-    maplink = f"{LANDMAP}/?lat={lat}&lng={lng}&door={urllib.parse.quote(title)}"
+    # 深連結回我們自己的地圖：帶座標+門牌 → 自動落點；mode 讓地圖用「原查詢方式」呈現(地址→地址模式、地號→地籍模式)
+    maplink = f"{LANDMAP}/?lat={lat}&lng={lng}&door={urllib.parse.quote(title)}&mode={'sect' if is_land else 'addr'}"
     contents = {
         "type": "bubble",
         "body": {"type": "box", "layout": "vertical", "contents": body, "paddingAll": "16px"},
