@@ -275,6 +275,7 @@ def query(text):
     total = nearby.get("total") or 0
 
     subj_key = _bkey(title)
+    rep = None                                        # 代表戶(同棟)：供社區/屋齡/樓高與型態判斷；本標的門牌則另需精準比對
     if is_land:
         # 目標分區：優先用標的自己土地明細的細分區(zd)，否則用 luzzone，再退主檔粗分
         tcls, tlvl = _zlevel(self_rec.get("zd") or zone_txt or self_rec.get("zn") or self_rec.get("nz"))
@@ -290,24 +291,24 @@ def query(text):
             return (1 if (tlvl or ilvl) else 0, 0, d)   # 工/農無層級→同類即可;一邊有層級一邊無→次之
         pool = sorted(lands, key=_score)
         match_label = "土地／" + _zshort(tcls, tlvl)
-        # 本標的：同地號的土地成交（優先 API self），否則同地號最新一筆
-        selfrow = self_rec if (self_rec and _cat_of(self_rec) == "土地") else _latest([it for it in lands if _bkey(it.get("a")) == subj_key])
+        selfrow = self_rec if (self_rec and _cat_of(self_rec) == "土地") else None   # 土地：以 API 地號身分比對＝本標的
+        rep = selfrow
     else:
         blds = [it for it in items if _cat_of(it) != "土地"]
-        # 本標的門牌成交：同棟(同號)中，優先精準比對輸入樓層；無則同棟最新一筆；再退 API self
         sameb = [it for it in blds if _bkey(it.get("a")) == subj_key]
+        # 本標的門牌成交：只認『同號＋同樓層』的精準比對；查無(如全新未住)＝不硬湊別戶充當本標的
         selfrow = None
         if floor and sameb:
             fnum = _floor_num(floor)
             selfrow = _latest([it for it in sameb if _floor_num(it.get("fl") or it.get("a")) == fnum])
-        if not selfrow and sameb:
-            # 無精準樓層 → 取同棟『最常見型態』(建物主型態，避開1樓店面把型態帶偏)最新一筆代表
+        # 代表戶：精準本標的 → 同棟最常見住宅型態(避1樓店面帶偏)最新一筆 → API self（供社區/屋齡/樓高與型態）
+        rep = selfrow
+        if not rep and sameb:
             modal = Counter(_cat_of(it) for it in sameb).most_common(1)[0][0]
-            selfrow = _latest([it for it in sameb if _cat_of(it) == modal]) or _latest(sameb)
-        if not selfrow and self_rec and _cat_of(self_rec) != "土地":
-            selfrow = self_rec
-        # 型態依「本標的」判斷（例：查7樓住宅→配住宅大樓，不會被1樓店面帶偏）
-        tgt = _cat_of(selfrow) if selfrow else (_cat_of(self_rec) if self_rec else "")
+            rep = _latest([it for it in sameb if _cat_of(it) == modal]) or _latest(sameb)
+        if not rep and self_rec and _cat_of(self_rec) != "土地":
+            rep = self_rec
+        tgt = _cat_of(rep) if rep else ""
         if tgt and tgt not in ("土地", "其他"):
             pool = [it for it in blds if _cat_of(it) == tgt]
             match_label = tgt
@@ -353,7 +354,7 @@ def query(text):
     info = body[3]["contents"]
     # 本標的：社區名稱／屋齡／總樓層（建物；來源＝本標的門牌成交，社區名再退社區API）
     if not is_land:
-        s = selfrow or {}
+        s = rep or {}
         subj_com = (s.get("com") or "").strip()
         if not subj_com:
             subj_com = ((_get("/api/lvr_community", city=city, lat=lat, lng=lng) or {}).get("com") or "").strip()
@@ -365,9 +366,9 @@ def query(text):
         info.append(_line("使用分區", zone_txt, "#0f7d55"))
     if not is_land:
         agft = []
-        if (selfrow or {}).get("age") not in (None, ""):
-            agft.append(f"約{selfrow['age']}年")
-        _ft = _full2half((selfrow or {}).get("ft") or "").strip()
+        if (rep or {}).get("age") not in (None, ""):
+            agft.append(f"約{rep['age']}年")
+        _ft = _full2half((rep or {}).get("ft") or "").strip()
         if _ft:
             agft.append(f"共{_ft}")
         if agft:
@@ -378,16 +379,17 @@ def query(text):
     if lvr_rows:
         body.append({"type": "separator", "margin": "lg"})
         body.append({"type": "text", "text": f"📊 周邊實價 · {match_label}", "size": "sm", "color": "#8c4de6", "weight": "bold", "margin": "lg"})
-        body.append({"type": "text", "text": f"（同類 {len(lvr_rows)} 筆，附近共 {total} 筆；第一筆為本標的門牌）", "size": "xs", "color": "#aaaaaa", "wrap": True})
+        _note = f"（同類 {len(lvr_rows)} 筆，附近共 {total} 筆" + ("；第一筆為本標的門牌" if selfrow else "；本戶查無成交，以下為周邊同類") + "）"
+        body.append({"type": "text", "text": _note, "size": "xs", "color": "#999999", "wrap": True})
         for row in lvr_rows:
             top = [
                 {"type": "text", "text": ("◉ " if row["self"] else "") + (row["a"] or "—"), "size": "sm", "color": ("#1558b0" if row["self"] else "#333333"), "flex": 6, "wrap": True, "weight": "bold"},
                 {"type": "text", "text": row["up"], "size": "sm", "color": "#e74c3c", "flex": 4, "align": "end", "weight": "bold"},
             ]
             midL = (row["com"] + "｜" if row["com"] else "") + f"{row['ty']}　{row['ym']}" + ("　🔴特殊" if row["sp"] else "")
-            mid = [{"type": "text", "text": midL, "size": "xs", "color": ("#e74c3c" if row["sp"] else "#999999"), "flex": 6, "wrap": True}]
+            mid = [{"type": "text", "text": midL, "size": "sm", "color": ("#e74c3c" if row["sp"] else "#555555"), "flex": 6, "wrap": True}]
             if row["tot"]:
-                mid.append({"type": "text", "text": "總價 " + row["tot"], "size": "xs", "color": "#555555", "flex": 4, "align": "end", "weight": "bold"})
+                mid.append({"type": "text", "text": "總價 " + row["tot"], "size": "sm", "color": "#333333", "flex": 4, "align": "end", "weight": "bold"})
             if row["pkn"]:
                 pk_disp = f"🅿{row['pkn']}位" + ("·" + row["pk"] if row["pk"] else "")   # 車位數量(+類別)
             elif row["pk"]:
@@ -400,7 +402,7 @@ def query(text):
                 {"type": "box", "layout": "baseline", "contents": mid},
             ]}
             if meta:
-                rowbox["contents"].append({"type": "text", "text": meta, "size": "xs", "color": "#aaaaaa", "wrap": True})
+                rowbox["contents"].append({"type": "text", "text": meta, "size": "sm", "color": "#555555", "wrap": True})
             if row["self"]:
                 rowbox.update({"backgroundColor": "#eef4ff", "cornerRadius": "6px", "paddingAll": "8px"})
             body.append(rowbox)
