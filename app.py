@@ -297,6 +297,18 @@ IMGUR_CLIENT_ID = os.environ.get('IMGUR_CLIENT_ID', '')
 access_token = os.environ.get('CHANNEL_ACCESS_TOKEN', '')
 mat_d={}
 
+
+def show_loading(user_id, seconds=25):
+    """在聊天室顯示「…」載入動畫(告知正在查詢中)。查詢較久的功能開頭呼叫，不佔訊息數。"""
+    if not user_id or not access_token:
+        return
+    try:
+        requests.post("https://api.line.me/v2/bot/chat/loading/start",
+                      headers={"Authorization": "Bearer " + access_token, "Content-Type": "application/json"},
+                      json={"chatId": user_id, "loadingSeconds": max(5, min(60, seconds))}, timeout=4)
+    except Exception:
+        pass
+
 # 圖片暫存資料夾
 CHART_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'charts')
 os.makedirs(CHART_DIR, exist_ok=True)
@@ -2462,22 +2474,24 @@ def handle_message(event):
     ######################## 房地查詢（直接打地址/地號 → 地籍＋周邊實價）########
     # 放在中文股票搜尋之前，但條件很嚴（要像「…路N號」或「X區X段地號」）才觸發，不會誤撞一般詞/股票名。
     if realestate.looks_like_realestate(original_msg):
+        show_loading(getattr(event.source, "user_id", None))   # 先顯示「…」查詢中(此查詢會連地籍/實價，較久)
+        err = False
         try:
             res = realestate.query(original_msg)
         except Exception:
-            res = None
+            res = None; err = True
         if res:
             alt, contents = res
-            line_bot_api.reply_message(
-                event.reply_token,
-                FlexSendMessage(alt_text=alt[:60], contents=contents)
-            )
+            line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text=alt[:60], contents=contents))
             return 0
-        # 看起來像地址/地號但查無 → 友善提示，不再往下誤判成股票
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text="查無這個地址／地號 😅\n可試更完整的寫法：\n・地址：高雄市鼓山區美術館路187號\n・地號：要含「行政區」，例如 大寮區山子頂段2442")
-        )
+        if err:
+            msg = "查詢時連線出了點問題 😥 請稍等幾秒再試一次。"
+        else:
+            msg = ("查不到這個地址／地號 😅 可能原因：\n"
+                   "① 打錯或不完整 → 地址例：高雄市鼓山區美術館路187號；地號要含行政區，例：大寮區山子頂段2442\n"
+                   "② 目前實價只有【高雄／台南／屏東】三縣市\n"
+                   "③ 太新的門牌可能還查不到")
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=msg))
         return 0
 
     ######################## 中文搜尋股票 ################################
@@ -2498,11 +2512,23 @@ def handle_message(event):
             )
             return 0
 
+    ######################## 社區名／公寓大廈名（放最後：前面指令都沒中，才試當作名稱查詢）########
+    if len(original_msg) >= 2 and not re.match(r'^[A-Za-z0-9#@／/\s]+$', original_msg):
+        show_loading(getattr(event.source, "user_id", None), 20)
+        try:
+            res = realestate.name_query(original_msg)
+        except Exception:
+            res = None
+        if res:
+            alt, contents = res
+            line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text=alt[:60], contents=contents))
+            return 0
+
     ######################## 未知指令預設回覆 ################################
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(
-            text="抱歉，我不太懂您的意思 😅\n\n可以試試以下指令：\n📈 #2330（股價查詢）\n💱 外幣USD（匯率查詢）\n⛽ 油價查詢\n🌤 最新氣象\n\n或輸入「使用說明」查看所有功能",
+            text="抱歉，我不太懂您的意思 😅\n\n可以試試以下指令：\n📈 #2330（股價查詢）\n💱 外幣USD（匯率查詢）\n⛽ 油價查詢\n🌤 最新氣象\n🏠 直接打地址/地號/社區名\n\n或輸入「使用說明」查看所有功能",
             quick_reply=QuickReply(
                 items=[
                     QuickReplyButton(action=MessageAction(label="使用說明", text="使用說明")),

@@ -259,11 +259,34 @@ def _is_special(nt):
 
 
 def query(text):
-    """回 (alt_text, flex_contents_dict) 或 None（查無/非房地）。"""
+    """地址／地號 → (alt_text, flex) 或 None。"""
     got = _resolve(text)
     if not got:
         return None
     title, lat, lng, city = got
+    is_land = bool(_RE_SECT.search(text)) and ("號" not in text.replace("地號", ""))
+    return _card(title, lat, lng, city, text, is_land)
+
+
+def name_query(text):
+    """社區名／公寓大廈名 關鍵字 → (alt_text, flex) 或 None（給非地址/地號的名稱用，放最後才試）。"""
+    t = (text or "").strip()
+    if len(t) < 2:
+        return None
+    d = _get("/api/community_search", q=t, city="E")
+    results = (d or {}).get("results") or []
+    if not results:
+        return None
+    best = next((r for r in results if (r.get("name") or "") == t), None)   # 完全同名優先
+    if not best:
+        if len(t) < 3:
+            return None                                                     # 太短的部分比對不採，避免亂配
+        best = results[0]                                                   # 否則取最相符/最熱門者
+    return _card(best["name"], best["lat"], best["lng"], best.get("city", "E"), best["name"], False)
+
+
+def _card(title, lat, lng, city, text, is_land):
+    """由（名稱/門牌 ＋ 座標）組實價卡。text 供抽樓層/地號；is_land 決定土地或建物配對。"""
     floor = _extract_floor(text)                       # 保留使用者輸入的樓層（地理編碼會丟樓層）
     title_disp = (title + floor) if (floor and "樓" not in title) else title
 
@@ -283,7 +306,6 @@ def query(text):
     #   地號(土地) → 只配土地，且同分區大類(住/商/工/農/其他；實價登錄無「第幾種」層級)，非都市配使用分區
     #   地址(建物) → 抓該門牌自己成交過的型態(self)，配同型態建物(住宅大樓/透天/…各別)；無成交可判→顯示各類建物
     #   同類不足時，才以鄰近的其他墊底
-    is_land = bool(_RE_SECT.search(text)) and ("號" not in text.replace("地號", ""))
     nb_params = dict(city=city, lat=lat, lng=lng, r=1000, grouped=1)
     if is_land:
         pp = _parse_landno(text)
