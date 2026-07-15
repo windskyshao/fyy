@@ -82,7 +82,7 @@ def _total_wan(pr):
     return f"{round(pr/10000):,}萬" if pr else ""
 
 
-_FLOOR_IN_RE = re.compile(r"號\s*([0-9]+|[一二兩三四五六七八九十百]+)\s*樓(?:之\s*([0-9]+|[一二三四五六七八九十]+))?")
+_FLOOR_IN_RE = re.compile(r"號\s*([0-9]+|[一二兩三四五六七八九十百]+)\s*樓(?:\s*[之\-‐－–—]\s*([0-9]+|[一二三四五六七八九十]+))?")   # 之X／-X／各式連字號都當戶號
 _CN_F = {"一": 1, "二": 2, "兩": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
 
 
@@ -101,6 +101,28 @@ def _floor_num(s):
     """樓層字串(中文/阿拉伯、『樓』或『層』) → 樓層數，供比對本標的樓層。"""
     s = _full2half(s or "")
     m = re.search(r"([0-9]+|[一二兩三四五六七八九十]+)\s*[樓層]", s)
+    if not m:
+        return None
+    t = m.group(1)
+    if t.isdigit():
+        return int(t)
+    if t == "十":
+        return 10
+    if t.startswith("十"):
+        return 10 + _CN_F.get(t[1:], 0)
+    if "十" in t:
+        a, _, b = t.partition("十")
+        return _CN_F.get(a, 0) * 10 + (_CN_F.get(b, 0) if b else 0)
+    return _CN_F.get(t)
+
+
+_UNIT_RE = re.compile(r"[樓層]\s*[之\-‐－–—]\s*([0-9]+|[一二兩三四五六七八九十]+)")
+
+
+def _unit_num(s):
+    """門牌『之X』的戶號（阿拉伯/中文、之或各式連字號皆可）→ 數字；無戶號則 None。"""
+    s = _full2half(s or "")
+    m = _UNIT_RE.search(s)
     if not m:
         return None
     t = m.group(1)
@@ -296,11 +318,17 @@ def query(text):
     else:
         blds = [it for it in items if _cat_of(it) != "土地"]
         sameb = [it for it in blds if _bkey(it.get("a")) == subj_key]
-        # 本標的門牌成交：只認『同號＋同樓層』的精準比對；查無(如全新未住)＝不硬湊別戶充當本標的
+        # 本標的門牌成交：認『同號＋同樓層＋同戶(之X)』精準比對；查無(如該戶全新未成交)＝不硬湊別戶充當本標的
         selfrow = None
         if floor and sameb:
             fnum = _floor_num(floor)
-            selfrow = _latest([it for it in sameb if _floor_num(it.get("fl") or it.get("a")) == fnum])
+            unum = _unit_num(floor)                                # 輸入指定的戶號(之X)；沒指定則 None
+            def _is_subj(it):
+                a = it.get("a") or ""
+                if _floor_num(it.get("fl") or a) != fnum:
+                    return False
+                return _unit_num(a) == unum if unum is not None else True   # 有指定戶→需精準同戶；沒指定→同樓層即可
+            selfrow = _latest([it for it in sameb if _is_subj(it)])
         # 代表戶：精準本標的 → 同棟最常見住宅型態(避1樓店面帶偏)最新一筆 → API self（供社區/屋齡/樓高與型態）
         rep = selfrow
         if not rep and sameb:
