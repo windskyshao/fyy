@@ -2056,6 +2056,7 @@ def handle_message(event):
                 "body": {"type": "box", "layout": "vertical", "contents": btns, "spacing": "sm", "paddingAll": "12px"}
             }
         b1 = house_bubble("🏠 房屋交易", [
+            ("🐱 阿生地圖", "https://map.windsky-sky.com"),
             ("內政部實價登錄", "https://lvr.land.moi.gov.tw/"),
             ("591 房屋交易", "https://www.591.com.tw/"),
             ("Google 地圖", "https://www.google.com.tw/maps"),
