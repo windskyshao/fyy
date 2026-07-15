@@ -1116,7 +1116,7 @@ def _fetch_transmit_oil():
     """
     try:
         r = requests.get('https://gasoline.transmit-info.com/',
-                         headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, verify=False)
+                         headers={'User-Agent': 'Mozilla/5.0'}, timeout=7, verify=False)
         r.encoding = 'utf-8'
         html = r.text
     except Exception:
@@ -1236,7 +1236,7 @@ def _fetch_moea_oil():
         # MOEA 會擋預設的 python-requests UA，帶瀏覽器 UA 才會回完整頁面
         ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'
         r = requests.get('https://www2.moeaea.gov.tw/oil111',
-                         headers={'User-Agent': ua}, timeout=10, verify=False)
+                         headers={'User-Agent': ua}, timeout=7, verify=False)
         r.encoding = 'utf-8'
         html = r.text
     except Exception:
@@ -1327,7 +1327,7 @@ def oil_price():
         return data
     target_url = 'https://gas.goodlife.tw/'
     rs = requests.session()
-    res = rs.get(target_url, verify=False)
+    res = rs.get(target_url, verify=False, timeout=7)   # 補上 timeout：原本無 timeout，前兩來源都失敗時這裡會無限等→LINE 完全沒反應
     res.encoding = 'utf-8'
     soup = BeautifulSoup(res.text, 'html.parser')
     # 解析中油油價（key 和 value 在不同行）

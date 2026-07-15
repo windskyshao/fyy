@@ -39,23 +39,28 @@ def getCurrencyName(currency):
     return currency_name
 # 查詢匯率
 def showCurrency(code) -> "JPY": # code 為外幣代碼
-    content = ""
+    # 註：原本用 twder 抓臺灣銀行牌告，臺銀已加反爬蟲(回傳挑戰頁)導致 twder 解析失敗；
+    #     改用 open.er-api.com 免金鑰參考匯率(中價)，穩定不被擋。實際交易仍以銀行牌告為準。
     currency_name = getCurrencyName(code)
     if currency_name == "無可支援的外幣": return "無可支援的外幣"
-    # 資料格式 {貨幣代碼: (時間, 現金買入, 現金賣出, 即期買入, 即期賣出), ...}
-    currency = twder.now(code) 
-    # 當下時間
-    now_time = str(currency[0])
-    # 銀行現金買入價格
-    buying_cash = "無資料" if currency[1] == '-' else str(float(currency[1])) 
-    # 銀行現金賣出價格
-    sold_cash = "無資料" if currency[2] == '-' else str(float(currency[2])) 
-    # 銀行即期買入價格
-    buying_spot = "無資料" if currency[3] == '-' else str(float(currency[3])) 
-    # 銀行即期賣出價格
-    sold_spot = "無資料" if currency[4] == '-' else str(float(currency[4])) 
-    content +=  f"{currency_name} 最新掛牌時間為: {now_time}\n ---------- \n 現金買入價格: {buying_cash}\n 現金賣出價格: {sold_cash}\n 即期買入價格: {buying_spot}\n 即期賣出價格: {sold_spot}\n \n"
-    return content
+    try:
+        r = requests.get(f"https://open.er-api.com/v6/latest/{code}", timeout=10).json()
+        rates = r.get("rates") or {}
+        if r.get("result") != "success" or "TWD" not in rates:
+            return f"{currency_name}（{code}）匯率暫時查不到，請稍後再試 🙏"
+        twd = float(rates["TWD"])
+        upd = (r.get("time_last_update_utc") or "")[:16]
+        inv = (1.0 / twd) if twd else 0.0
+        return (
+            f"{currency_name}（{code}）參考匯率\n"
+            f" ---------- \n"
+            f" 1 {code} ≈ {twd:.3f} 台幣\n"
+            f" 1 台幣 ≈ {inv:.4f} {code}\n"
+            f" 更新時間: {upd}\n"
+            f"（此為中價參考，實際買賣以各銀行牌告為準）\n \n"
+        )
+    except Exception:
+        return f"{currency_name}（{code}）匯率查詢失敗，請稍後再試 🙏"
 
 def getExchangeRate(msg): # 不同貨幣直接換算(非只限於台幣)
     """

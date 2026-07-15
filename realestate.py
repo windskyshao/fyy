@@ -408,7 +408,7 @@ def query(text):
         body.append({"type": "separator", "margin": "lg"})
         body.append({"type": "text", "text": f"📊 周邊實價 · {match_label}", "size": "sm", "color": "#8c4de6", "weight": "bold", "margin": "lg"})
         _note = f"（同類 {len(lvr_rows)} 筆，附近共 {total} 筆" + ("；第一筆為本標的門牌" if selfrow else "；本戶查無成交，以下為周邊同類") + "）"
-        body.append({"type": "text", "text": _note, "size": "xs", "color": "#999999", "wrap": True})
+        body.append({"type": "text", "text": _note, "size": "sm", "color": "#555555", "wrap": True})
         for row in lvr_rows:
             top = [
                 {"type": "text", "text": ("◉ " if row["self"] else "") + (row["a"] or "—"), "size": "sm", "color": ("#1558b0" if row["self"] else "#333333"), "flex": 6, "wrap": True, "weight": "bold"},
