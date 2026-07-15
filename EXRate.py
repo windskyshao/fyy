@@ -37,6 +37,19 @@ def getCurrencyName(currency):
     try: currency_name = currency_list[currency]
     except: return "無可支援的外幣"
     return currency_name
+def now_rate(code):
+    """回 (1 code = ? 台幣 的匯率 float, 更新時間str) 或 (None, None)。
+    來源 open.er-api.com(免金鑰、中價)。取代已被臺銀反爬蟲擋掉的 twder。"""
+    try:
+        r = requests.get(f"https://open.er-api.com/v6/latest/{code}", timeout=10).json()
+        rates = r.get("rates") or {}
+        if r.get("result") == "success" and "TWD" in rates:
+            return float(rates["TWD"]), (r.get("time_last_update_utc") or "")[:16]
+    except Exception:
+        pass
+    return None, None
+
+
 # 查詢匯率
 def showCurrency(code) -> "JPY": # code 為外幣代碼
     # 註：原本用 twder 抓臺灣銀行牌告，臺銀已加反爬蟲(回傳挑戰頁)導致 twder 解析失敗；
@@ -54,8 +67,8 @@ def showCurrency(code) -> "JPY": # code 為外幣代碼
         return (
             f"{currency_name}（{code}）參考匯率\n"
             f" ---------- \n"
-            f" 1 {code} ≈ {twd:.3f} 台幣\n"
-            f" 1 台幣 ≈ {inv:.4f} {code}\n"
+            f" 1 {code} ≈ {twd:.4g} 台幣\n"
+            f" 1 台幣 ≈ {inv:.4g} {code}\n"
             f" 更新時間: {upd}\n"
             f"（此為中價參考，實際買賣以各銀行牌告為準）\n \n"
         )

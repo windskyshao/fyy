@@ -263,14 +263,10 @@ def get_sell_rate(currency):
     回傳 (rate_str, rate_type)：rate_type 為 '即期' 或 '現金'；皆無資料時回傳 (None, None)
     """
     try:
-        data = twder.now(currency)
-        spot_sell = data[4]
-        if spot_sell != '-':
-            return spot_sell, '即期'
-        cash_sell = data[2]
-        if cash_sell != '-':
-            return cash_sell, '現金'
-    except:
+        rate, _ = EXRate.now_rate(currency)   # 臺銀被反爬蟲擋→改用 open.er-api.com 中價
+        if rate:
+            return f"{rate:.4f}", '參考'
+    except Exception:
         pass
     return None, None
 
@@ -817,7 +813,7 @@ def cron_oil_price():
         today_str = datetime.datetime.utcnow().strftime('%Y-%m-%d')
         if not force and not test_mode and mongodb.get_cron_last_run('oil_price') == today_str:
             return f"OK, already sent today ({today_str})", 200
-        data = oil_price()
+        data = oil_price(force=True)   # 每週排程重抓最新→順便刷新快取，之後使用者查詢直接吃快取
         # 若拿到 transmit 結構（含 cpc/fpc），用 flex；否則 fallback 純文字
         use_flex = bool(data.get('cpc'))
         if test_mode:
@@ -1298,10 +1294,24 @@ def _fetch_moea_oil():
     }
     return {'prices': prices_out, 'forecast': forecast, '_source': 'moea'}
 
-def oil_price():
-    """回傳結構化油價資料 dict。
-    優先序：transmit-info（中油+台塑對照）→ MOEA（僅中油）→ goodlife.tw（公式預估）
-    """
+_OIL_CACHE = {"data": None, "ts": 0}
+
+
+def oil_price(force=False):
+    """回傳油價 dict（含快取）。油價一週才變一次，抓到就存起來，之後查詢直接回存檔→秒回、
+    不必每次即時連那幾個從海外 Render 常常很慢的政府網站(避免拖太久→LINE reply token 過期→沒反應)。"""
+    c = _OIL_CACHE
+    if not force and c["data"] and (time.time() - c["ts"]) < 8 * 86400:
+        return c["data"]
+    data = _oil_price_fetch()
+    if data and (data.get("prices") or data.get("cpc")):
+        c["data"] = data
+        c["ts"] = time.time()
+    return data or c["data"]   # 這次抓失敗也回上次存檔(若有)，不讓使用者看到空的
+
+
+def _oil_price_fetch():
+    """實際抓取。優先序：transmit-info（中油+台塑對照）→ MOEA（僅中油）→ goodlife.tw（公式預估）"""
     data = _fetch_transmit_oil()
     if data:
         # 為了與舊 caller 相容，同時填入 prices/forecast 兩個舊 key
@@ -1819,22 +1829,20 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage("無可支援的外幣"))
         else:
             try:
-                data = twder.now(currency)
-                now_time = str(data[0])
-                items = [
-                    ("現金買入", data[1]), ("現金賣出", data[2]),
-                    ("即期買入", data[3]), ("即期賣出", data[4])
+                rate, upd = EXRate.now_rate(currency)   # 臺銀反爬蟲擋 twder→改用 open.er-api.com 中價
+                if not rate:
+                    line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{currency_name}（{currency}）匯率暫時查不到，請稍後再試 🙏"))
+                    return 0
+                inv = (1.0 / rate) if rate else 0
+                rows = [
+                    {"type": "box", "layout": "horizontal", "margin": "md", "contents": [
+                        {"type": "text", "text": f"1 {currency}", "size": "sm", "color": "#555555", "flex": 3},
+                        {"type": "text", "text": f"{rate:.4g} 台幣", "size": "md", "weight": "bold", "align": "end", "flex": 4, "color": "#2196F3"}]},
+                    {"type": "box", "layout": "horizontal", "margin": "md", "contents": [
+                        {"type": "text", "text": "1 台幣", "size": "sm", "color": "#555555", "flex": 3},
+                        {"type": "text", "text": f"{inv:.4g} {currency}", "size": "md", "weight": "bold", "align": "end", "flex": 4, "color": "#2196F3"}]},
+                    {"type": "text", "text": "中價參考，實際買賣以各銀行牌告為準", "size": "xs", "color": "#aaaaaa", "margin": "md", "wrap": True},
                 ]
-                rows = []
-                for label, val in items:
-                    v = "無資料" if val == '-' else str(float(val))
-                    rows.append({
-                        "type": "box", "layout": "horizontal", "margin": "md",
-                        "contents": [
-                            {"type": "text", "text": label, "size": "sm", "color": "#555555", "flex": 3},
-                            {"type": "text", "text": v, "size": "sm", "weight": "bold", "align": "end", "flex": 2, "color": "#2196F3"}
-                        ]
-                    })
                 currency_flex = FlexSendMessage(
                     alt_text=f"{currency_name}匯率查詢",
                     contents={
@@ -1843,28 +1851,19 @@ def handle_message(event):
                             "type": "box", "layout": "vertical",
                             "contents": [
                                 {"type": "text", "text": f"💱 {currency_name} ({currency})", "weight": "bold", "size": "lg", "color": "#2196F3"},
-                                {"type": "text", "text": f"掛牌時間：{now_time}", "size": "xs", "color": "#888888", "margin": "sm"}
+                                {"type": "text", "text": f"更新：{upd}", "size": "xs", "color": "#888888", "margin": "sm"}
                             ], "paddingAll": "15px"
                         },
-                        "body": {
-                            "type": "box", "layout": "vertical",
-                            "contents": rows,
-                            "paddingAll": "15px"
-                        },
+                        "body": {"type": "box", "layout": "vertical", "contents": rows, "paddingAll": "15px"},
                         "footer": {
                             "type": "box", "layout": "vertical",
                             "contents": [
-                                {
-                                    "type": "box", "layout": "horizontal",
-                                    "contents": [
-                                        {"type": "button", "style": "primary", "color": "#2196F3", "height": "sm", "flex": 1,
-                                         "action": {"type": "message", "label": "走勢圖", "text": f"CT{currency}"}},
-                                        {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
-                                         "action": {"type": "message", "label": "兌換台幣", "text": f"換匯{currency}/TWD"}},
-                                        {"type": "button", "style": "primary", "color": "#FF5252", "height": "sm", "flex": 1,
-                                         "action": {"type": "message", "label": "加入關注", "text": f"關注外幣{currency}"}}
-                                    ], "spacing": "sm"
-                                },
+                                {"type": "box", "layout": "horizontal", "contents": [
+                                    {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm", "flex": 1,
+                                     "action": {"type": "message", "label": "兌換台幣", "text": f"換匯{currency}/TWD"}},
+                                    {"type": "button", "style": "primary", "color": "#FF5252", "height": "sm", "flex": 1,
+                                     "action": {"type": "message", "label": "加入關注", "text": f"關注外幣{currency}"}}
+                                ], "spacing": "sm"},
                                 {"type": "button", "style": "link", "height": "sm",
                                  "action": {"type": "message", "label": "↩ 返回匯率查詢", "text": "匯率查詢"}}
                             ], "paddingAll": "10px", "spacing": "sm"
