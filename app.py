@@ -896,6 +896,33 @@ def cron_status():
     lines = [f"{k}: {v}" for k, v in info.items()]
     return "\n".join(lines), 200, {"Content-Type": "text/plain; charset=utf-8"}
 
+@app.route('/cron/bot_health')
+def cron_bot_health():
+    """診斷 bot 健康：LINE quota、followers 數、webhook token 有效性"""
+    import json as _json
+    out = {}
+    headers = {'Authorization': f'Bearer {access_token}'}
+    try:
+        info_r = requests.get('https://api.line.me/v2/bot/info', headers=headers, timeout=8)
+        out['bot_info_status'] = info_r.status_code
+        out['bot_info'] = info_r.json() if info_r.status_code == 200 else info_r.text[:200]
+    except Exception as e:
+        out['bot_info_error'] = str(e)
+    try:
+        quota_r = requests.get('https://api.line.me/v2/bot/message/quota', headers=headers, timeout=8)
+        usage_r = requests.get('https://api.line.me/v2/bot/message/quota/consumption', headers=headers, timeout=8)
+        out['quota'] = quota_r.json()
+        out['usage'] = usage_r.json()
+    except Exception as e:
+        out['quota_error'] = str(e)
+    try:
+        followers = mongodb.get_all_followers()
+        out['followers_count'] = len(followers)
+        out['followers_sample'] = followers[:3]
+    except Exception as e:
+        out['followers_error'] = str(e)
+    return _json.dumps(out, ensure_ascii=False, indent=2), 200, {"Content-Type": "application/json; charset=utf-8"}
+
 @app.route('/cron/oil_debug')
 def cron_oil_debug():
     """診斷 oil_price 資料結構，看實際用了哪個來源，不推播"""
