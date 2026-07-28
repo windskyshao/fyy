@@ -2507,6 +2507,28 @@ def handle_message(event):
             res = realestate.query(original_msg)
         except Exception:
             res = None; err = True
+        # 段名缺行政區 → 使用者從候選挑
+        if isinstance(res, dict) and res.get("type") == "section_picker":
+            matches = res.get("matches", [])
+            sect = res.get("sect", "")
+            no = res.get("no", "")
+            city_names = {"E": "高雄市", "D": "台南市", "T": "屏東縣"}
+            items = []
+            # LINE quick reply 最多 13 顆
+            for m in matches[:13]:
+                area_disp = f"{city_names.get(m['city'], '')}{m['area_name']}"
+                # 送出時帶完整前綴，重新觸發查詢
+                send_text = f"{area_disp}{m['sect_name']}{no}"
+                label = f"{area_disp}{m['sect_name']}"[:20]
+                items.append(QuickReplyButton(action=MessageAction(label=label, text=send_text)))
+            tip = f"「{sect}{no}」在多處都有 ({len(matches)} 筆)，請選擇："
+            if len(matches) > 13:
+                tip += f"\n(僅列前 13 筆，或請直接打縣市+區+段+號)"
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=tip, quick_reply=QuickReply(items=items))
+            )
+            return 0
         if res:
             alt, contents = res
             line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text=alt[:60], contents=contents))
@@ -2515,7 +2537,7 @@ def handle_message(event):
             msg = "查詢時連線出了點問題 😥 請稍等幾秒再試一次。"
         else:
             msg = ("查不到這個地址／地號 😅 可能原因：\n"
-                   "① 打錯或不完整 → 地址例：高雄市鼓山區美術館路187號；地號要含行政區，例：大寮區山子頂段2442\n"
+                   "① 打錯或不完整 → 地址例：高雄市鼓山區美術館路187號；地號可直接打「段名+號」讓系統反查\n"
                    "② 目前實價只有【高雄／台南／屏東】三縣市\n"
                    "③ 太新的門牌可能還查不到")
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=msg))

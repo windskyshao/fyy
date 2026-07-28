@@ -5,6 +5,7 @@
 資料來源：landmap 雲端主機 map.windsky-sky.com（免費地籍/實價；面積/公告現值/建蔽容積因海外主機被地理封鎖，暫不含）。
 設計原則：每段查詢各自容錯（拿不到就略過該段，不讓整張卡失敗）；字級用 sm~lg，不用 xs。
 """
+import os
 import re
 import requests
 import urllib.parse
@@ -177,18 +178,62 @@ def _parse_landno(t):
     return (city or "E", tn, sect, no)
 
 
+_SECT_INDEX = {}   # {段名: [[city, area_id, area_name], ...]}
+try:
+    import json as _json
+    _SECT_INDEX_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sections_index.json")
+    if os.path.exists(_SECT_INDEX_PATH):
+        with open(_SECT_INDEX_PATH, "r", encoding="utf-8") as _f:
+            _SECT_INDEX = _json.load(_f)
+except Exception as _e:
+    print(f"[realestate] load sections_index failed: {_e}")
+
+
+def _search_sections(name):
+    """段名搜尋：完全同名優先，其次前綴、其次包含。回傳 list of dict。
+    資料來自預生成的 sections_index.json（高雄E、台南D、屏東T）。
+    """
+    exact = _SECT_INDEX.get(name)
+    if exact:
+        return [{"city": x[0], "area_id": x[1], "area_name": x[2], "sect_name": name} for x in exact]
+    if len(name) < 2:
+        return []
+    hits = []
+    for sname, entries in _SECT_INDEX.items():
+        if sname.startswith(name):
+            hits.extend({"city": x[0], "area_id": x[1], "area_name": x[2], "sect_name": sname} for x in entries)
+    if hits:
+        return hits
+    # 都沒前綴匹配才試包含（避免太寬）
+    for sname, entries in _SECT_INDEX.items():
+        if name in sname:
+            hits.extend({"city": x[0], "area_id": x[1], "area_name": x[2], "sect_name": sname} for x in entries)
+    return hits
+
+
 def _resolve(text):
-    """輸入 → (title, lat, lng, city_code)。地號（X段+數字）只走 landlocate；否則走地址。"""
+    """輸入 → (title, lat, lng, city_code)。地號（X段+數字）只走 landlocate；否則走地址。
+
+    地號查詢缺行政區時，不再直接回 None 讓上層報「查無」——改反查段名，
+    若找到多個候選，回一個 dict picker 讓使用者選（app 層轉 quick reply）。
+    """
     t = text.strip()
     # 地號查詢：有「X段+數字」且沒有建物門牌號 → 只用地號定位，不 fallback 到地址（避免亂定位到不相干路口）
     if _RE_SECT.search(t) and "號" not in t.replace("地號", ""):
         p = _parse_landno(t)
-        if p and p[1]:                         # 必須有行政區才能定位（landlocate 需要鄉鎮市區）
+        if p and p[1]:                         # 有行政區 → 直接定位
             city, tn, sect, no = p
             d = _get("/api/landlocate", city=city, tn=tn, a=f"{sect}{no}地號")
             if d and d.get("status") == "OK" and d.get("lat"):
                 return (f"{tn}{sect}{no}", d["lat"], d["lng"], city)
-        return None                            # 地號查無 / 缺行政區 → 交上層回提示，不改猜地址
+            return None                        # 已指定行政區但查無 → 直接回無資料
+        # 缺行政區 → 反查段名，讓使用者從候選挑
+        if p:
+            _, _, sect, no = p
+            matches = _search_sections(sect)
+            if matches:
+                return {"type": "section_picker", "matches": matches, "sect": sect, "no": no}
+        return None
     # 地址查詢
     d = _get("/api/address", q=t)
     if d and d.get("results"):
@@ -259,10 +304,18 @@ def _is_special(nt):
 
 
 def query(text):
-    """地址／地號 → (alt_text, flex) 或 None。"""
+    """地址／地號 → (alt_text, flex) / picker dict / None。
+
+    回傳型式：
+      - (alt_text, flex_contents)：一般結果卡（app 層照舊）
+      - dict{'type': 'section_picker', ...}：地號缺行政區、需使用者從候選挑（app 層轉 quick reply）
+      - None：完全查無
+    """
     got = _resolve(text)
     if not got:
         return None
+    if isinstance(got, dict) and got.get("type") == "section_picker":
+        return got
     title, lat, lng, city = got
     is_land = bool(_RE_SECT.search(text)) and ("號" not in text.replace("地號", ""))
     return _card(title, lat, lng, city, text, is_land)
