@@ -1,0 +1,42 @@
+{
+  "updated": "2026-07",
+  "note": "各家折扣為概略資訊，實際以現場公告為準。信用卡、APP、會員等額外優惠不含在內。",
+  "stations": [
+    {
+      "name": "台塑石化",
+      "self_gas_off": 0,
+      "self_diesel_off": 0,
+      "manual_gas_off": 0,
+      "manual_diesel_off": 0,
+      "note": "牌價比較"
+    },
+    {
+      "name": "台亞石油",
+      "self_gas_off": 1.0,
+      "self_diesel_off": 0.7,
+      "manual_gas_off": 0.7,
+      "manual_diesel_off": 0.5,
+      "note": "OP會員可2選1: 折扣 或 2.5% 累點"
+    },
+    {
+      "name": "全國加油站",
+      "self_gas_off": 1.1,
+      "self_diesel_off": 0.8,
+      "manual_gas_off": 0.8,
+      "manual_diesel_off": 0.6,
+      "note": "常設優惠"
+    },
+    {
+      "name": "山隆加油站",
+      "self_gas_off": 1.3,
+      "self_diesel_off": 1.0,
+      "manual_gas_off": 1.0,
+      "manual_diesel_off": 0.8,
+      "note": "單筆滿 201 元才享折扣"
+    }
+  ],
+  "extras": [
+    "週三優惠：全國、台亞 加油滿 25 公升折 15 元",
+    "信用卡回饋另計（各家中油聯名卡多有 3-5% 回饋）"
+  ]
+}

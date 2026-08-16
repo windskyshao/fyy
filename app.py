@@ -1914,6 +1914,72 @@ def handle_message(event):
                 line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"匯率查詢失敗: {str(e)}"))
         return 0
     ######################## 使用說明 選單 油價報你知################################
+    if event.message.text in ("加油折扣", "加油站折扣", "折扣速覽"):
+        try:
+            data = oil_price()
+            cpc92 = (data.get('cpc') or {}).get('92')
+            cpcD = (data.get('cpc') or {}).get('柴油')
+            gd_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gas_discount.json')
+            with open(gd_path, 'r', encoding='utf-8') as f:
+                gd = json.load(f)
+
+            def _price(base, off):
+                if base is None:
+                    return "—"
+                return f"{base - off:.2f}" + (f" (-{off})" if off > 0 else "")
+
+            def _section(title, base, off_key):
+                rows = [{"type": "text", "text": title, "size": "sm", "color": "#333333", "weight": "bold", "margin": "md"}]
+                for st in gd['stations']:
+                    off = st.get(off_key, 0)
+                    rows.append({
+                        "type": "box", "layout": "horizontal", "margin": "sm",
+                        "contents": [
+                            {"type": "text", "text": st['name'], "size": "sm", "color": "#555555", "flex": 5},
+                            {"type": "text", "text": _price(base, off), "size": "sm", "weight": "bold", "align": "end", "flex": 4,
+                             "color": "#1DB446" if off > 0 else "#333333"},
+                        ]
+                    })
+                return rows
+
+            body = []
+            base_line = f"以中油 92={cpc92:.2f}／柴油={cpcD:.2f} 換算" if cpc92 and cpcD else "無法取得中油牌價做基準"
+            body.append({"type": "text", "text": base_line, "size": "xs", "color": "#888888", "margin": "sm"})
+            body.extend(_section("💧 自助 92 無鉛", cpc92, 'self_gas_off'))
+            body.extend(_section("💧 自助 超級柴油", cpcD, 'self_diesel_off'))
+            body.append({"type": "separator", "margin": "lg"})
+            body.extend(_section("🧑 人工 92 無鉛", cpc92, 'manual_gas_off'))
+            body.extend(_section("🧑 人工 超級柴油", cpcD, 'manual_diesel_off'))
+            body.append({"type": "separator", "margin": "lg"})
+            body.append({"type": "text", "text": "💡 額外優惠", "size": "sm", "color": "#333333", "weight": "bold", "margin": "md"})
+            for line in gd.get('extras', []):
+                body.append({"type": "text", "text": f"· {line}", "size": "xs", "color": "#555555", "wrap": True, "margin": "sm"})
+            body.append({"type": "separator", "margin": "lg"})
+            body.append({"type": "text", "text": f"⚠️ 折扣為 {gd['updated']} 整理，實際以各站現場為準",
+                         "size": "xs", "color": "#FF9800", "wrap": True, "margin": "md"})
+
+            discount_flex = FlexSendMessage(
+                alt_text="加油站折扣速覽",
+                contents={
+                    "type": "bubble", "size": "mega",
+                    "header": {
+                        "type": "box", "layout": "vertical",
+                        "contents": [
+                            {"type": "text", "text": "🎫 加油站折扣速覽", "weight": "bold", "size": "xl", "color": "#FF6600"},
+                            {"type": "text", "text": "各家自助/人工預估價", "size": "sm", "color": "#888888", "margin": "sm"}
+                        ], "paddingAll": "16px"
+                    },
+                    "body": {
+                        "type": "box", "layout": "vertical",
+                        "contents": body,
+                        "paddingAll": "16px"
+                    }
+                }
+            )
+            line_bot_api.reply_message(event.reply_token, discount_flex)
+        except Exception as e:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"加油折扣查詢失敗: {e}"))
+        return 0
     if event.message.text == "油價查詢":
         try:
             data = oil_price()
@@ -1992,8 +2058,10 @@ def handle_message(event):
                         "spacing": "sm"
                     },
                     "footer": {
-                        "type": "box", "layout": "vertical",
+                        "type": "box", "layout": "vertical", "spacing": "sm",
                         "contents": [
+                            {"type": "button", "style": "primary", "color": "#FF9800", "height": "sm",
+                             "action": {"type": "message", "label": "🎫 看其他加油站折扣", "text": "加油折扣"}},
                             {"type": "text", "text": "資料來源：中油官方公告", "size": "xs", "color": "#aaaaaa", "align": "center"}
                         ],
                         "paddingAll": "10px"
