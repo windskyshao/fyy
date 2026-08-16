@@ -1917,73 +1917,86 @@ def handle_message(event):
     if event.message.text == "油價查詢":
         try:
             data = oil_price()
-            prices = data['prices']
-            forecast = data['forecast']
-            # 油品名稱對照
-            label_map = {'92': '92無鉛', '95': '95無鉛', '98': '98無鉛', '柴油': '超級柴油',
-                         '今日中油油價': None}
-            price_rows = []
-            for key, val in prices.items():
-                label = label_map.get(key, key)
-                if label is None:
-                    continue
-                price_rows.append({
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": label, "size": "md", "color": "#555555", "flex": 3},
-                        {"type": "text", "text": f"${val}", "size": "md", "weight": "bold", "align": "end", "flex": 2, "color": "#FF6600"}
-                    ], "margin": "md"
-                })
-            body_contents = price_rows if price_rows else [{"type": "text", "text": "暫無資料", "wrap": True}]
-            # 下週預測
-            if forecast:
-                body_contents.append({"type": "separator", "margin": "lg"})
-                body_contents.append({"type": "text", "text": "📊 下週預測", "size": "sm", "weight": "bold", "color": "#333333", "margin": "lg"})
-                # 用 .get() 判空：key 存在但值是空字串時 LINE flex 會回錯，導致回覆失敗
-                if forecast.get('日期'):
-                    body_contents.append({"type": "text", "text": forecast['日期'], "size": "xs", "color": "#888888", "wrap": True, "margin": "sm"})
-                if forecast.get('汽油調整'):
-                    body_contents.append({
-                        "type": "box", "layout": "horizontal", "margin": "sm",
-                        "contents": [
-                            {"type": "text", "text": "汽油", "size": "sm", "color": "#555555", "flex": 2},
-                            {"type": "text", "text": forecast['汽油調整'], "size": "sm", "weight": "bold", "align": "end", "flex": 3,
-                             "color": "#1DB446" if '不調整' in forecast['汽油調整'] else "#FF3B30"}
-                        ]
-                    })
-                if forecast.get('柴油預計調整'):
-                    body_contents.append({
-                        "type": "box", "layout": "horizontal", "margin": "sm",
-                        "contents": [
-                            {"type": "text", "text": "柴油", "size": "sm", "color": "#555555", "flex": 2},
-                            {"type": "text", "text": forecast['柴油預計調整'], "size": "sm", "weight": "bold", "align": "end", "flex": 3,
-                             "color": "#1DB446" if '不調整' in forecast['柴油預計調整'] else "#FF3B30"}
-                        ]
-                    })
-                if forecast.get('變動幅度'):
-                    body_contents.append({
-                        "type": "box", "layout": "horizontal", "margin": "sm",
-                        "contents": [
-                            {"type": "text", "text": "變動幅度", "size": "sm", "color": "#555555", "flex": 2},
-                            {"type": "text", "text": forecast['變動幅度'], "size": "sm", "weight": "bold", "align": "end", "flex": 3,
-                             "color": "#FF3B30" if '-' in forecast['變動幅度'] else "#1DB446"}
-                        ]
-                    })
+            cpc = data.get('cpc') or {}
+            fpc = data.get('fpc') or {}
+            cpc_next = data.get('cpc_next') or {}
+            fpc_next = data.get('fpc_next') or {}
+            deltas = data.get('deltas') or {}
+            eff_date = data.get('effective_date') or ''
+            has_fpc = bool(fpc)
+            has_change = any(abs(d) > 0.001 for d in deltas.values())
+
+            def _delta_text(d):
+                if d is None:
+                    return "—", "#888888"
+                if abs(d) < 0.001:
+                    return "持平", "#888888"
+                return (f"▼ {abs(d):.1f}", "#1DB446") if d < 0 else (f"▲ {abs(d):.1f}", "#FF3B30")
+
+            # 表頭
+            header_cols = [
+                {"type": "text", "text": "油品", "size": "md", "color": "#888888", "weight": "bold", "flex": 3},
+                {"type": "text", "text": "中油", "size": "md", "color": "#FF6600", "weight": "bold", "align": "end", "flex": 2},
+            ]
+            if has_fpc:
+                header_cols.append({"type": "text", "text": "台塑", "size": "md", "color": "#2196F3", "weight": "bold", "align": "end", "flex": 2})
+            if has_change:
+                header_cols.append({"type": "text", "text": "下週", "size": "md", "color": "#888888", "weight": "bold", "align": "end", "flex": 2})
+            rows = [{"type": "box", "layout": "horizontal", "contents": header_cols, "margin": "sm"}]
+            rows.append({"type": "separator", "margin": "md"})
+
+            fuels = [('92', '92無鉛'), ('95', '95無鉛'), ('98', '98無鉛'), ('柴油', '柴油')]
+            for key, label in fuels:
+                cpc_price = cpc.get(key)
+                fpc_price = fpc.get(key) if has_fpc else None
+                d = deltas.get(key)
+                cols = [
+                    {"type": "text", "text": label, "size": "lg", "color": "#333333", "weight": "bold", "flex": 3},
+                    {"type": "text", "text": f"{cpc_price:.2f}" if cpc_price is not None else "—",
+                     "size": "lg", "color": "#FF6600", "align": "end", "weight": "bold", "flex": 2},
+                ]
+                if has_fpc:
+                    cols.append({"type": "text", "text": f"{fpc_price:.2f}" if fpc_price is not None else "—",
+                                 "size": "lg", "color": "#2196F3", "align": "end", "weight": "bold", "flex": 2})
+                if has_change:
+                    txt, color = _delta_text(d)
+                    cols.append({"type": "text", "text": txt, "size": "lg", "color": color, "align": "end", "weight": "bold", "flex": 2})
+                rows.append({"type": "box", "layout": "horizontal", "contents": cols, "margin": "lg"})
+
+            # 下週生效日期提示（有變動才顯示）
+            if has_change and eff_date:
+                rows.append({"type": "separator", "margin": "md"})
+                rows.append({"type": "text", "text": f"📅 下週 {eff_date} 起生效", "size": "sm", "color": "#888888", "align": "center", "margin": "md"})
+            elif eff_date:
+                rows.append({"type": "separator", "margin": "md"})
+                rows.append({"type": "text", "text": f"下週 {eff_date} 起 不調整", "size": "sm", "color": "#1DB446", "align": "center", "margin": "md", "weight": "bold"})
+
+            subtitle = "本週生效｜元/公升"
             oil_flex = FlexSendMessage(
                 alt_text="油價查詢",
                 contents={
                     "type": "bubble",
+                    "size": "mega",
                     "header": {
                         "type": "box", "layout": "vertical",
                         "contents": [
-                            {"type": "text", "text": "⛽ 中油最新油價", "weight": "bold", "size": "lg", "color": "#FF6600"},
-                            {"type": "text", "text": "單位：元/公升", "size": "xs", "color": "#888888", "margin": "sm"}
-                        ], "paddingAll": "15px"
+                            {"type": "text", "text": "⛽ 加油站現價比較", "weight": "bold", "size": "xl", "color": "#FF6600"},
+                            {"type": "text", "text": subtitle, "size": "md", "color": "#888888", "margin": "sm"}
+                        ],
+                        "paddingAll": "16px"
                     },
                     "body": {
                         "type": "box", "layout": "vertical",
-                        "contents": body_contents,
-                        "paddingAll": "15px"
+                        "contents": rows,
+                        "paddingAll": "16px",
+                        "spacing": "sm"
+                    },
+                    "footer": {
+                        "type": "box", "layout": "vertical",
+                        "contents": [
+                            {"type": "text", "text": "資料來源：中油官方公告", "size": "xs", "color": "#aaaaaa", "align": "center"}
+                        ],
+                        "paddingAll": "10px"
                     }
                 }
             )
