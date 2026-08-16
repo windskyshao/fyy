@@ -1939,9 +1939,10 @@ def handle_message(event):
             if forecast:
                 body_contents.append({"type": "separator", "margin": "lg"})
                 body_contents.append({"type": "text", "text": "📊 下週預測", "size": "sm", "weight": "bold", "color": "#333333", "margin": "lg"})
-                if '日期' in forecast:
+                # 用 .get() 判空：key 存在但值是空字串時 LINE flex 會回錯，導致回覆失敗
+                if forecast.get('日期'):
                     body_contents.append({"type": "text", "text": forecast['日期'], "size": "xs", "color": "#888888", "wrap": True, "margin": "sm"})
-                if '汽油調整' in forecast:
+                if forecast.get('汽油調整'):
                     body_contents.append({
                         "type": "box", "layout": "horizontal", "margin": "sm",
                         "contents": [
@@ -1950,16 +1951,16 @@ def handle_message(event):
                              "color": "#1DB446" if '不調整' in forecast['汽油調整'] else "#FF3B30"}
                         ]
                     })
-                if '柴油預計調整' in forecast:
+                if forecast.get('柴油預計調整'):
                     body_contents.append({
                         "type": "box", "layout": "horizontal", "margin": "sm",
                         "contents": [
                             {"type": "text", "text": "柴油", "size": "sm", "color": "#555555", "flex": 2},
                             {"type": "text", "text": forecast['柴油預計調整'], "size": "sm", "weight": "bold", "align": "end", "flex": 3,
-                             "color": "#1DB446" if '0.0' in forecast['柴油預計調整'] else "#FF3B30"}
+                             "color": "#1DB446" if '不調整' in forecast['柴油預計調整'] else "#FF3B30"}
                         ]
                     })
-                if '變動幅度' in forecast:
+                if forecast.get('變動幅度'):
                     body_contents.append({
                         "type": "box", "layout": "horizontal", "margin": "sm",
                         "contents": [
