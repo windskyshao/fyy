@@ -1159,19 +1159,23 @@ def _fetch_transmit_oil():
     row_re = re.compile(
         r'<td>\s*(中油|台塑)\s*(98|95|92|柴油)(?:無鉛)?\s*</td>\s*'
         r'<td>\s*([\d.]+)\s*</td>\s*'
-        r'<td>\s*([\d.]+)\s*</td>',
+        r'<td[^>]*>\s*([^<]*?)\s*</td>',   # 下週欄可能是「尚無數據」（週日中油未公布前）
         re.S,
     )
     rows = row_re.findall(html)
     if len(rows) < 8:
         return None
     data = {'cpc': {}, 'fpc': {}, 'cpc_next': {}, 'fpc_next': {}, 'deltas': {}}
-    for company, fuel, cur, nxt in rows[:8]:
+    for company, fuel, cur, nxt_raw in rows[:8]:
         target = 'cpc' if company == '中油' else 'fpc'
         data[target][fuel] = float(cur)
-        data[f'{target}_next'][fuel] = float(nxt)
-        d = round(float(nxt) - float(cur), 2)
-        data['deltas'].setdefault(fuel, d)
+        try:
+            nxt = float(nxt_raw)
+            data[f'{target}_next'][fuel] = nxt
+            data['deltas'].setdefault(fuel, round(nxt - float(cur), 2))
+        except (ValueError, TypeError):
+            # 下週資料尚未公布（如週日早上），只保留本週價
+            pass
     date_m = re.search(r'(\d{4}/\d{2}/\d{2})\s*~\s*(\d{4}/\d{2}/\d{2})', html)
     if date_m:
         try:
@@ -1917,8 +1921,16 @@ def handle_message(event):
     if event.message.text in ("加油折扣", "加油站折扣", "折扣速覽"):
         try:
             data = oil_price()
-            cpc92 = (data.get('cpc') or {}).get('92')
-            cpcD = (data.get('cpc') or {}).get('柴油')
+            cpc = data.get('cpc') or {}
+            # fallback：若 transmit/moea 失敗，goodlife 只給 prices dict（也是中油牌價）
+            if not cpc:
+                for k, v in (data.get('prices') or {}).items():
+                    try:
+                        cpc[k] = float(str(v).strip())
+                    except (ValueError, TypeError):
+                        pass
+            cpc92 = cpc.get('92')
+            cpcD = cpc.get('柴油')
             gd_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gas_discount.json')
             with open(gd_path, 'r', encoding='utf-8') as f:
                 gd = json.load(f)
@@ -1984,6 +1996,13 @@ def handle_message(event):
         try:
             data = oil_price()
             cpc = data.get('cpc') or {}
+            # fallback：若 transmit/moea 都失敗，goodlife 的 prices dict 也是中油牌價
+            if not cpc:
+                for k, v in (data.get('prices') or {}).items():
+                    try:
+                        cpc[k] = float(str(v).strip())
+                    except (ValueError, TypeError):
+                        pass
             fpc = data.get('fpc') or {}
             cpc_next = data.get('cpc_next') or {}
             fpc_next = data.get('fpc_next') or {}
