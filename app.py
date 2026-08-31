@@ -455,6 +455,20 @@ def contacts_upload():
     return ({'ok': True, 'size': len(raw)}, 200)
 
 
+@app.route('/contacts/meta', methods=['GET'])
+def contacts_meta():
+    """輕量查詢：只回雲端通訊錄的更新時間，用來讓用戶端判斷有無新版（不回檔案本體）。"""
+    token = request.headers.get('X-Contacts-Token', '') or request.args.get('token', '')
+    if CONTACTS_DL_TOKEN and token != CONTACTS_DL_TOKEN:
+        return ('forbidden', 403)
+    try:
+        _b64, updated = mongodb.get_app_file('contacts_xlsx')
+    except Exception as e:
+        print(f'[contacts] meta 讀取失敗: {e}')
+        return ('db error', 500)
+    return ({'updated': updated or '', 'exists': bool(_b64)}, 200)
+
+
 def build_currency_alert_flex(currency_data, new_trigger_count, currently_triggered):
     """組裝匯率通知 flex：列出所有關注幣別，區分「剛達標」與「持續達標」"""
     rows = []
