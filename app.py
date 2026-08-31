@@ -1,6 +1,6 @@
 ﻿# -- coding: utf-8 --**
 #載入LineBot所需要的套件
-from flask import Flask, request, abort
+from flask import Flask, request, abort, Response
 from linebot import (LineBotApi, WebhookHandler, exceptions)
 from linebot.exceptions import (InvalidSignatureError)
 from linebot.models import *
@@ -402,6 +402,57 @@ def feedback():
     except Exception as e:
         print(f'[feedback] push 失敗: {e}')
         return ('push failed', 500)
+
+
+# 📇 通訊錄雲端同步：檔案存 MongoDB(私密)，主程式用戶端下載/上傳；避免個資進公開 GitHub。
+CONTACTS_DL_TOKEN = os.environ.get('CONTACTS_DL_TOKEN', 'ksp-contacts-dl-2026')      # 下載(輕量token)
+CONTACTS_ADMIN_TOKEN = os.environ.get('CONTACTS_ADMIN_TOKEN', '')                    # 上傳(僅管理者，務必在Render設強密碼)
+
+
+@app.route('/contacts/download', methods=['GET'])
+def contacts_download():
+    """用戶端下載最新通訊錄(xlsx bytes)。輕量 token 防亂打。"""
+    token = request.headers.get('X-Contacts-Token', '') or request.args.get('token', '')
+    if CONTACTS_DL_TOKEN and token != CONTACTS_DL_TOKEN:
+        return ('forbidden', 403)
+    try:
+        data_b64, updated = mongodb.get_app_file('contacts_xlsx')
+    except Exception as e:
+        print(f'[contacts] 讀取失敗: {e}')
+        return ('db error', 500)
+    if not data_b64:
+        return ('not found', 404)
+    try:
+        raw = base64.b64decode(data_b64)
+    except Exception as e:
+        print(f'[contacts] base64 解碼失敗: {e}')
+        return ('decode error', 500)
+    resp = Response(raw, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp.headers['X-Contacts-Updated'] = updated or ''
+    resp.headers['Content-Disposition'] = 'attachment; filename="contacts.xlsx"'
+    return resp
+
+
+@app.route('/contacts/upload', methods=['POST'])
+def contacts_upload():
+    """管理者上傳通訊錄(multipart file 欄位)。需強 token CONTACTS_ADMIN_TOKEN(只有管理者電腦有)。"""
+    token = request.headers.get('X-Contacts-Admin-Token', '') or request.form.get('token', '')
+    if not CONTACTS_ADMIN_TOKEN or token != CONTACTS_ADMIN_TOKEN:
+        return ('forbidden', 403)
+    fileobj = request.files.get('file')
+    if not fileobj or not fileobj.filename:
+        return ('no file', 400)
+    raw = fileobj.read()
+    if not raw or len(raw) < 100:
+        return ('empty', 400)
+    import datetime as _dt
+    try:
+        mongodb.save_app_file('contacts_xlsx', base64.b64encode(raw).decode(),
+                              _dt.datetime.now().isoformat(timespec='seconds'))
+    except Exception as e:
+        print(f'[contacts] 儲存失敗: {e}')
+        return ('db error', 500)
+    return ({'ok': True, 'size': len(raw)}, 200)
 
 
 def build_currency_alert_flex(currency_data, new_trigger_count, currently_triggered):

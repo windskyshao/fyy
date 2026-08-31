@@ -70,6 +70,25 @@ def set_cron_last_run(key, date_str):
     collect = db['cron_state']
     collect.update_one({"key": key}, {"$set": {"last_run_date": date_str}}, upsert=True)
 
+
+def save_app_file(name, data_b64, updated_iso):
+    """存放程式用檔案(如通訊錄.xlsx，base64字串)到 MongoDB，供用戶端下載同步；避免個資進公開 repo。"""
+    db = constructor_followers()
+    collect = db['app_files']
+    collect.update_one({"name": name},
+                       {"$set": {"name": name, "data": data_b64, "updated": updated_iso}},
+                       upsert=True)
+
+
+def get_app_file(name):
+    """取回程式用檔案，回傳 (data_b64, updated)；沒有回 (None, None)。"""
+    db = constructor_followers()
+    collect = db['app_files']
+    doc = collect.find_one({"name": name})
+    if not doc:
+        return None, None
+    return doc.get('data'), doc.get('updated')
+
 Authdb='test-good1'
 stockDB='mydb'
 currencyDB = 'users'
