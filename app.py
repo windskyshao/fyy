@@ -352,6 +352,9 @@ def feedback():
         category = (d.get('category') or '').strip()
         message = (d.get('message') or '(無內容)').strip()
         b64 = d.get('screenshot_b64') or ''
+        hostname = (d.get('hostname') or '').strip()
+        username = (d.get('username') or '').strip()
+        lan_ip = (d.get('lan_ip') or '').strip()
     else:
         token = request.headers.get('X-Feedback-Token', '') or request.form.get('token', '')
         version = (request.form.get('version') or '未知').strip()
@@ -359,6 +362,9 @@ def feedback():
         category = (request.form.get('category') or '').strip()
         message = (request.form.get('message') or '(無內容)').strip()
         b64 = ''
+        hostname = (request.form.get('hostname') or '').strip()
+        username = (request.form.get('username') or '').strip()
+        lan_ip = (request.form.get('lan_ip') or '').strip()
 
     # 1) 權杖驗證（擋亂打）；未設定 FEEDBACK_TOKEN 時不檢查
     if FEEDBACK_TOKEN and token != FEEDBACK_TOKEN:
@@ -372,6 +378,16 @@ def feedback():
         lines.append(f'類型：{category}')
     lines.append(f'來自：{name}')
     lines.append(f'內容：{message}')
+    # 補上可辨識資訊（匿名回饋也能查到是誰/哪台）：對外真實IP由連線取得，區網IP/電腦/使用者由主程式帶上
+    real_ip = (request.headers.get('X-Forwarded-For', '').split(',')[0].strip() or request.remote_addr or '')
+    if username:
+        lines.append(f'使用者：{username}')
+    if hostname:
+        lines.append(f'電腦：{hostname}')
+    if lan_ip:
+        lines.append(f'區網IP：{lan_ip}')
+    if real_ip:
+        lines.append(f'對外IP：{real_ip}')
     messages = [TextSendMessage(text='\n'.join(lines))]
 
     # 3) 截圖（選填）：取得 bytes（base64 或 multipart 檔），存進 charts/ 取得公開網址
