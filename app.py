@@ -1565,6 +1565,29 @@ def handle_message(event):
         )
         return 0
 
+    # 管理員查阿生地圖每日檢查報告（回覆訊息不計推播額度 → 想看就問，不必每天推給你）
+    if original_msg in ('檢查', '每日檢查', '報告'):
+        ADMIN_UIDS = ('U60ff9aa248221639d7717bf54d1db609',)
+        if uid not in ADMIN_UIDS:
+            return 0  # 非管理員：靜默不回（報告含監控地號，不可外洩，也不讓人知道有這功能）
+        try:
+            r = requests.get('https://map.windsky-sky.com/api/daily_report',
+                             params={'token': FEEDBACK_TOKEN}, timeout=15)
+            d = r.json() if r.status_code == 200 else {}
+            if d.get('status') == 'OK':
+                txt = (d.get('text') or '').strip() or '（報告是空的）'
+                if len(txt) > 4800:
+                    txt = txt[:4780] + '\n…（太長截斷）'
+                body = f"{txt}\n\n—— 這是最近一次的檢查（{d.get('at', '')}）"
+            elif d.get('status') == 'NONE':
+                body = d.get('msg') or '還沒有任何檢查報告。'
+            else:
+                body = f"讀不到報告（HTTP {r.status_code}）。雲端主機或權杖可能有問題。"
+        except Exception as e:
+            body = f"讀取失敗：{str(e)[:100]}"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=body))
+        return 0
+
     # 管理員查推播用量
     if original_msg in ('用量', '額度', '配額'):
         # 管理員白名單；若想多加管理員直接附在 tuple 內即可
