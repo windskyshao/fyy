@@ -425,6 +425,29 @@ CONTACTS_DL_TOKEN = os.environ.get('CONTACTS_DL_TOKEN', 'ksp-contacts-dl-2026') 
 CONTACTS_ADMIN_TOKEN = os.environ.get('CONTACTS_ADMIN_TOKEN', '')                    # 上傳(僅管理者，務必在Render設強密碼)
 
 
+@app.route('/report_push', methods=['POST'])
+def report_push():
+    """雲端(landmap)把每日檢查報告推過來存著；你傳「檢查」時機器人直接回這份。
+    ★方向很重要：機器人主動打雲端會被 Cloudflare 擋(機房 IP)，但雲端打機器人是通的。
+    權杖沿用 FEEDBACK_TOKEN。存 MongoDB(Render 免費方案會休眠重啟，記憶體會清空)。"""
+    token = request.headers.get('X-Feedback-Token', '') or (request.get_json(silent=True) or {}).get('token', '')
+    if FEEDBACK_TOKEN and token != FEEDBACK_TOKEN:
+        return ('forbidden', 403)
+    d = request.get_json(silent=True) or {}
+    text = (d.get('text') or '').strip()
+    if not text:
+        return ('empty', 400)
+    import datetime as _dt
+    payload = json.dumps({'text': text, 'at': d.get('at', ''), 'ok': d.get('ok'),
+                          'failed': d.get('failed'), 'changes': d.get('changes')}, ensure_ascii=False)
+    try:
+        mongodb.save_app_file('landmap_daily_report', base64.b64encode(payload.encode('utf-8')).decode(),
+                              _dt.datetime.now().isoformat(timespec='seconds'))
+    except Exception as e:
+        return (f'save failed: {e}', 500)
+    return ('ok', 200)
+
+
 @app.route('/contacts/download', methods=['GET'])
 def contacts_download():
     """用戶端下載最新通訊錄(xlsx bytes)。輕量 token 防亂打。"""
@@ -1570,19 +1593,17 @@ def handle_message(event):
         ADMIN_UIDS = ('U60ff9aa248221639d7717bf54d1db609',)
         if uid not in ADMIN_UIDS:
             return 0  # 非管理員：靜默不回（報告含監控地號，不可外洩，也不讓人知道有這功能）
+        # 直接讀雲端推過來存在 MongoDB 的那份（不主動連雲端：機房 IP 會被 Cloudflare 擋）
         try:
-            r = requests.get('https://map.windsky-sky.com/api/daily_report',
-                             params={'token': FEEDBACK_TOKEN}, timeout=15)
-            d = r.json() if r.status_code == 200 else {}
-            if d.get('status') == 'OK':
+            data_b64, _updated = mongodb.get_app_file('landmap_daily_report')   # ★回傳 tuple,不是 dict
+            if not data_b64:
+                body = '還沒有收到任何檢查報告（今晚 22:30 跑完後，雲端就會把報告送過來存著）。'
+            else:
+                d = json.loads(base64.b64decode(data_b64).decode('utf-8'))
                 txt = (d.get('text') or '').strip() or '（報告是空的）'
                 if len(txt) > 4800:
                     txt = txt[:4780] + '\n…（太長截斷）'
                 body = f"{txt}\n\n—— 這是最近一次的檢查（{d.get('at', '')}）"
-            elif d.get('status') == 'NONE':
-                body = d.get('msg') or '還沒有任何檢查報告。'
-            else:
-                body = f"讀不到報告（HTTP {r.status_code}）。雲端主機或權杖可能有問題。"
         except Exception as e:
             body = f"讀取失敗：{str(e)[:100]}"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=body))
