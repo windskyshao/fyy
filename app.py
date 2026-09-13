@@ -930,6 +930,24 @@ def cron_oil_price():
         if not force and not test_mode and mongodb.get_cron_last_run('oil_price') == today_str:
             return f"OK, already sent today ({today_str})", 200
         data = oil_price(force=True)   # 每週排程重抓最新→順便刷新快取，之後使用者查詢直接吃快取
+        # 防呆：檢查資料是否為「最新」——effective_date 應該是今天之後 0~7 天內的日期
+        # 用意：中油週日下午才公告下週油價，若 cron 在 CPC 公告前跑，資料源會給
+        # 「與本週相同」的舊 next 資料（deltas 全 0、eff_date 是上週的下週）→ 誤推「不變動」。
+        # 檢查不通過就 skip、不寫入冪等，讓下次 cron fire（例如 13:30、14:00…）能重試，
+        # 直到 CPC 公告完、資料源同步後正確推出，之後 fire 全被冪等擋掉。
+        # ?force=1 / ?test=1 略過此防呆（供手動測試）
+        if not force and not test_mode:
+            eff = data.get('effective_date', '')
+            try:
+                eff_dt = datetime.datetime.strptime(eff, '%Y/%m/%d') if eff else None
+            except ValueError:
+                eff_dt = None
+            now_tw = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+            days_ahead = (eff_dt.date() - now_tw.date()).days if eff_dt else None
+            if days_ahead is None or days_ahead < 0 or days_ahead > 7:
+                # 資料源尚未更新到最新一週 → 這次不推，讓後續 cron fire 有機會重試
+                print(f"[cron_oil] skip stale: effective_date={eff}, days_ahead={days_ahead}")
+                return f"OK, skipped: data not fresh (eff={eff}, days_ahead={days_ahead})", 200
         # 若拿到 transmit 結構（含 cpc/fpc），用 flex；否則 fallback 純文字
         use_flex = bool(data.get('cpc'))
         if test_mode:
