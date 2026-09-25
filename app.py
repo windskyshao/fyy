@@ -1598,6 +1598,107 @@ def handle_message(event):
     uid = profile.user_id #使用者ID
     user_name = profile.display_name #使用者名稱
 
+    # ── 🐱 阿生地圖導引卡（多處共用：「地圖」指令、使用說明選單）────────────────
+    #   目的：讓 LINE 好友能一鍵進地圖。只提已開放的功能(地籍/實價/都計分區)，
+    #   謄本等限本人功能不放進對外訊息。
+    LANDMAP_URL = "https://map.windsky-sky.com"
+
+    def landmap_bubble():
+        return {
+            "type": "bubble", "size": "mega",
+            "header": {"type": "box", "layout": "vertical", "paddingAll": "14px",
+                       "contents": [{"type": "text", "text": "🐱 阿生地圖", "weight": "bold",
+                                     "size": "lg", "color": "#C25E12", "align": "center"}]},
+            "body": {"type": "box", "layout": "vertical", "spacing": "sm", "paddingAll": "14px", "contents": [
+                {"type": "text", "text": "免費地籍圖資工具", "size": "sm", "color": "#666666", "align": "center"},
+                {"type": "text", "wrap": True, "size": "sm", "color": "#333333",
+                 "text": "・點地號看面積、公告現值、建蔽率容積率\n・實價登錄：買賣、租賃、預售屋\n・都市計畫分區、地質災害風險"},
+                {"type": "text", "wrap": True, "size": "sm", "color": "#1DB446", "margin": "md",
+                 "text": "💡 直接把「地址」或「段名＋地號」傳給我，我就回地籍資料＋周邊實價，還能一鍵在地圖上看。"},
+            ]},
+            "footer": {"type": "box", "layout": "vertical", "spacing": "sm", "paddingAll": "12px", "contents": [
+                {"type": "button", "style": "primary", "color": "#C25E12", "height": "sm",
+                 "action": {"type": "uri", "label": "開啟阿生地圖", "uri": LANDMAP_URL}},
+                {"type": "button", "style": "secondary", "height": "sm",
+                 "action": {"type": "message", "label": "試查：光華一路", "text": "光華一路"}},
+            ]},
+        }
+
+    if original_msg in ('地圖', '阿生地圖', '看地圖'):
+        line_bot_api.reply_message(event.reply_token,
+                                   FlexSendMessage(alt_text="阿生地圖", contents=landmap_bubble()))
+        return 0
+
+    # ── 🎑 節日賀圖群發（管理者專用）────────────────────────────────────────
+    #   ★群發＝發給所有好友，會照「好友數」吃掉推播額度，而且收回不了。
+    #     所以分三步：①「中秋預覽」只發給自己看 ②「群發中秋」先報影響與額度 ③「群發中秋 確認」才真的發。
+    #   ★用 Flex 一則(圖＋字＋按鈕)而不是「圖片＋文字兩則」→ 每位好友只算 1 則，額度省一半。
+    if original_msg in ('中秋預覽', '群發中秋', '群發中秋 確認', '群發中秋確認'):
+        ADMIN_UIDS = ('U60ff9aa248221639d7717bf54d1db609',)
+        if uid not in ADMIN_UIDS:
+            return 0                                   # 非管理者：靜默不回
+        FEST_IMG = "https://map.windsky-sky.com/img/midautumn2026_line.jpg"
+        fest_flex = {
+            "type": "bubble", "size": "mega",
+            "hero": {"type": "image", "url": FEST_IMG, "size": "full", "aspectRatio": "941:1672",
+                     "aspectMode": "fit", "backgroundColor": "#FFFDF6",
+                     "action": {"type": "uri", "uri": LANDMAP_URL}},
+            "body": {"type": "box", "layout": "vertical", "spacing": "sm", "paddingAll": "14px", "contents": [
+                {"type": "text", "text": "🌕 中秋節快樂", "weight": "bold", "size": "lg",
+                 "color": "#C25E12", "align": "center"},
+                {"type": "text", "wrap": True, "size": "sm", "color": "#333333", "align": "center",
+                 "text": "月圓人團圓，祝你和家人平安順心、烤肉不斷電 🥮"},
+            ]},
+            "footer": {"type": "box", "layout": "vertical", "paddingAll": "12px", "contents": [
+                {"type": "button", "style": "primary", "color": "#C25E12", "height": "sm",
+                 "action": {"type": "uri", "label": "🐱 開啟阿生地圖", "uri": LANDMAP_URL}},
+            ]},
+        }
+        api_headers = {'Authorization': f'Bearer {access_token}', 'Content-Type': 'application/json'}
+        payload = {"messages": [{"type": "flex", "altText": "🌕 中秋節快樂 — 阿生生", "contents": fest_flex}]}
+
+        if original_msg == '中秋預覽':                   # ① 只發給自己
+            requests.post('https://api.line.me/v2/bot/message/push', headers=api_headers,
+                          json=dict(payload, to=uid), timeout=10)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(
+                text="👆 這是預覽，只發給你。\n確認沒問題請傳「群發中秋」看影響，再傳「群發中秋 確認」才會真的發給所有好友。"))
+            return 0
+
+        if original_msg == '群發中秋':                   # ② 報影響與額度，不發送
+            try:
+                q = requests.get('https://api.line.me/v2/bot/message/quota', headers=api_headers, timeout=8).json()
+                c = requests.get('https://api.line.me/v2/bot/message/quota/consumption', headers=api_headers, timeout=8).json()
+                total = int(q.get('value', 0)) if q.get('type') == 'limited' else 0
+                used = int(c.get('totalUsage', 0))
+                left = (total - used) if total else None
+                info = (f"本月已用 {used}" + (f" / {total} 則，剩 {left} 則" if total else " 則（無上限方案）"))
+            except Exception as e:
+                info = f"額度查詢失敗：{str(e)[:40]}"
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(
+                text=("⚠️ 群發＝發給所有好友，發出去收不回來。\n"
+                      "這則是 Flex 一則訊息（圖＋字＋按鈕），每位好友算 1 則。\n\n"
+                      f"📊 {info}\n\n"
+                      "確定要發，請傳：群發中秋 確認\n（先傳「中秋預覽」可以只發給自己看樣子）")))
+            return 0
+
+        # ③ 真的群發
+        try:
+            r = requests.post('https://api.line.me/v2/bot/message/broadcast',
+                              headers=api_headers, json=payload, timeout=15)
+            ok = (r.status_code == 200)
+            try:
+                c2 = requests.get('https://api.line.me/v2/bot/message/quota/consumption',
+                                  headers=api_headers, timeout=8).json()
+                used2 = int(c2.get('totalUsage', 0))
+            except Exception:
+                used2 = None
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(
+                text=(("✅ 已群發中秋賀圖給所有好友。" if ok else f"❌ 群發失敗（HTTP {r.status_code}）：{r.text[:120]}")
+                      + (f"\n📊 本月累計已用 {used2} 則" if used2 is not None else ""))))
+        except Exception as e:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"❌ 群發出錯：{str(e)[:100]}"))
+        return 0
+
     # 取得自己的 LINE userID（任何人可用，方便取得 ID 給管理員設定 ADMIN_UID）
     if original_msg in ('我的id', '我的ID', '我的Id'):
         line_bot_api.reply_message(
@@ -2312,7 +2413,7 @@ def handle_message(event):
         }
         usage_flex = FlexSendMessage(
             alt_text="使用說明",
-            contents={"type": "carousel", "contents": [stock_bubble, currency_bubble, follow_bubble, life_bubble, sticker_bubble]}
+            contents={"type": "carousel", "contents": [stock_bubble, currency_bubble, follow_bubble, life_bubble, sticker_bubble, landmap_bubble()]}
         )
         line_bot_api.reply_message(event.reply_token, usage_flex)
         return 0
