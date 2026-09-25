@@ -1643,11 +1643,10 @@ def handle_message(event):
             "hero": {"type": "image", "url": FEST_IMG, "size": "full", "aspectRatio": "941:1672",
                      "aspectMode": "fit", "backgroundColor": "#FFFDF6",
                      "action": {"type": "uri", "uri": LANDMAP_URL}},
-            "body": {"type": "box", "layout": "vertical", "spacing": "sm", "paddingAll": "14px", "contents": [
-                {"type": "text", "text": "🌕 中秋節快樂", "weight": "bold", "size": "lg",
-                 "color": "#C25E12", "align": "center"},
-                {"type": "text", "wrap": True, "size": "sm", "color": "#333333", "align": "center",
-                 "text": "月圓人團圓，祝你和家人平安順心、烤肉不斷電 🥮"},
+            # 圖上已經寫了「中秋節快樂」→ 這裡只留一行祝福，不重複標題(使用者 2026-09-25 交代)
+            "body": {"type": "box", "layout": "vertical", "paddingAll": "14px", "contents": [
+                {"type": "text", "wrap": True, "size": "md", "weight": "bold", "color": "#C25E12", "align": "center",
+                 "text": "🌕 月圓人團圓，祝閤家安康"},
             ]},
             "footer": {"type": "box", "layout": "vertical", "paddingAll": "12px", "contents": [
                 {"type": "button", "style": "primary", "color": "#C25E12", "height": "sm",
