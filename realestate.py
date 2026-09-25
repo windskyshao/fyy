@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """阿生生 LINE bot：房地查詢（像「房地小賴」）。
 使用者直接打「地址」或「地號」→ 打 landmap 後端 API → 回一張 Flex 卡：
   地號、使用分區、周邊實價(前幾筆)、在地圖上看按鈕。
@@ -44,12 +44,36 @@ def _full2half(s):
     return "".join(chr(ord(c) - 0xFEE0) if "０" <= c <= "９" else c for c in (s or ""))
 
 
+# ★2026-09-26：機器人(Render)打阿生地圖一直失敗，而且是靜默的(例外被吞掉→回 None→使用者看到「我不太懂您的意思」)。
+#   查 landmap 的 access.log：9/10 以來 15 天完全沒有任何一筆來自 Render 的請求，
+#   代表請求根本沒到我們的伺服器 → 被擋在 Cloudflare 那一層(機房 IP ＋ 程式預設 User-Agent 最容易被挑戰)。
+#   因此：①帶瀏覽器標頭 ②把真正的錯誤記在 LAST_ERR，呼叫端才能誠實告訴使用者，不再假裝「聽不懂」。
+LAST_ERR = ""
+
+_HDRS = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"),
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "zh-TW,zh;q=0.9",
+}
+
+
 def _get(path, **params):
+    global LAST_ERR
+    LAST_ERR = ""
+    url = LANDMAP + path + "?" + urllib.parse.urlencode(params)
     try:
-        url = LANDMAP + path + "?" + urllib.parse.urlencode(params)
-        r = requests.get(url, timeout=TIMEOUT)
+        r = requests.get(url, timeout=TIMEOUT, headers=_HDRS)
+    except Exception as e:
+        LAST_ERR = "連線失敗 %s: %s" % (type(e).__name__, str(e)[:60])
+        return None
+    if r.status_code != 200:
+        LAST_ERR = "HTTP %d" % r.status_code
+        return None
+    try:
         return r.json()
     except Exception:
+        LAST_ERR = "回應不是 JSON(可能被中間層擋下)"
         return None
 
 

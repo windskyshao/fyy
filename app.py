@@ -1629,6 +1629,32 @@ def handle_message(event):
                                    FlexSendMessage(alt_text="阿生地圖", contents=landmap_bubble()))
         return 0
 
+    # ── 🔎 診斷：從機器人這端實際打阿生地圖的 API，回報狀態碼與耗時（管理者專用）──
+    #   用途：房地/社區查詢失敗時，分辨是「請求被中間層(Cloudflare)擋掉」還是「伺服器真的查無」。
+    #   起因 2026-09-26：landmap access.log 顯示 15 天來沒有任何一筆來自 Render 的請求。
+    if original_msg in ('診斷地圖', '地圖診斷'):
+        if uid not in ('U60ff9aa248221639d7717bf54d1db609',):
+            return 0
+        import time as _t
+        _diag_hdrs = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                                     "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"),
+                      "Accept": "application/json, text/plain, */*"}
+        _checks = (("版本", "/api/version"),
+                   ("社區搜尋", "/api/community_search?q=%E5%85%89%E8%8F%AF%E9%A6%96%E5%B8%AD&city=E"),
+                   ("地號", "/api/parcel?lat=22.6098&lng=120.3177"))
+        _lines = []
+        for _nm, _path in _checks:
+            _t0 = _t.time()
+            try:
+                _rr = requests.get("https://map.windsky-sky.com" + _path, timeout=12, headers=_diag_hdrs)
+                _body = (_rr.text or "")[:70].replace("\n", " ")
+                _lines.append("%s：HTTP %d（%.1f秒）\n%s" % (_nm, _rr.status_code, _t.time() - _t0, _body))
+            except Exception as _e:
+                _lines.append("%s：連線失敗 %s %s" % (_nm, type(_e).__name__, str(_e)[:50]))
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text="🔎 阿生地圖連線診斷\n\n" + "\n\n".join(_lines)))
+        return 0
+
     # ── 🎑 節日賀圖群發（管理者專用）────────────────────────────────────────
     #   ★群發＝發給所有好友，會照「好友數」吃掉推播額度，而且收回不了。
     #     所以分三步：①「中秋預覽」只發給自己看 ②「群發中秋」先報影響與額度 ③「群發中秋 確認」才真的發。
@@ -2915,6 +2941,12 @@ def handle_message(event):
         if res:
             alt, contents = res
             line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text=alt[:60], contents=contents))
+            return 0
+        # ★查不到有兩種：真的沒這個社區 vs 連不上查詢服務(Cloudflare 擋/逾時)。
+        #   後者要誠實講，不能回「我不太懂您的意思」害使用者以為自己打錯。
+        if getattr(realestate, "LAST_ERR", ""):
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(
+                text="😥 查詢服務暫時連不上，請稍後再試。\n（若一直這樣請告訴阿生，這是系統問題、不是你打錯）"))
             return 0
 
     ######################## 未知指令預設回覆 ################################
