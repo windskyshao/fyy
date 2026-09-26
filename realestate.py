@@ -359,11 +359,15 @@ def name_query(text):
         if len(t) < 3:
             return None                                                     # 太短的部分比對不採，避免亂配
         best = results[0]                                                   # 否則取最相符/最熱門者
-    return _card(best["name"], best["lat"], best["lng"], best.get("city", "E"), best["name"], False)
+    # ★門牌要另外帶：實價是以門牌為鍵，拿社區名去比對永遠配不到自己的成交(卡片會只剩地號/分區)。
+    return _card(best["name"], best["lat"], best["lng"], best.get("city", "E"), best["name"], False,
+                 addr=(best.get("addr") or "").strip())
 
 
-def _card(title, lat, lng, city, text, is_land):
-    """由（名稱/門牌 ＋ 座標）組實價卡。text 供抽樓層/地號；is_land 決定土地或建物配對。"""
+def _card(title, lat, lng, city, text, is_land, addr=""):
+    """由（名稱/門牌 ＋ 座標）組實價卡。text 供抽樓層/地號；is_land 決定土地或建物配對。
+
+    addr：標題不是門牌時（社區名查詢）用來比對實價的真實門牌；標題照樣顯示社區名。"""
     floor = _extract_floor(text)                       # 保留使用者輸入的樓層（地理編碼會丟樓層）
     title_disp = (title + floor) if (floor and "樓" not in title) else title
 
@@ -389,13 +393,13 @@ def _card(title, lat, lng, city, text, is_land):
         if pp:
             nb_params.update(kind="land", sect=pp[2], landno=pp[3])
     else:
-        nb_params.update(kind="bldg", door=title)
+        nb_params.update(kind="bldg", door=(addr or title))
     nearby = _get("/api/lvr_nearby", **nb_params) or {}
     items = nearby.get("items") or []
     self_rec = nearby.get("self") or {}
     total = nearby.get("total") or 0
 
-    subj_key = _bkey(title)
+    subj_key = _bkey(addr or title)      # 社區名查詢→用代表門牌比對同棟，否則永遠配不到
     rep = None                                        # 代表戶(同棟)：供社區/屋齡/樓高與型態判斷；本標的門牌則另需精準比對
     if is_land:
         # 目標分區：優先用標的自己土地明細的細分區(zd)，否則用 luzzone，再退主檔粗分
