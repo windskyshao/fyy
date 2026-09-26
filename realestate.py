@@ -268,11 +268,46 @@ def _resolve(text):
     return None
 
 
+# ── 卡片字級 ────────────────────────────────────────────────────────
+#   LINE Flex 的字級只能用關鍵字(不能指定像素)，所以「放大」＝在這個階梯上往上跳。
+#   TEXT_STEP 跳幾階：0=原樣、2≈1.4倍、4≈2倍(使用者 2026-09-26 要求手機上加大一倍)。
+#   要再調大或調小，只改這一個數字就好。
+_SIZE_LADDER = ["xxs", "xs", "sm", "md", "lg", "xl", "xxl", "3xl", "4xl", "5xl"]
+TEXT_STEP = 4
+_BIG = TEXT_STEP >= 3          # 大字模式：左右兩欄會擠成一團 → 改上下排列
+
+
+def _sz(name, cap=None):
+    """字級往上跳 TEXT_STEP 階；cap 可限制上限(標題再放大會誇張)。"""
+    try:
+        i = _SIZE_LADDER.index(name)
+    except ValueError:
+        return name
+    j = min(len(_SIZE_LADDER) - 1, i + TEXT_STEP)
+    if cap and cap in _SIZE_LADDER:
+        j = min(j, _SIZE_LADDER.index(cap))
+    return _SIZE_LADDER[j]
+
+
+def _pairbox(items):
+    """一列兩欄(左文字＋右數字)。大字模式改成上下排，免得左右互相擠到斷行斷得亂七八糟。"""
+    if not _BIG:
+        return {"type": "box", "layout": "baseline", "contents": items}
+    for it in items:
+        it.pop("flex", None)
+        if it.get("type") == "text":
+            it["wrap"] = True
+    return {"type": "box", "layout": "vertical", "spacing": "xs", "contents": items}
+
+
 def _line(label, value, vcolor="#333333"):
-    return {"type": "box", "layout": "baseline", "spacing": "sm", "contents": [
-        {"type": "text", "text": label, "size": "sm", "color": "#8c8c8c", "flex": 2},
-        {"type": "text", "text": value, "size": "md", "color": vcolor, "flex": 5, "wrap": True, "weight": "bold"},
-    ]}
+    lab = {"type": "text", "text": label, "size": _sz("sm"), "color": "#666666", "flex": 2}
+    val = {"type": "text", "text": value, "size": _sz("md"), "color": vcolor, "flex": 5,
+           "wrap": True, "weight": "bold"}
+    if _BIG:                      # 大字：標籤在上、數值在下，兩邊都不會被壓縮
+        lab.pop("flex"); val.pop("flex")
+        return {"type": "box", "layout": "vertical", "spacing": "xs", "contents": [lab, val]}
+    return {"type": "box", "layout": "baseline", "spacing": "sm", "contents": [lab, val]}
 
 
 _ZNAME = {"住": "住宅區", "商": "商業區", "工": "工業區", "農": "農業區", "其他": "其他分區"}
@@ -477,8 +512,8 @@ def _card(title, lat, lng, city, text, is_land, addr=""):
 
     # ── 組 Flex ──
     body = [
-        {"type": "text", "text": "🏠 房地查詢", "size": "sm", "color": "#e67e22", "weight": "bold"},
-        {"type": "text", "text": title_disp, "size": "lg", "weight": "bold", "wrap": True, "margin": "sm", "color": "#222222"},
+        {"type": "text", "text": "🏠 房地查詢", "size": _sz("sm", cap="xl"), "color": "#e67e22", "weight": "bold"},
+        {"type": "text", "text": title_disp, "size": _sz("lg", cap="3xl"), "weight": "bold", "wrap": True, "margin": "sm", "color": "#222222"},
         {"type": "separator", "margin": "md"},
         {"type": "box", "layout": "vertical", "spacing": "sm", "margin": "md", "contents": []},
     ]
@@ -505,22 +540,22 @@ def _card(title, lat, lng, city, text, is_land, addr=""):
         if agft:
             info.append(_line("屋齡‧樓高", "　".join(agft), "#555555"))
     if not info:
-        info.append({"type": "text", "text": "此點查無地號（可能在道路或範圍外）", "size": "sm", "color": "#999999", "wrap": True})
+        info.append({"type": "text", "text": "此點查無地號（可能在道路或範圍外）", "size": _sz("sm"), "color": "#666666", "wrap": True})
 
     if lvr_rows:
         body.append({"type": "separator", "margin": "lg"})
-        body.append({"type": "text", "text": f"📊 周邊實價 · {match_label}", "size": "sm", "color": "#8c4de6", "weight": "bold", "margin": "lg"})
+        body.append({"type": "text", "text": f"📊 周邊實價 · {match_label}", "size": _sz("sm", cap="xl"), "color": "#8c4de6", "weight": "bold", "margin": "lg"})
         _note = f"（同類 {len(lvr_rows)} 筆，附近共 {total} 筆" + ("；第一筆為本標的門牌" if selfrow else "；本戶查無成交，以下為周邊同類") + "）"
-        body.append({"type": "text", "text": _note, "size": "sm", "color": "#555555", "wrap": True})
+        body.append({"type": "text", "text": _note, "size": _sz("sm"), "color": "#555555", "wrap": True})
         for row in lvr_rows:
             top = [
-                {"type": "text", "text": ("◉ " if row["self"] else "") + (row["a"] or "—"), "size": "sm", "color": ("#1558b0" if row["self"] else "#333333"), "flex": 6, "wrap": True, "weight": "bold"},
-                {"type": "text", "text": row["up"], "size": "sm", "color": "#e74c3c", "flex": 4, "align": "end", "weight": "bold"},
+                {"type": "text", "text": ("◉ " if row["self"] else "") + (row["a"] or "—"), "size": _sz("sm"), "color": ("#1558b0" if row["self"] else "#333333"), "flex": 6, "wrap": True, "weight": "bold"},
+                {"type": "text", "text": row["up"], "size": _sz("sm"), "color": "#e74c3c", "flex": 4, "align": "end", "weight": "bold"},
             ]
             midL = (row["com"] + "｜" if row["com"] else "") + f"{row['ty']}　{row['ym']}" + ("　🔴特殊" if row["sp"] else "")
-            mid = [{"type": "text", "text": midL, "size": "sm", "color": ("#e74c3c" if row["sp"] else "#555555"), "flex": 6, "wrap": True}]
+            mid = [{"type": "text", "text": midL, "size": _sz("sm"), "color": ("#e74c3c" if row["sp"] else "#555555"), "flex": 6, "wrap": True}]
             if row["tot"]:
-                mid.append({"type": "text", "text": "總價 " + row["tot"], "size": "sm", "color": "#333333", "flex": 4, "align": "end", "weight": "bold"})
+                mid.append({"type": "text", "text": "總價 " + row["tot"], "size": _sz("sm"), "color": "#333333", "flex": 4, "align": "end", "weight": "bold"})
             if row["pkn"]:
                 pk_disp = f"🅿{row['pkn']}位" + ("·" + row["pk"] if row["pk"] else "")   # 車位數量(+類別)
             elif row["pk"]:
@@ -529,11 +564,11 @@ def _card(title, lat, lng, city, text, is_land, addr=""):
                 pk_disp = ""
             meta = "　".join(x for x in [row["pg"], row["age"], row["fl"], row["layout"], pk_disp] if x)
             rowbox = {"type": "box", "layout": "vertical", "margin": "md", "spacing": "xs", "contents": [
-                {"type": "box", "layout": "baseline", "contents": top},
-                {"type": "box", "layout": "baseline", "contents": mid},
+                _pairbox(top),
+                _pairbox(mid),
             ]}
             if meta:
-                rowbox["contents"].append({"type": "text", "text": meta, "size": "sm", "color": "#555555", "wrap": True})
+                rowbox["contents"].append({"type": "text", "text": meta, "size": _sz("sm"), "color": "#555555", "wrap": True})
             if row["self"]:
                 rowbox.update({"backgroundColor": "#eef4ff", "cornerRadius": "6px", "paddingAll": "8px"})
             body.append(rowbox)
@@ -542,11 +577,13 @@ def _card(title, lat, lng, city, text, is_land, addr=""):
     maplink = f"{LANDMAP}/?lat={lat}&lng={lng}&door={urllib.parse.quote(title_disp)}&mode={'sect' if is_land else 'addr'}"
     contents = {
         "type": "bubble",
+        "size": "giga",                 # 最寬的卡片尺寸：字放大後才不會每行都斷
+
         "body": {"type": "box", "layout": "vertical", "contents": body, "paddingAll": "16px"},
         "footer": {"type": "box", "layout": "vertical", "spacing": "sm", "contents": [
             {"type": "button", "style": "primary", "color": "#e67e22", "height": "sm",
              "action": {"type": "uri", "label": "📍 在地圖上看（建號/實價）", "uri": maplink}},
-            {"type": "text", "text": "資料：內政部地籍/實價登錄 · landmap", "size": "xs", "color": "#aaaaaa", "align": "center", "wrap": True},
+            {"type": "text", "text": "資料：內政部地籍/實價登錄 · landmap", "size": _sz("xs"), "color": "#888888", "align": "center", "wrap": True},
         ], "paddingAll": "12px"},
     }
     return (f"房地查詢：{title_disp}", contents)
