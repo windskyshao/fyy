@@ -1644,11 +1644,21 @@ def handle_message(event):
                    ("地號", "/api/parcel?lat=22.6098&lng=120.3177"),
                    ("靜態檔", "/img/midautumn2026_line.jpg"))   # 靜態檔有沒有被擋→決定能不能改走別的取得方式
         _lines = []
-        try:                                    # 先報機器人的對外 IP：要把它加進 Cloudflare 放行清單
-            _ip = requests.get("https://api.ipify.org", timeout=8).text.strip()
-            _lines.append("本機對外 IP：%s" % _ip)
-        except Exception as _e:
-            _lines.append("對外 IP 查詢失敗：%s" % str(_e)[:40])
+        # 先報機器人的對外 IP（要加進 Cloudflare 放行清單才不會被機器人防護擋）。
+        # ★Render 的服務通常有 2~3 個對外 NAT IP 輪流用 → 只放行一個會「時好時壞」，
+        #   所以連問 4 次，把出現過的都列出來，一次全部加進去。
+        _ips = []
+        for _ in range(4):
+            try:
+                _ip = requests.get("https://api.ipify.org", timeout=8).text.strip()
+                if _ip and _ip not in _ips:
+                    _ips.append(_ip)
+            except Exception as _e:
+                if not _ips:
+                    _lines.append("對外 IP 查詢失敗：%s" % str(_e)[:40])
+                break
+        if _ips:
+            _lines.append("本機對外 IP（%d 個）：\n" % len(_ips) + "\n".join(_ips))
         for _nm, _path in _checks:
             _t0 = _t.time()
             try:
