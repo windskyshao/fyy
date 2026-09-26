@@ -1641,7 +1641,8 @@ def handle_message(event):
                       "Accept": "application/json, text/plain, */*"}
         _checks = (("版本", "/api/version"),
                    ("社區搜尋", "/api/community_search?q=%E5%85%89%E8%8F%AF%E9%A6%96%E5%B8%AD&city=E"),
-                   ("地號", "/api/parcel?lat=22.6098&lng=120.3177"))
+                   ("地號", "/api/parcel?lat=22.6098&lng=120.3177"),
+                   ("靜態檔", "/img/midautumn2026_line.jpg"))   # 靜態檔有沒有被擋→決定能不能改走別的取得方式
         _lines = []
         try:                                    # 先報機器人的對外 IP：要把它加進 Cloudflare 放行清單
             _ip = requests.get("https://api.ipify.org", timeout=8).text.strip()
