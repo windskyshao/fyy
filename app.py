@@ -1643,12 +1643,18 @@ def handle_message(event):
                    ("社區搜尋", "/api/community_search?q=%E5%85%89%E8%8F%AF%E9%A6%96%E5%B8%AD&city=E"),
                    ("地號", "/api/parcel?lat=22.6098&lng=120.3177"))
         _lines = []
+        try:                                    # 先報機器人的對外 IP：要把它加進 Cloudflare 放行清單
+            _ip = requests.get("https://api.ipify.org", timeout=8).text.strip()
+            _lines.append("本機對外 IP：%s" % _ip)
+        except Exception as _e:
+            _lines.append("對外 IP 查詢失敗：%s" % str(_e)[:40])
         for _nm, _path in _checks:
             _t0 = _t.time()
             try:
                 _rr = requests.get("https://map.windsky-sky.com" + _path, timeout=12, headers=_diag_hdrs)
-                _body = (_rr.text or "")[:70].replace("\n", " ")
-                _lines.append("%s：HTTP %d（%.1f秒）\n%s" % (_nm, _rr.status_code, _t.time() - _t0, _body))
+                _cf = (_rr.headers.get("cf-mitigated") or "") + " ray=" + (_rr.headers.get("cf-ray") or "-")
+                _body = (_rr.text or "")[:50].replace('\\n', " ")
+                _lines.append("%s：HTTP %d（%.1f秒）\n%s\n%s" % (_nm, _rr.status_code, _t.time() - _t0, _cf, _body))
             except Exception as _e:
                 _lines.append("%s：連線失敗 %s %s" % (_nm, type(_e).__name__, str(_e)[:50]))
         line_bot_api.reply_message(event.reply_token,
