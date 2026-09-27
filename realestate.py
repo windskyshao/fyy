@@ -58,12 +58,13 @@ _HDRS = {
 }
 
 
-def _get(path, **params):
+def _get(path, _timeout=None, **params):
+    """_timeout：這一支特別慢時可以單獨放寬（周邊實價冷啟要近 10 秒，用預設 12 秒很容易超時）。"""
     global LAST_ERR
     LAST_ERR = ""
     url = LANDMAP + path + "?" + urllib.parse.urlencode(params)
     try:
-        r = requests.get(url, timeout=TIMEOUT, headers=_HDRS)
+        r = requests.get(url, timeout=(_timeout or TIMEOUT), headers=_HDRS)
     except Exception as e:
         LAST_ERR = "連線失敗 %s: %s" % (type(e).__name__, str(e)[:60])
         return None
@@ -273,7 +274,9 @@ def _resolve(text):
 #   TEXT_STEP 跳幾階：0=原樣、2≈1.4倍、4≈2倍(使用者 2026-09-26 要求手機上加大一倍)。
 #   要再調大或調小，只改這一個數字就好。
 _SIZE_LADDER = ["xxs", "xs", "sm", "md", "lg", "xl", "xxl", "3xl", "4xl", "5xl"]
-TEXT_STEP = 4
+# ★2026-09-27 改 2：放大 4 階(約2倍)實測太大。而且 LINE 會跟著手機的系統字級放大，
+#   使用者若自己把手機字調大，我們再乘上去會爆版 → 保守放 2 階(約1.4倍)，最終大小交給手機設定決定。
+TEXT_STEP = 2
 _BIG = TEXT_STEP >= 3          # 大字模式：左右兩欄會擠成一團 → 改上下排列
 
 
@@ -311,6 +314,34 @@ def _line(label, value, vcolor="#333333"):
 
 
 _ZNAME = {"住": "住宅區", "商": "商業區", "工": "工業區", "農": "農業區", "其他": "其他分區"}
+
+# 周邊實價的「大類」：要和地圖上的分頁一模一樣(web/index.html 的 LVR_BROAD_OF)，
+# 否則在 LINE 看到的那筆，點進地圖卻在別的分頁裡，使用者會找不到。
+_BROAD_COM = ("住宅大樓", "華廈", "公寓", "套房")
+_BROAD_BIZ = ("辦公商業大樓", "辦公大樓", "廠辦", "工廠", "倉庫")
+
+
+def _broad_of(cat):
+    c = (cat or "").strip()
+    if c in ("土地", "店面", "透天厝"):
+        return c
+    if c in _BROAD_COM:
+        return "社區"
+    if c in _BROAD_BIZ:
+        return "工商辦"
+    return "其他"
+
+
+def _row_link(row, base):
+    """點某一筆實價 → 跳到地圖上那一筆（帶座標、要開的分頁、要對焦的門牌）。"""
+    if not (row.get("lat") and row.get("lng")):
+        return None
+    # focus=1：門牌只送一次(door)，地圖用它在清單裡把那一筆找出來。網址短一點，卡片才不會撐爆 LINE 的大小上限。
+    # ★識別碼用「成交日_單價」(fk)：中文門牌經網址編碼每個字要 9 位元組，6 列就吃掉 1KB，
+    #   會把卡片撐破 LINE 的 10KB 上限。fk 只要十幾個位元組，而且足以在清單裡精準指到那一筆。
+    q = urllib.parse.urlencode({"lat": row["lat"], "lng": row["lng"], "mode": "addr",
+                                "cat": _broad_of(row.get("ty")), "fk": row.get("fk") or ""})
+    return base + "/?" + q
 
 
 def _cat_of(p):
@@ -422,14 +453,17 @@ def _card(title, lat, lng, city, text, is_land, addr=""):
     #   地號(土地) → 只配土地，且同分區大類(住/商/工/農/其他；實價登錄無「第幾種」層級)，非都市配使用分區
     #   地址(建物) → 抓該門牌自己成交過的型態(self)，配同型態建物(住宅大樓/透天/…各別)；無成交可判→顯示各類建物
     #   同類不足時，才以鄰近的其他墊底
-    nb_params = dict(city=city, lat=lat, lng=lng, r=1000, grouped=1)
+    # gn=12：後端預設每大類回 150 筆(約 512KB)，但我們只顯示 6 筆 → 只要 12 筆(約 42KB)，
+    #        從新加坡的機器人主機打台灣快很多，也比較不會卡在逾時。
+    nb_params = dict(city=city, lat=lat, lng=lng, r=1000, grouped=1, gn=12)
     if is_land:
         pp = _parse_landno(text)
         if pp:
             nb_params.update(kind="land", sect=pp[2], landno=pp[3])
     else:
         nb_params.update(kind="bldg", door=(addr or title))
-    nearby = _get("/api/lvr_nearby", **nb_params) or {}
+    nearby = _get("/api/lvr_nearby", _timeout=25, **nb_params) or {}
+    nearby_err = LAST_ERR                      # 取不到時要明講,不能默默少一整段
     items = nearby.get("items") or []
     self_rec = nearby.get("self") or {}
     total = nearby.get("total") or 0
@@ -495,6 +529,8 @@ def _card(title, lat, lng, city, text, is_land, addr=""):
         rm, hl, bt = it.get("rm"), it.get("hl"), it.get("bt")
         lvr_rows.append({
             "a": _short_addr(it.get("a", "")),
+            "lat": it.get("lat"), "lng": it.get("lng"),     # 供「點這筆→跳地圖那一筆」
+            "fk": ("%s_%d" % (it.get("dt") or "", int(it.get("up") or 0))),   # 那一筆的識別:成交日_單價
             "com": (it.get("com") or "").strip(),                                      # 社區名稱
             "up": _unit_wan(it.get("up")),
             "tot": _total_wan(it.get("pr")),                                          # 總價
@@ -547,6 +583,8 @@ def _card(title, lat, lng, city, text, is_land, addr=""):
         body.append({"type": "text", "text": f"📊 周邊實價 · {match_label}", "size": _sz("sm", cap="xl"), "color": "#8c4de6", "weight": "bold", "margin": "lg"})
         _note = f"（同類 {len(lvr_rows)} 筆，附近共 {total} 筆" + ("；第一筆為本標的門牌" if selfrow else "；本戶查無成交，以下為周邊同類") + "）"
         body.append({"type": "text", "text": _note, "size": _sz("sm"), "color": "#555555", "wrap": True})
+        body.append({"type": "text", "text": "👉 點任一筆可在地圖上看那一筆", "size": _sz("xs"),
+                     "color": "#1558b0", "wrap": True, "margin": "xs"})
         for row in lvr_rows:
             top = [
                 {"type": "text", "text": ("◉ " if row["self"] else "") + (row["a"] or "—"), "size": _sz("sm"), "color": ("#1558b0" if row["self"] else "#333333"), "flex": 6, "wrap": True, "weight": "bold"},
@@ -571,7 +609,18 @@ def _card(title, lat, lng, city, text, is_land, addr=""):
                 rowbox["contents"].append({"type": "text", "text": meta, "size": _sz("sm"), "color": "#555555", "wrap": True})
             if row["self"]:
                 rowbox.update({"backgroundColor": "#eef4ff", "cornerRadius": "6px", "paddingAll": "8px"})
+            _lk = _row_link(row, LANDMAP)
+            if _lk:                 # 整列可點→跳地圖上的那一筆(帶類別分頁與對焦門牌)
+                rowbox["action"] = {"type": "uri", "label": "看這筆", "uri": _lk}
+                rowbox.setdefault("paddingAll", "8px")      # 可點範圍大一點，手指好按
+                rowbox.setdefault("cornerRadius", "6px")
             body.append(rowbox)
+
+    elif nearby_err:
+        # ★沒取到不要默默省略：使用者會以為這個標的附近真的沒有成交。
+        body.append({"type": "separator", "margin": "lg"})
+        body.append({"type": "text", "margin": "lg", "size": _sz("sm"), "color": "#b45309", "wrap": True,
+                     "text": "📊 周邊實價這次沒取到（查詢忙線或逾時），再傳一次通常就有。"})
 
     # 深連結回我們自己的地圖：帶座標+門牌 → 自動落點；mode 讓地圖用「原查詢方式」呈現(地址→地址模式、地號→地籍模式)
     maplink = f"{LANDMAP}/?lat={lat}&lng={lng}&door={urllib.parse.quote(title_disp)}&mode={'sect' if is_land else 'addr'}"
