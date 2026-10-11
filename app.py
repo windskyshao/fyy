@@ -352,7 +352,18 @@ def download_installer():
                 _DL_CACHE.update(url=a["browser_download_url"], t=time.time())
                 return redirect(a["browser_download_url"], code=302)
     except Exception as e:
-        print(f"[download] 查 GitHub 最新版失敗：{e}")
+        print(f"[download] 查 GitHub API 失敗：{e}")
+    # 備援(不用 API，避開共用 IP 的次數限制)：看「最新版」網頁轉到哪個版號 → 組出安裝檔網址
+    try:
+        r = requests.head(releases_page, allow_redirects=False, timeout=10, headers={"User-Agent": "fyy-bot"})
+        tag = (r.headers.get("Location") or "").rstrip("/").rsplit("/tag/", 1)[-1]
+        if tag.startswith("v"):
+            url = f"https://github.com/windskyshao/tw-land-tools/releases/download/{tag}/tw-land-tools-setup_{tag}.exe"
+            if requests.head(url, allow_redirects=False, timeout=10, headers={"User-Agent": "fyy-bot"}).status_code in (200, 301, 302):
+                _DL_CACHE.update(url=url, t=time.time())
+                return redirect(url, code=302)
+    except Exception as e:
+        print(f"[download] 備援查最新版失敗：{e}")
     return redirect(releases_page, code=302)
 
 
