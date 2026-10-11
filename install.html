@@ -7,7 +7,7 @@
 <!-- 分享到 LINE / FB 時的預覽卡片 -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="地籍資料查詢系統｜新電腦安裝程式">
-<meta property="og:description" content="請用電腦開啟這個連結，按「下載安裝程式」→ 雙擊安裝檔 → 一路按下一步就完成。">
+<meta property="og:description" content="不動產地籍、謄本、實價登錄等查詢整合工具。Windows 電腦程式，請在電腦上開啟下載安裝。">
 <meta property="og:image" content="https://fyy-l8a3.onrender.com/help_img/main_page.png">
 <meta property="og:url" content="https://fyy-l8a3.onrender.com/install">
 <style>
@@ -31,7 +31,11 @@
   .mobile { display:none; background:#fdecea; border-left:5px solid #d93025; border-radius:8px; padding:12px 16px; margin-top:14px; font-weight:bold; }
   .small { color:var(--sub); font-size:.9em; }
   code { background:#f4f4f4; padding:2px 6px; border-radius:4px; font-family:Consolas,"Microsoft JhengHei",monospace; }
-  #copied { color:#1b7f3b; font-weight:bold; display:none; }
+  .shots { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:start; }
+  .shots figure { margin:0; } .shots .wide { grid-column:1 / -1; }
+  .shots img { width:100%; border:1px solid #d0d7de; border-radius:10px; cursor:zoom-in; }
+  .shots figcaption { font-size:.85em; color:var(--sub); text-align:center; margin-top:4px; }
+  @media (max-width:600px){ .shots { grid-template-columns:1fr; } }
   @media (max-width:600px){ body{font-size:18px;} .wrap{padding:16px 14px 40px;} .hero h1{font-size:1.45em;} .btn{width:100%; text-align:center;} }
 </style>
 </head>
@@ -39,12 +43,32 @@
 <div class="wrap">
   <div class="hero">
     <h1>📋 地籍資料查詢系統</h1>
-    <p>新電腦安裝程式（含所有執行環境，裝好就能用）</p>
+    <p>不動產地籍查詢整合工具｜Windows 電腦程式</p>
   </div>
 
-  <div class="mobile" id="mobileTip">📱 您現在是用手機開啟。這是 Windows 電腦程式，請<strong>用電腦</strong>開啟這個連結再下載安裝（可先按下方「分享到 LINE」或「複製連結」傳給自己）。</div>
+  <div class="mobile" id="mobileTip">💻 這是 <strong>Windows 電腦</strong>程式，請在 Windows 電腦上開啟這個網頁，下載安裝使用。</div>
 
   <div class="card">
+    <h3 style="margin-top:0;">這是什麼？</h3>
+    <p>專為<strong>不動產從業人員</strong>設計的整合工具：把原本要在很多個政府網站查詢、下載、整理的工作，整合成半自動流程，自動建立案件資料夾並存成 PDF。</p>
+    <ul>
+      <li>輸入<strong>地址或地號</strong>，自動查出地段地號、建號（哪一戶）、社區名稱，建立案件資料夾</li>
+      <li>電子謄本下載與<strong>結構化</strong>、土地增值稅估算</li>
+      <li>一鍵查詢：使用分區、使用執照、V523、國土分區、地質雲、實價登錄等，自動截圖存檔</li>
+      <li>物件調查表、實價登錄申報書（租）、業績分配表自動帶入產生</li>
+    </ul>
+    <h3>畫面長這樣</h3>
+    <div class="shots">
+      <figure><img src="https://fyy-l8a3.onrender.com/help_img/main_page.png" alt="主畫面"><figcaption>主畫面（固定在螢幕右側）</figcaption></figure>
+      <figure><img src="https://fyy-l8a3.onrender.com/help_img/quick_panel_lot.png" alt="萬用查詢"><figcaption>萬用查詢：用選單挑地號或地址</figcaption></figure>
+      <figure><img src="https://fyy-l8a3.onrender.com/help_img/quick_result.png" alt="查詢結果"><figcaption>查到地號、建號、社區，直接建立案件</figcaption></figure>
+      <figure class="wide"><img src="https://fyy-l8a3.onrender.com/help_img/runtime_layout.png" alt="實際執行畫面"><figcaption>實際執行：左邊自動操作查詢網站、右邊主程式</figcaption></figure>
+    </div>
+    <p class="small">（點截圖可放大）想先了解完整功能與操作方式：<a href="https://fyy-l8a3.onrender.com/help">📖 看使用說明</a></p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">下載與安裝（Windows 電腦）</h3>
     <div class="row">
       <a class="btn" href="https://fyy-l8a3.onrender.com/download">⬇ 下載安裝程式（最新版）</a>
     </div>
@@ -62,35 +86,24 @@
     <p class="small">已經在用的電腦<strong>不用重裝</strong>，在程式右上角按「🔄」更新即可。</p>
   </div>
 
-  <div class="card">
-    <h3 style="margin-top:0;">把這個安裝頁分享給同事／朋友</h3>
-    <div class="row">
-      <a class="btn line" id="lineShare" href="#" target="_blank" rel="noopener">分享到 LINE</a>
-      <button class="btn ghost" onclick="copyLink()">📋 複製連結</button>
-      <span id="copied">✓ 已複製</span>
-    </div>
-    <p class="small">分享出去的是這一頁：<code>https://fyy-l8a3.onrender.com/install</code>，對方在電腦點開就能下載。</p>
-  </div>
-
   <p class="small" style="text-align:center; margin-top:22px;">
     <a href="https://fyy-l8a3.onrender.com/help">📖 使用說明</a>　·
     <a href="https://github.com/windskyshao/tw-land-tools/releases/latest">GitHub 發布頁</a>
   </p>
 </div>
 <script>
-  var PAGE = "https://fyy-l8a3.onrender.com/install";
-  var MSG = "地籍資料查詢系統｜新電腦安裝：請用電腦開啟下載 👉 " + PAGE;
-  var mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (mobile) document.getElementById("mobileTip").style.display = "block";
-  // 手機開 LINE App 分享；電腦開 LINE 網頁分享(登入後選好友/群組)
-  document.getElementById("lineShare").href = mobile
-    ? "https://line.me/R/share?text=" + encodeURIComponent(MSG)
-    : "https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(PAGE) + "&text=" + encodeURIComponent("地籍資料查詢系統｜新電腦安裝（請用電腦開啟下載）");
-  function copyLink() {
-    var done = function(){ var c=document.getElementById("copied"); c.style.display="inline"; setTimeout(function(){c.style.display="none";}, 2500); };
-    if (navigator.clipboard) { navigator.clipboard.writeText(PAGE).then(done, function(){ prompt("請複製以下連結：", PAGE); }); }
-    else { prompt("請複製以下連結：", PAGE); }
-  }
+  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) document.getElementById("mobileTip").style.display = "block";
+  // 截圖點一下放大(全螢幕遮罩，再點一下關閉)
+  document.querySelectorAll(".shots img").forEach(function (im) {
+    im.addEventListener("click", function () {
+      var o = document.createElement("div");
+      o.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:zoom-out;padding:16px;";
+      var big = document.createElement("img");
+      big.src = im.src; big.style.cssText = "max-width:96vw;max-height:94vh;border-radius:8px;background:#fff;";
+      o.appendChild(big); o.onclick = function () { o.remove(); };
+      document.body.appendChild(o);
+    });
+  });
 </script>
 </body>
 </html>
