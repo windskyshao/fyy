@@ -30,3 +30,10 @@
 
 存好後 commit + push，help.html 裡的圖片就會顯示。
 網址格式：https://fyy-l8a3.onrender.com/help_img/main_page.png
+
+【萬用查詢（v1.1.8r 新增）】
+  quick_panel_lot.png           → 萬用查詢面板：地籍選單（縣市/行政區/段小段/地號）
+  quick_panel_addr.png          → 萬用查詢面板：地址選單（國土測繪門牌格式）
+  quick_result.png              → 快速建立案件：單筆查詢結果（位置/建號/社區）
+  quick_batch.png               → 快速建立案件：批次查詢結果（勾選清單）
+  status_chips.png              → 目前案件卡的三種謄本狀態（綠/橘/紅）

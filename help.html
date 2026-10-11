@@ -172,6 +172,7 @@
 <li><a href="#系統簡介">系統簡介</a></li>
 <li><a href="#安裝說明">安裝與更新說明</a></li>
 <li><a href="#主介面介紹">主介面介紹</a></li>
+<li><a href="#萬用查詢">萬用查詢（打地址／地號，或用選單快速建立案件）</a></li>
 <li><a href="#標題列與檔案位置">標題列與檔案位置說明</a></li>
 <li><a href="#子程式運作方式">子程式的運作方式</a></li>
 <li><a href="#買賣案件完整操作流程">買賣案件完整操作流程</a></li>
@@ -185,11 +186,12 @@
 <p><strong>地籍資料查詢系統</strong>是專為不動產從業人員設計的整合工具，將原本需要在多個網站查詢、下載、整理的工作，整合為半自動化流程。</p>
 <h3 id="主要功能">主要功能</h3>
 <ul>
-<li>自動建立案件資料夾結構</li>
+<li>自動建立案件資料夾結構（地籍便民系統，或<strong>萬用查詢</strong>：打地址／地號、用地籍／地址選單挑）</li>
+<li>萬用查詢自動查出<strong>地號、建號、社區名稱</strong>，可一次輸入多筆</li>
 <li>電子謄本下載與結構化處理</li>
 <li>土地增值稅自動估算</li>
 <li>整合多個查詢系統（V523、使用執照、實價登錄等）</li>
-<li>物件資料表自動生成</li>
+<li>物件資料表自動生成；<strong>實價登錄申報書（租）</strong>、<strong>業績分配表</strong>自動帶入產生可編輯 PDF</li>
 <li>連續模式批次執行</li>
 </ul>
 <h3 id="系統優勢">系統優勢</h3>
@@ -211,15 +213,18 @@
 </ol>
 </div>
 <h3 id="首次安裝">首次安裝（含所有模組）</h3>
-<p>請下載並解壓縮「<strong>完整安裝包</strong>」，它已包含 python_embedded 與 chromedriver，解壓後即可使用，不需另外安裝任何模組：</p>
+<p>從 v1.1.8q 起提供<strong>安裝程式</strong>，已包含 python_embedded 執行環境，下載後執行即可，不需另外安裝任何模組：</p>
 <ul>
-<li>完整安裝包（v1.1.7a）：<a href="https://www.dropbox.com/scl/fi/cc4cfo3gufikbjtsotx66/v1.1.7a.rar?rlkey=fk9r4typfo31flfx2q31z1mue&amp;dl=0">點此下載（Dropbox）</a></li>
+<li>到 <a href="https://github.com/windskyshao/tw-land-tools/releases/latest">GitHub 最新版本頁</a> 下載「<strong>安裝程式</strong>」（檔名 <code>tw-land-tools-setup_v….exe</code>），執行後依畫面操作。</li>
+<li>Windows 若跳出藍色的「<strong>Windows 已保護您的電腦</strong>」：點「<strong>其他資訊</strong>」→「<strong>仍要執行</strong>」即可（安裝程式沒有付費數位簽章才會這樣，不是病毒）。</li>
+<li><strong>已經有舊版的人</strong>：安裝路徑請選<strong>原本的資料夾</strong>，案件資料與設定都會保留。</li>
 </ul>
 <h3 id="後續更新">後續更新</h3>
 <p>安裝過一次後<strong>不需重裝 python_embedded</strong>。程式啟動時會自動檢查新版：</p>
 <ul>
 <li>偵測到新版時，會<strong>主動跳出「有新版本」對話框</strong>；右上角的「🔄」也會變紅。</li>
 <li>點「🔄」或對話框的確認，即可<strong>自動下載並更新</strong>程式本體（會關閉、更新、自動重啟，請勿關閉過程中的黑色視窗）。</li>
+<li>執行環境（python_embedded）有新版時也會<strong>一起自動更新</strong>，不用再手動下載。</li>
 </ul>
 <h3 id="復原上一版">復原上一版（新版有問題時）</h3>
 <p>為了安全，<strong>每次自動更新前，程式會先把目前版本備份起來</strong>。萬一更新後的新版用起來有問題，可以一鍵退回上一版：</p>
@@ -231,14 +236,36 @@
 <p>※ 備份是在「更新當下」產生的，所以<strong>至少要先成功自動更新過一次</strong>，之後才會有可復原的上一版。</p>
 <hr />
 <h2 id="主介面介紹">主介面介紹</h2>
-<p>系統以「<strong>主頁</strong>」為核心，部分功能收納在切換頁面中（謄本與土增稅、土地使用分區、實價登錄），可隨時用各頁的「回至主頁」返回。</p>
+<p>系統以「<strong>主頁</strong>」為核心，部分功能收納在切換頁面中（謄本與土增稅、土地使用分區、實價登錄…），可隨時用各頁的「<strong>‹ 回至主頁</strong>」返回。</p>
+<ul>
+<li><strong>按鈕右邊有「›」</strong>：代表按了會<strong>打開一個分頁</strong>（例如謄本與土增稅、實價登錄）；沒有「›」的是直接執行的功能。</li>
+<li><strong>執行中</strong>：正在執行的那顆會變成<strong>紅色「■ 關閉 …」</strong>，其他按鈕會淡掉暫時不能按；再按一次紅色那顆即可結束。</li>
+<li>主程式固定在螢幕<strong>右側約 1/3</strong>，會依每台電腦的解析度與縮放比例自動調整大小與字級。</li>
+</ul>
 
 <h3 id="1-主頁預設頁面">1. 主頁（預設頁面）</h3>
 <p><img src="https://fyy-l8a3.onrender.com/help_img/main_page.png" alt="主頁畫面" style="max-width:340px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
+<h4 id="目前案件卡">上方「目前案件」卡（藍色）</h4>
+<ul>
+<li>大字顯示<strong>目前作用中的案件</strong>（＝ data.json 第一筆地號）。</li>
+<li>下方小標籤是<strong>謄本結構化的狀態</strong>，用顏色區分：</li>
+</ul>
+<p><img src="https://fyy-l8a3.onrender.com/help_img/status_chips.png" alt="目前案件卡的三種謄本狀態" style="max-width:360px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
+<ul>
+<li><strong style="color:#1B7F3B;">✓ 綠色「已做謄本結構化」</strong>：謄本已結構化並載入，可接著做土增稅、物件編輯。</li>
+<li><strong style="color:#B35400;">○ 橘色「尚未謄本結構化」</strong>：這個案件還沒做謄本結構化。</li>
+<li><strong style="color:#D93025;">⚠ 紅色「謄本是…的，與目前案件不符」</strong>：載入的謄本是<strong>別的案件</strong>的，請重新做謄本結構化，或用「功能分頁 › 讀取結構化JSON」選對的檔案。</li>
+<li>右上角三個小圓鈕：<strong>📖 使用說明</strong>（本手冊）、<strong>💬 意見回饋</strong>、<strong>🔄 檢查更新</strong>（有新版時右上角出現紅點）。</li>
+</ul>
+<h4 id="下方輸入欄">最下方輸入欄（萬用查詢）</h4>
+<ul>
+<li>沒有在執行功能時，可直接打<strong>地址或地號按 Enter</strong>，或按右邊「<strong>☰ 選單</strong>」用地籍／地址選單挑，詳見<a href="#萬用查詢">萬用查詢</a>。</li>
+<li>執行子程式時，這裡是<strong>回應子程式提問</strong>的地方（例如輸入選項、按 Enter 繼續）。</li>
+</ul>
 <p>主頁功能分為三欄：</p>
 <h4 id="主頁-左欄">左欄</h4>
 <ul>
-<li><strong>地籍便民系統</strong>（橙色按鈕，建議優先執行）：建立案件的地段、地號資料夾作為儲存目錄</li>
+<li><strong>地籍便民系統</strong>（橙色按鈕）：在地籍圖網頁上查地號、建立案件資料夾（也可改用<a href="#萬用查詢">萬用查詢</a>建立）</li>
 <li><strong>謄本與土增稅</strong>（紫色按鈕）：切換到謄本下載／結構化／土增稅頁面</li>
 <li><strong>使用執照查詢</strong>：查詢建物使用執照</li>
 <li><strong>重要設施查詢</strong>：查詢周邊重要設施</li>
@@ -320,15 +347,46 @@
 <li><strong>回主選單</strong>：返回主頁面</li>
 </ul>
 <hr />
-<h2 id="標題列與檔案位置">標題列與檔案位置說明</h2>
-<h3 id="標題列兩行">視窗上方兩行的意義</h3>
-<p>主視窗最上方有兩行資訊，互相對照即可一眼看出目前進度：</p>
+<h2 id="萬用查詢">萬用查詢（快速建立案件）</h2>
+<p>不用開地籍圖網頁，就能從<strong>地址或地號</strong>查出<strong>地段地號、建號（哪一戶）、社區名稱</strong>，並直接建立案件。查詢資料來自阿生地圖（國土測繪中心、內政部實價登錄）。</p>
+<h3 id="萬用查詢-三種用法">三種用法</h3>
+<ol>
+<li><strong>直接打字</strong>：在主程式最下方輸入欄打地址或地號，按 Enter。例：<code>前鎮區和平二路236之2號12樓</code>、<code>前鎮區竹北段一小段2096</code>（縣市可省略，預設高雄市）。</li>
+<li><strong>地籍選單</strong>：按輸入欄右邊「<strong>☰ 選單</strong>」（或輸入欄空白時按 Enter），在「地籍選單」依序選 <strong>縣市 → 行政區 → 段小段 → 地號</strong>。段小段可打字過濾（例如打「竹北段一」）。</li>
+<li><strong>地址選單</strong>：在「地址選單」依序選 <strong>縣市 → 行政區 → 街路</strong>，再填 段／巷／弄／門牌號／樓層。欄位依<strong>國土測繪中心的門牌格式</strong>（例如 <code>236之2號</code>、段寫國字「一段」）；路名來自內政部戶政司「全國路名資料」。</li>
+</ol>
+<p><img src="https://fyy-l8a3.onrender.com/help_img/quick_panel_lot.png" alt="萬用查詢-地籍選單" style="max-width:520px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p><p><img src="https://fyy-l8a3.onrender.com/help_img/quick_panel_addr.png" alt="萬用查詢-地址選單" style="max-width:520px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
+<h3 id="萬用查詢-多筆">一次查多筆</h3>
 <ul>
-<li><strong>第一行（視窗標題）</strong>，例如 <code>地籍資料查詢系統 v1.1.8 - 苓雅區林興段-399(資料夾)</code><br />→ 系統名稱、版本，以及<strong>目前作用中的案件</strong>（資料夾名稱＝data.json 第一筆地號）。後面「<strong>(資料夾)</strong>」代表<strong>已用地籍便民建立資料夾</strong>；若還沒查詢建立，會顯示「<strong>尚未查詢建立資料夾</strong>」。</li>
-<li><strong>第二行（狀態列）</strong>，例如 <code>苓雅區林興段-399←已做謄本結構化</code>（綠字）<br />→ <strong>目前載入的「結構化謄本」</strong>是哪一筆地號；尚未做時顯示「<strong>尚未謄本結構化</strong>」（橘字）。</li>
+<li>用「<strong>、</strong>」或半形「<strong>,</strong>」分開，後面可只寫號碼：<code>前鎮區竹北段一小段2096、2097、2100-1</code>。</li>
+<li>地籍選單的地號欄旁有「<strong>、下一筆</strong>」按鈕，不用切換中文輸入法；多打的符號、空白或不是地號的字，查詢前會<strong>自動整理</strong>。</li>
+<li>查完會列出勾選清單，查不到的標紅、不能勾；落在同一地號的會合併成一筆，建號都記下來。</li>
+</ul>
+<p><img src="https://fyy-l8a3.onrender.com/help_img/quick_batch.png" alt="萬用查詢-批次結果" style="max-width:560px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
+<h3 id="萬用查詢-結果">查到之後</h3>
+<p><img src="https://fyy-l8a3.onrender.com/help_img/quick_result.png" alt="萬用查詢-單筆結果" style="max-width:560px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
+<ul>
+<li><strong>位置</strong>：縣市、行政區、地段、地號、座標，可按「<strong>在阿生地圖上看</strong>」。</li>
+<li><strong>建物／建號</strong>：地址有寫樓層時會直接對到那一戶的建號；也可在「要查某一戶」輸入門牌＋樓層再查。</li>
+<li><strong>社區</strong>：依歷年實價登錄比對出的社區名稱，之後「實價登錄 › 內政部」會自動用社區名查詢。</li>
+<li>按「<strong>＋ 建立新案件</strong>」或「<strong>加入目前案件</strong>」：寫入 data.json、建立案件資料夾（與地籍便民相同），各查詢功能就能直接接著用。</li>
+<li>查錯或想改條件：按左下角「<strong>‹ 回上一步重新查</strong>」，會回到選單且<strong>保留剛才選的值</strong>（打字查的會把文字放回輸入欄）。</li>
 </ul>
 <div style="background-color:#e8f4f8; border-left:5px solid #3498db; padding:12px 16px; margin:12px 0; border-radius:4px;">
-<p><strong>💡 對照技巧：</strong>兩行的<strong>地號一致</strong>，代表這個案件的謄本<strong>已結構化並載入</strong>，可以接著做土增稅、物件編輯；若第二行是空的或地號不同，表示<strong>還沒結構化／尚未載入</strong>，請先完成「電子謄本結構化」並在跳出的對話框選「是」載入。</p>
+<p><strong>💡 地籍便民 vs 萬用查詢：</strong>兩種都會建立同樣的案件資料夾、存成<strong>同一份 data.json</strong>，可以混用（例如先用萬用查詢建案件，再用地籍便民補查）。萬用查詢多了建號與社區名稱；地籍便民則會在地籍圖網頁上截圖存檔。</p>
+</div>
+<p>第一次啟動時萬用查詢面板會自動跳出（含「怎麼用」說明），勾「<strong>啟動時不要自動跳出</strong>」後就只在按「☰ 選單」時出現；在主程式按其他功能鈕時面板會自動關閉。</p>
+<hr />
+<h2 id="標題列與檔案位置">標題列與檔案位置說明</h2>
+<h3 id="標題列兩行">視窗上方的意義</h3>
+<p>主視窗最上方的標題列與「目前案件」卡，互相對照即可一眼看出目前進度：</p>
+<ul>
+<li><strong>第一行（視窗標題）</strong>，例如 <code>地籍資料查詢系統 v1.1.8 - 苓雅區林興段-399(資料夾)</code><br />→ 系統名稱、版本，以及<strong>目前作用中的案件</strong>（資料夾名稱＝data.json 第一筆地號）。後面「<strong>(資料夾)</strong>」代表<strong>已用地籍便民建立資料夾</strong>；若還沒查詢建立，會顯示「<strong>尚未查詢建立資料夾</strong>」。</li>
+<li><strong>目前案件卡的小標籤</strong>，例如 <code>✓ 已做謄本結構化：苓雅區林興段-399</code>（綠色）<br />→ <strong>目前載入的「結構化謄本」</strong>是哪一筆地號；尚未做時顯示橘色「<strong>尚未謄本結構化</strong>」；謄本是別的案件時顯示<strong>紅色「與目前案件不符」</strong>。</li>
+</ul>
+<div style="background-color:#e8f4f8; border-left:5px solid #3498db; padding:12px 16px; margin:12px 0; border-radius:4px;">
+<p><strong>💡 對照技巧：</strong>標籤是<strong>綠色</strong>，代表這個案件的謄本<strong>已結構化並載入</strong>，可以接著做土增稅、物件編輯；<strong>橘色或紅色</strong>表示還沒結構化、或載入的是別的案件，請先完成「電子謄本結構化」並在跳出的對話框選「是」載入。</p>
+<p>※ 用地籍便民或萬用查詢<strong>建立新案件</strong>後，若原本載入的謄本是別的案件，系統會<strong>自動解除連結</strong>（檔案不會刪除）並在訊息區提示重新做結構化。</p>
 </div>
 <h3 id="主要檔案位置">主要檔案存放位置</h3>
 <ul>
@@ -348,7 +406,7 @@
 <p>啟動「地籍便民系統」及其他查詢功能後，畫面會自動分成左右兩塊，方便您邊看邊操作：</p>
 <p><img src="https://fyy-l8a3.onrender.com/help_img/runtime_layout.png" alt="主程式與子程式畫面配置" style="max-width:560px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
 <ul>
-<li><strong>畫面配置</strong>：主程式固定在螢幕<strong>右側約 1/3</strong>，子程式（瀏覽器）佔<strong>左側約 2/3</strong>，兩者並排不重疊。</li>
+<li><strong>畫面配置</strong>：主程式固定在螢幕<strong>右側約 1/3</strong>，子程式（瀏覽器）佔<strong>左側約 2/3</strong>，兩者並排不重疊；執行中的按鈕會顯示紅色「■ 關閉 …」。</li>
 <li><strong>全程可見、可介入</strong>：各查詢子程式是以「<strong>自動化（網頁爬蟲）</strong>」方式操作網站——自動開啟網頁、填入地段地號、定位到目標位置；整個過程畫面都看得見，您可隨時用滑鼠介入、調整。</li>
 <li><strong>截圖前倒數 10 秒</strong>：在擷取瀏覽器畫面前，程式會<strong>倒數 10 秒</strong>，讓您把地圖<strong>縮放、移動到最理想的位置</strong>；倒數結束會自動截圖並轉存。</li>
 <li><strong>自動轉存</strong>：各筆查詢結果會自動轉存為 JSON／PNG／PDF（PDF 存入案件「1.基本資料」、截圖存其 png 子資料夾）。</li>
@@ -358,6 +416,11 @@
 <hr />
 <h2 id="買賣案件完整操作流程">買賣案件完整操作流程</h2>
 <h3 id="步驟-1建立案件資料夾">步驟 1：建立案件資料夾</h3>
+<p>兩種方式擇一（結果相同，可混用）：</p>
+<ul>
+<li><strong>方式 A：萬用查詢</strong>（較快，還會查出建號與社區）：在最下方輸入欄打地址或地號按 Enter，或按「☰ 選單」挑選，查到後按「＋ 建立新案件」。詳見<a href="#萬用查詢">萬用查詢</a>。</li>
+<li><strong>方式 B：地籍便民系統</strong>，步驟如下：</li>
+</ul>
 <ol>
 <li>點擊主頁左上角的「<strong>地籍便民系統</strong>」按鈕（橙色）</li>
 <li>在彈出視窗中輸入：</li>
@@ -560,9 +623,9 @@
 <p><strong>📌 共通說明：</strong>多數查詢功能（使用執照、重要設施、V523、國土測繪、都市計畫、國土分區、地質雲、土地使用分區、實價登錄等）現在都會<strong>自動定位、倒數後自動截圖並存成 PDF</strong>（一般存入案件的「1.基本資料」，實價登錄存「3.行情」），<strong>不需手動截圖</strong>；倒數期間可自行調整網頁畫面位置。下方各功能若仍提到「手動截圖」，以此自動流程為準。</p>
 </div>
 <h3 id="1-地籍便民系統">1. 地籍便民系統</h3>
-<p><strong>功能</strong>：依您手動選擇的「縣市、行政區、地段、地號」<strong>建立案件資料夾</strong>並寫入 data.json。後續所有查詢都會以這個 data.json 為基準，<strong>所以每個案件一定要先執行這一步。</strong></p>
+<p><strong>功能</strong>：依您手動選擇的「縣市、行政區、地段、地號」<strong>建立案件資料夾</strong>並寫入 data.json。後續所有查詢都會以這個 data.json 為基準。（也可改用<a href="#萬用查詢">萬用查詢</a>建立，兩者存的是同一份 data.json；同一地號再查時會保留萬用查詢存的建號、社區等資料。）</p>
 <div style="background-color:#fff3cd; border-left:5px solid #f0ad4e; padding:12px 16px; margin:12px 0; border-radius:4px;">
-<p><strong>⚠️ 一定要先執行「地籍便民系統」</strong>，它會建立資料夾、寫入地號清單；沒有這一步，後續功能沒有 data.json 可用。</p>
+<p><strong>⚠️ 每個新案件都要先「建立案件」</strong>（地籍便民系統或<a href="#萬用查詢">萬用查詢</a>擇一），它會建立資料夾、寫入地號清單；沒有這一步，後續功能沒有 data.json 可用。</p>
 </div>
 <p><strong>操作步驟</strong>：</p>
 <ol>
@@ -618,9 +681,10 @@
 - 交通設施</p>
 <p><strong>操作步驟</strong>：
 1. 點擊「重要設施查詢」按鈕
-2. 系統開啟查詢網站
+2. 系統開啟查詢網站（台灣地圖網）
 3. 系統會自動定位到物件位置
 4. <strong>手動操作</strong>：查看結果並截圖</p>
+<p>※ 若訊息區顯示「<strong>台灣地圖網「重要設施分析」網站目前故障（對方伺服器錯誤）</strong>」，是對方網站暫時無法使用，不是本程式的問題，請稍後再試。</p>
 <h3 id="4-V523-系統僅限高雄市">4. V523 系統（高雄市／屏東縣）</h3>
 <p><strong>功能</strong>：查詢 V523 地產資訊網資料</p>
 <p><strong>操作步驟</strong>：
@@ -687,9 +751,13 @@
 <p><strong>操作步驟</strong>：
 1. 切換到「實價登錄頁面」
 2. 點擊「內政部」按鈕
-3. 系統開啟內政部實價登錄查詢系統
-4. 系統會自動填入地址或地段
-5. <strong>手動操作</strong>：查看實價資料並截圖</p>
+3. 系統開啟內政部實價登錄查詢系統，自動查詢並截圖存檔（存入「3.行情」）</p>
+<p><strong>自動判斷用社區名或地段查詢</strong>：</p>
+<ul>
+<li><strong>有社區名稱的案件</strong>（大樓、華廈）：用<strong>社區名</strong>查詢，只看「房地」交易，結果比較準。社區名來自萬用查詢；用地籍便民建的案件也會依座標自動查出社區。</li>
+<li><strong>土地、透天或查不到社區</strong>：照原本用<strong>地段</strong>查詢，並勾選「土地」交易。</li>
+<li>用社區名查完若想改用地段查，在輸入欄輸入 <strong>L</strong> 按 Enter 即可補查。</li>
+</ul>
 <h4 id="104實價網">104實價網</h4>
 <p><strong>查詢內容</strong>：
 - 實價登錄資料（整合顯示）
@@ -919,6 +987,8 @@
 <p><strong>✨ Google AI 生成行銷文（訴求重點）</strong>（v1.1.8 新增）：「訴求重點」欄位下方有「<strong>Google AI 生成行銷文</strong>」按鈕，會自動擷取本物件的有用欄位（門牌、坪數、格局、樓層、座向、現況、車位、商圈、學區…），交給 Google AI 撰寫行銷文並帶回「訴求重點」。售件用銷售語氣、租件用租賃語氣；已完工成屋會用現在式（不會誤寫「預計落成」）、並正確區分建物坪數與土地持份。</p>
 <p>點按鈕後會先跳出<strong>可編輯的提示詞</strong>，你可自行修改、加減重點，按「<strong>送出</strong>」才生成、「取消」則不動作；若「訴求重點」已有你寫的內容，會一併納入並加強修飾，不會憑空蓋掉。</p>
 <p>⚠️ 內容為 AI 撰寫，<strong>僅供參考</strong>，請務必自行核對（行情、重大建設、交通等多為推測）。首次使用需貼上一組<strong>免費的 Google Gemini 金鑰</strong>（程式會提供申請連結、只需設定一次會記住）；額度用完或想更換金鑰時，程式會在需要時詢問。每個人的金鑰各自獨立（綁自己的 Google 帳號、各有免費額度），請保密、勿外流。</p>
+<p><strong>📝 實價登錄申報書（租）</strong>（v1.1.8p 新增，僅租件顯示）：物件編輯器內按「<strong>📝 實價登錄申報書(租)</strong>」，會自動從案件資料（謄本、物件資料、租約）帶入，產生<strong>每格都可編輯的 PDF</strong>。按鈕前會先列出資料來源，可改選租約檔；掃描版租約會自動文字辨識（OCR）。</p>
+<p><strong>📊 業績分配表</strong>（v1.1.8p 新增，售件、租件都有）：按「<strong>📊 業績分配表</strong>」自動帶入契約編號、物件名稱與地址（土地用土地標示），可用日曆選委託期間、選租售／上網、設定賣方與買方的分配比例（快速鍵 60/40、50/50）及各方經紀人，產生可編輯 PDF。</p>
 <h3 id="16-連續模式">16. 連續模式</h3>
 <p><strong>功能</strong>：批次執行多個查詢程式</p>
 <p><img src="https://fyy-l8a3.onrender.com/help_img/continuous_mode.png" alt="連續模式對話框" style="max-width:340px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
@@ -990,7 +1060,7 @@
 <hr />
 <h2 id="常見問題">常見問題</h2>
 <h3 id="Q1建立案件資料夾時如何輸入地段地號">Q1：建立案件資料夾時，如何輸入地段地號？</h3>
-<p><strong>A</strong>：
+<p><strong>A</strong>：最簡單是用<a href="#萬用查詢">萬用查詢</a>：直接打 <code>前鎮區竹北段一小段2096</code>，或按「☰ 選單」從下拉選單挑。若用地籍便民系統：
 - <strong>縣市</strong>：從下拉選單選擇（例如：高雄市）
 - <strong>行政區</strong>：從下拉選單選擇（例如：大寮區）
 - <strong>地段</strong>：直接輸入地段名稱（例如：義堂段）
@@ -1023,6 +1093,8 @@
 2. <strong>調整謄本JSON順序</strong>（建議）：重新排列選擇的謄本檔案
 3. <strong>暫不處理</strong>：跳過檢查，繼續處理</p>
 <p><strong>建議</strong>：選擇「調整謄本JSON順序」，確保資料正確對應。</p>
+<h3 id="Q5-2謄本狀態顯示紅色">Q5-2：「目前案件」下方顯示紅色「謄本是…的，與目前案件不符」怎麼辦？</h3>
+<p><strong>A</strong>：代表載入的結構化謄本是<strong>另一個案件</strong>的（例如剛換了新案件）。請到「謄本與土增稅」為目前案件調閱謄本並重新做「謄本結構化」，或用「功能分頁 › 讀取結構化JSON」選這個案件的檔案。舊的結構化檔案不會被刪除，仍在主程式目錄的 output 資料夾。</p>
 <h3 id="Q6為什麼有些功能只能在高雄市使用">Q6：為什麼有些功能只能在高雄市使用？</h3>
 <p><strong>A</strong>：
 部分功能（如V523、使用執照查詢、高雄土增稅估算）是使用高雄市政府的專屬系統，因此只能查詢高雄市的物件。</p>
@@ -1229,8 +1301,8 @@
 <li><strong>使用說明</strong>：請參考本手冊，或點擊系統中的「說明」按鈕。</li>
 </ul>
 <hr />
-<p><strong>對應程式版本</strong>：v1.1.8（2026年6月）</p>
-<p><strong>手冊更新日期</strong>：2026年6月30日</p>
+<p><strong>對應程式版本</strong>：v1.1.8r（2026年10月）</p>
+<p><strong>手冊更新日期</strong>：2026年10月11日</p>
 <p><strong>適用系統</strong>：
 - Windows 10
 - Windows 11</p>
