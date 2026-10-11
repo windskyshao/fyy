@@ -333,6 +333,13 @@ def help_img(filename):
     return send_from_directory(_img_dir, filename)
 
 
+# 📥 新電腦安裝「分享頁」：給 LINE 分享用(有預覽卡片、下載鈕、安裝步驟、手機提示改用電腦開)
+@app.route('/install')
+def install_page():
+    _here = os.path.dirname(os.path.abspath(__file__))
+    return send_from_directory(_here, 'install.html')
+
+
 # 📥 地籍資料查詢系統「新電腦安裝程式」固定下載網址：/download → 自動導到 GitHub 最新版的安裝檔
 #    (安裝檔檔名每版不同：tw-land-tools-setup_v{版號}.exe，所以用 GitHub API 找最新版；查不到就導到發布頁)
 _DL_CACHE = {"url": None, "t": 0}
@@ -2544,7 +2551,7 @@ def handle_message(event):
             ("捷運離你多遠", "https://mrtexit.com/"),
         ])
         b6 = house_bubble("📋 地籍資料查詢系統（軟體）", [
-            ("📦 完整安裝包(首次/含模組)", "https://www.dropbox.com/scl/fi/cc4cfo3gufikbjtsotx66/v1.1.7a.rar?rlkey=fk9r4typfo31flfx2q31z1mue&dl=0"),
+            ("📦 新電腦安裝程式(請用電腦開)", "https://fyy-l8a3.onrender.com/install"),
             ("🔄 程式更新檔(GitHub)", "https://github.com/windskyshao/tw-land-tools/releases/latest"),
             ("📖 使用說明 / 教學", "https://fyy-l8a3.onrender.com/help"),
         ])

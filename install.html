@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>地籍資料查詢系統｜新電腦安裝</title>
+<!-- 分享到 LINE / FB 時的預覽卡片 -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="地籍資料查詢系統｜新電腦安裝程式">
+<meta property="og:description" content="請用電腦開啟這個連結，按「下載安裝程式」→ 雙擊安裝檔 → 一路按下一步就完成。">
+<meta property="og:image" content="https://fyy-l8a3.onrender.com/help_img/main_page.png">
+<meta property="og:url" content="https://fyy-l8a3.onrender.com/install">
+<style>
+  :root { --orange:#e8730c; --orange-dk:#c75f05; --blue:#0f4c92; --ink:#1f2328; --sub:#3a3f45; --bg:#f2f4f7; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-size:19px; line-height:1.8;
+         font-family:"Microsoft JhengHei","微軟正黑體","PingFang TC","Noto Sans TC",Arial,sans-serif; }
+  .wrap { max-width:760px; margin:0 auto; padding:28px 20px 48px; }
+  .hero { background:linear-gradient(120deg,#0d47a1,#00796b); color:#fff; border-radius:18px; padding:26px 26px 22px; }
+  .hero h1 { margin:0 0 6px; font-size:1.7em; }
+  .hero p { margin:0; color:#e3f2fd; }
+  .card { background:#fff; border-radius:16px; padding:22px 24px; margin-top:18px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .btn { display:inline-block; background:var(--orange); color:#fff; font-weight:bold; font-size:1.15em;
+         padding:14px 30px; border-radius:40px; text-decoration:none; border:0; cursor:pointer; }
+  .btn:hover { background:var(--orange-dk); }
+  .btn.line { background:#06c755; } .btn.line:hover { background:#05a648; }
+  .btn.ghost { background:#e3e8ef; color:var(--ink); font-size:1em; padding:12px 22px; }
+  .row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  ol { padding-left:24px; } li { margin:8px 0; }
+  .note { background:#fff4e5; border-left:5px solid var(--orange); border-radius:8px; padding:12px 16px; margin-top:14px; }
+  .mobile { display:none; background:#fdecea; border-left:5px solid #d93025; border-radius:8px; padding:12px 16px; margin-top:14px; font-weight:bold; }
+  .small { color:var(--sub); font-size:.9em; }
+  code { background:#f4f4f4; padding:2px 6px; border-radius:4px; font-family:Consolas,"Microsoft JhengHei",monospace; }
+  #copied { color:#1b7f3b; font-weight:bold; display:none; }
+  @media (max-width:600px){ body{font-size:18px;} .wrap{padding:16px 14px 40px;} .hero h1{font-size:1.45em;} .btn{width:100%; text-align:center;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>📋 地籍資料查詢系統</h1>
+    <p>新電腦安裝程式（含所有執行環境，裝好就能用）</p>
+  </div>
+
+  <div class="mobile" id="mobileTip">📱 您現在是用手機開啟。這是 Windows 電腦程式，請<strong>用電腦</strong>開啟這個連結再下載安裝（可先按下方「分享到 LINE」或「複製連結」傳給自己）。</div>
+
+  <div class="card">
+    <div class="row">
+      <a class="btn" href="https://fyy-l8a3.onrender.com/download">⬇ 下載安裝程式（最新版）</a>
+    </div>
+    <p class="small">下載的檔名是 <code>tw-land-tools-setup_v版號.exe</code>，約 250MB。</p>
+    <h3>安裝三步驟</h3>
+    <ol>
+      <li>按上面的橘色按鈕下載安裝程式。</li>
+      <li>雙擊下載的檔案，依畫面一路按「<strong>下一步</strong>」（預設裝在 <code>D:\地籍資料查詢系統</code>，不需要系統管理員權限）。</li>
+      <li>完成後桌面會有捷徑；第一次開啟會自動下載幾個輔助工具，按「是」即可。</li>
+    </ol>
+    <div class="note">
+      ⚠️ 第一次執行時 Windows 若跳出藍色的「<strong>Windows 已保護您的電腦</strong>」：請按「<strong>其他資訊</strong>」→「<strong>仍要執行</strong>」。<br>
+      <span class="small">（這是因為安裝程式沒有付費數位簽章，不是病毒。）</span>
+    </div>
+    <p class="small">已經在用的電腦<strong>不用重裝</strong>，在程式右上角按「🔄」更新即可。</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">把這個安裝頁分享給同事／朋友</h3>
+    <div class="row">
+      <a class="btn line" id="lineShare" href="#" target="_blank" rel="noopener">分享到 LINE</a>
+      <button class="btn ghost" onclick="copyLink()">📋 複製連結</button>
+      <span id="copied">✓ 已複製</span>
+    </div>
+    <p class="small">分享出去的是這一頁：<code>https://fyy-l8a3.onrender.com/install</code>，對方在電腦點開就能下載。</p>
+  </div>
+
+  <p class="small" style="text-align:center; margin-top:22px;">
+    <a href="https://fyy-l8a3.onrender.com/help">📖 使用說明</a>　·
+    <a href="https://github.com/windskyshao/tw-land-tools/releases/latest">GitHub 發布頁</a>
+  </p>
+</div>
+<script>
+  var PAGE = "https://fyy-l8a3.onrender.com/install";
+  var MSG = "地籍資料查詢系統｜新電腦安裝：請用電腦開啟下載 👉 " + PAGE;
+  var mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (mobile) document.getElementById("mobileTip").style.display = "block";
+  // 手機開 LINE App 分享；電腦開 LINE 網頁分享(登入後選好友/群組)
+  document.getElementById("lineShare").href = mobile
+    ? "https://line.me/R/share?text=" + encodeURIComponent(MSG)
+    : "https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(PAGE) + "&text=" + encodeURIComponent("地籍資料查詢系統｜新電腦安裝（請用電腦開啟下載）");
+  function copyLink() {
+    var done = function(){ var c=document.getElementById("copied"); c.style.display="inline"; setTimeout(function(){c.style.display="none";}, 2500); };
+    if (navigator.clipboard) { navigator.clipboard.writeText(PAGE).then(done, function(){ prompt("請複製以下連結：", PAGE); }); }
+    else { prompt("請複製以下連結：", PAGE); }
+  }
+</script>
+</body>
+</html>
