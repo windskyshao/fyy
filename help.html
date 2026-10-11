@@ -2,16 +2,20 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>電子謄本處理系統 - 使用說明文檔</title>
+    <!-- 手機用裝置寬度顯示(沒有這行手機會把整頁縮小，字變超小) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>地籍資料查詢系統 - 使用手冊</title>
     <style>
         body {
-            font-family: "Microsoft YaHei", "微軟正黑體", Arial, sans-serif;
-            line-height: 1.8;
+            font-family: "Microsoft JhengHei", "微軟正黑體", "PingFang TC", "Noto Sans TC", Arial, sans-serif;
+            font-size: 19px;              /* 內文放大(原本未設=瀏覽器預設 16px，太小) */
+            line-height: 1.85;
             max-width: 1000px;
             margin: 0 auto;
-            padding: 40px 20px;
-            color: #333;
+            padding: 40px 24px;
+            color: #1f2328;               /* 字色加深 */
             background-color: #fff;
+            -webkit-text-size-adjust: 100%;
         }
 
         h1 {
@@ -19,7 +23,7 @@
             border-bottom: 3px solid #3498db;
             padding-bottom: 10px;
             margin-top: 50px;
-            font-size: 2.5em;
+            font-size: 2.1em;
         }
 
         h2 {
@@ -27,17 +31,17 @@
             border-bottom: 2px solid #bdc3c7;
             padding-bottom: 8px;
             margin-top: 40px;
-            font-size: 2em;
+            font-size: 1.65em;
         }
 
         h3 {
-            color: #555;
+            color: #2c3e50;
             margin-top: 30px;
-            font-size: 1.5em;
+            font-size: 1.35em;
         }
 
         h4 {
-            color: #666;
+            color: #34495e;
             margin-top: 20px;
             font-size: 1.2em;
         }
@@ -46,8 +50,8 @@
             background-color: #f4f4f4;
             padding: 2px 6px;
             border-radius: 3px;
-            font-family: Consolas, "Courier New", monospace;
-            font-size: 0.9em;
+            font-family: Consolas, "Microsoft JhengHei", monospace;
+            font-size: 0.95em;
         }
 
         pre {
@@ -140,6 +144,24 @@
             margin: 30px 0;
         }
 
+        /* 📱 手機：內文 18px、邊距縮小、表格可左右滑 */
+        @media (max-width: 700px) {
+            body { font-size: 18px; padding: 20px 16px; }
+            h1 { font-size: 1.7em; margin-top: 24px; }
+            h2 { font-size: 1.45em; }
+            h3 { font-size: 1.25em; }
+            ul, ol { padding-left: 22px; }
+            table { display: block; overflow-x: auto; }
+            img { max-width: 100% !important; height: auto; }
+        }
+
+        /* 📥 新電腦安裝下載按鈕 */
+        .dl-box { background:#fff4e5; border:2px solid #f0a040; border-radius:12px; padding:16px 20px; margin:18px 0 26px; }
+        .dl-box p { margin: 6px 0; }
+        .dl-btn { display:inline-block; background:#e8730c; color:#fff !important; font-weight:bold; font-size:1.1em;
+                  padding:12px 26px; border-radius:30px; margin:6px 0; text-decoration:none !important; }
+        .dl-btn:hover { background:#c75f05; }
+
         @media print {
             body {
                 max-width: 100%;
@@ -167,6 +189,13 @@
 </head>
 <body>
 <h1 id="地籍資料查詢系統---使用手冊">地籍資料查詢系統 - 使用手冊</h1>
+<div class="dl-box">
+<p><strong>📥 新電腦第一次安裝：</strong>下載安裝程式，雙擊依畫面按「下一步」即可（已含所有執行環境）。</p>
+<p><a class="dl-btn" href="https://fyy-l8a3.onrender.com/download">⬇ 下載最新版安裝程式</a></p>
+<p>※ 已經在用的電腦<strong>不用重裝</strong>，按程式右上角「🔄」更新即可。詳見<a href="#安裝說明">安裝與更新說明</a>。<br />
+※ 下載的檔名是 <code>tw-land-tools-setup_v版號.exe</code>；Windows 若跳出藍色「已保護您的電腦」，按「其他資訊」→「仍要執行」。<br />
+※ 也可到 <a href="https://github.com/windskyshao/tw-land-tools/releases/latest">GitHub 發布頁</a> 下載（找「地籍資料查詢系統_安裝_…（新電腦用）」）。</p>
+</div>
 <h2 id="目錄">目錄</h2>
 <ol>
 <li><a href="#系統簡介">系統簡介</a></li>
@@ -215,7 +244,7 @@
 <h3 id="首次安裝">首次安裝（含所有模組）</h3>
 <p>從 v1.1.8q 起提供<strong>安裝程式</strong>，已包含 python_embedded 執行環境，下載後執行即可，不需另外安裝任何模組：</p>
 <ul>
-<li>到 <a href="https://github.com/windskyshao/tw-land-tools/releases/latest">GitHub 最新版本頁</a> 下載「<strong>安裝程式</strong>」（檔名 <code>tw-land-tools-setup_v….exe</code>），執行後依畫面操作。</li>
+<li>點這裡下載：<a class="dl-btn" href="https://fyy-l8a3.onrender.com/download">⬇ 下載最新版安裝程式</a>（會自動下載 GitHub 上最新版，檔名 <code>tw-land-tools-setup_v….exe</code>），執行後依畫面操作。也可到 <a href="https://github.com/windskyshao/tw-land-tools/releases/latest">GitHub 發布頁</a> 找「地籍資料查詢系統_安裝_…（新電腦用）」。</li>
 <li>Windows 若跳出藍色的「<strong>Windows 已保護您的電腦</strong>」：點「<strong>其他資訊</strong>」→「<strong>仍要執行</strong>」即可（安裝程式沒有付費數位簽章才會這樣，不是病毒）。</li>
 <li><strong>已經有舊版的人</strong>：安裝路徑請選<strong>原本的資料夾</strong>，案件資料與設定都會保留。</li>
 </ul>

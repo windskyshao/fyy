@@ -333,6 +333,29 @@ def help_img(filename):
     return send_from_directory(_img_dir, filename)
 
 
+# 📥 地籍資料查詢系統「新電腦安裝程式」固定下載網址：/download → 自動導到 GitHub 最新版的安裝檔
+#    (安裝檔檔名每版不同：tw-land-tools-setup_v{版號}.exe，所以用 GitHub API 找最新版；查不到就導到發布頁)
+_DL_CACHE = {"url": None, "t": 0}
+
+
+@app.route('/download')
+def download_installer():
+    from flask import redirect
+    releases_page = "https://github.com/windskyshao/tw-land-tools/releases/latest"
+    if _DL_CACHE["url"] and time.time() - _DL_CACHE["t"] < 600:
+        return redirect(_DL_CACHE["url"], code=302)
+    try:
+        r = requests.get("https://api.github.com/repos/windskyshao/tw-land-tools/releases/latest",
+                         headers={"Accept": "application/vnd.github+json", "User-Agent": "fyy-bot"}, timeout=10)
+        for a in (r.json().get("assets") or []):
+            if a.get("name", "").startswith("tw-land-tools-setup_") and a.get("name", "").endswith(".exe"):
+                _DL_CACHE.update(url=a["browser_download_url"], t=time.time())
+                return redirect(a["browser_download_url"], code=302)
+    except Exception as e:
+        print(f"[download] 查 GitHub 最新版失敗：{e}")
+    return redirect(releases_page, code=302)
+
+
 # 🔧 意見回饋：推播對象預設＝管理員本人（已知 userId），可用環境變數覆蓋
 ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', 'U60ff9aa248221639d7717bf54d1db609')
 # 🔧 意見回饋端點的簡單權杖；未設定環境變數時不檢查（方便先測，要鎖再設）
