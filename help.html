@@ -190,14 +190,14 @@
 <body>
 <h1 id="地籍資料查詢系統---使用手冊">地籍資料查詢系統 - 使用手冊</h1>
 <div class="dl-box">
-<p><strong>📥 新電腦第一次安裝：</strong>下載安裝程式，雙擊依畫面按「下一步」即可（已含所有執行環境）。</p>
+<p><strong>📥 新電腦第一次安裝：</strong>下載 ZIP 壓縮檔 → 右鍵「解壓縮全部」→ 雙擊裡面的安裝程式，依畫面按「下一步」即可（已含所有執行環境）。</p>
 <p><a class="dl-btn" href="https://fyy-l8a3.onrender.com/download">⬇ 下載最新版安裝程式</a>
 <a class="dl-btn" style="background:#06c755;" id="lineShareInstall" href="https://social-plugins.line.me/lineit/share?url=https%3A%2F%2Ffyy-l8a3.onrender.com%2Finstall" target="_blank" rel="noopener">📤 分享安裝連結到 LINE</a></p>
 <p>要給同事或朋友安裝，分享這個網址即可：<code>https://fyy-l8a3.onrender.com/install</code>（對方會看到程式介紹、畫面與下載按鈕）
 <button onclick="navigator.clipboard ? navigator.clipboard.writeText('https://fyy-l8a3.onrender.com/install').then(function(){this.textContent='✓ 已複製'}.bind(this)) : prompt('請複製：','https://fyy-l8a3.onrender.com/install')" style="font-size:.9em; padding:4px 12px; border-radius:16px; border:1px solid #ccc; background:#f4f4f4; cursor:pointer;">📋 複製網址</button></p>
 <script>if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) document.getElementById("lineShareInstall").href = "https://line.me/R/share?text=" + encodeURIComponent("地籍資料查詢系統（Windows 電腦程式）介紹與安裝 👉 https://fyy-l8a3.onrender.com/install");</script>
 <p>※ 已經在用的電腦<strong>不用重裝</strong>，按程式右上角「🔄」更新即可。詳見<a href="#安裝說明">安裝與更新說明</a>。<br />
-※ 下載的檔名是 <code>tw-land-tools-setup_v版號.exe</code>；Windows 若跳出藍色「已保護您的電腦」，按「其他資訊」→「仍要執行」。<br />
+※ 下載的是 <code>tw-land-tools-setup_v版號.zip</code>（ZIP 內附安裝說明）；Windows 若跳出藍色「已保護您的電腦」，按「其他資訊」→「仍要執行」。<br />
 ※ 也可到 <a href="https://github.com/windskyshao/tw-land-tools/releases/latest">GitHub 發布頁</a> 下載（找「地籍資料查詢系統_安裝_…（新電腦用）」）。</p>
 </div>
 <h2 id="目錄">目錄</h2>
@@ -248,7 +248,7 @@
 <h3 id="首次安裝">首次安裝（含所有模組）</h3>
 <p>從 v1.1.8q 起提供<strong>安裝程式</strong>，已包含 python_embedded 執行環境，下載後執行即可，不需另外安裝任何模組：</p>
 <ul>
-<li>點這裡下載：<a class="dl-btn" href="https://fyy-l8a3.onrender.com/download">⬇ 下載最新版安裝程式</a>（會自動下載 GitHub 上最新版，檔名 <code>tw-land-tools-setup_v….exe</code>），執行後依畫面操作。也可到 <a href="https://github.com/windskyshao/tw-land-tools/releases/latest">GitHub 發布頁</a> 找「地籍資料查詢系統_安裝_…（新電腦用）」。</li>
+<li>點這裡下載：<a class="dl-btn" href="https://fyy-l8a3.onrender.com/download">⬇ 下載最新版安裝程式</a>（會自動下載 GitHub 上最新版的 ZIP 壓縮檔 <code>tw-land-tools-setup_v….zip</code>），解壓縮後執行裡面的安裝程式，依畫面操作。也可到 <a href="https://github.com/windskyshao/tw-land-tools/releases/latest">GitHub 發布頁</a> 找「地籍資料查詢系統_安裝_…（新電腦用）」。</li>
 <li>Windows 若跳出藍色的「<strong>Windows 已保護您的電腦</strong>」：點「<strong>其他資訊</strong>」→「<strong>仍要執行</strong>」即可（安裝程式沒有付費數位簽章才會這樣，不是病毒）。</li>
 <li><strong>已經有舊版的人</strong>：安裝路徑請選<strong>原本的資料夾</strong>，案件資料與設定都會保留。</li>
 </ul>

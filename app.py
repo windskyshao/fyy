@@ -341,23 +341,29 @@ def install_page():
 
 
 # 📥 地籍資料查詢系統「新電腦安裝程式」固定下載網址：/download → 自動導到 GitHub 最新版的安裝檔
-#    (安裝檔檔名每版不同：tw-land-tools-setup_v{版號}.exe，所以用 GitHub API 找最新版；查不到就導到發布頁)
-_DL_CACHE = {"url": None, "t": 0}
+#    預設給 ZIP 版(tw-land-tools-setup_v{版號}.zip，瀏覽器比較不會擋下載)；/download?type=exe 給 .exe
+#    (檔名每版不同，所以用 GitHub API 找最新版；查不到就導到發布頁)
+_DL_CACHE = {}
 
 
 @app.route('/download')
 def download_installer():
     from flask import redirect
     releases_page = "https://github.com/windskyshao/tw-land-tools/releases/latest"
-    if _DL_CACHE["url"] and time.time() - _DL_CACHE["t"] < 600:
-        return redirect(_DL_CACHE["url"], code=302)
+    want = [".exe"] if request.args.get("type") == "exe" else [".zip", ".exe"]     # ZIP 優先，沒有才給 exe
+    ck = want[0]
+    hit = _DL_CACHE.get(ck)
+    if hit and time.time() - hit[1] < 600:
+        return redirect(hit[0], code=302)
     try:
         r = requests.get("https://api.github.com/repos/windskyshao/tw-land-tools/releases/latest",
                          headers={"Accept": "application/vnd.github+json", "User-Agent": "fyy-bot"}, timeout=10)
-        for a in (r.json().get("assets") or []):
-            if a.get("name", "").startswith("tw-land-tools-setup_") and a.get("name", "").endswith(".exe"):
-                _DL_CACHE.update(url=a["browser_download_url"], t=time.time())
-                return redirect(a["browser_download_url"], code=302)
+        assets = r.json().get("assets") or []
+        for ext in want:
+            for a in assets:
+                if a.get("name", "").startswith("tw-land-tools-setup_") and a.get("name", "").endswith(ext):
+                    _DL_CACHE[ck] = (a["browser_download_url"], time.time())
+                    return redirect(a["browser_download_url"], code=302)
     except Exception as e:
         print(f"[download] 查 GitHub API 失敗：{e}")
     # 備援(不用 API，避開共用 IP 的次數限制)：看「最新版」網頁轉到哪個版號 → 組出安裝檔網址
@@ -365,10 +371,11 @@ def download_installer():
         r = requests.head(releases_page, allow_redirects=False, timeout=10, headers={"User-Agent": "fyy-bot"})
         tag = (r.headers.get("Location") or "").rstrip("/").rsplit("/tag/", 1)[-1]
         if tag.startswith("v"):
-            url = f"https://github.com/windskyshao/tw-land-tools/releases/download/{tag}/tw-land-tools-setup_{tag}.exe"
-            if requests.head(url, allow_redirects=False, timeout=10, headers={"User-Agent": "fyy-bot"}).status_code in (200, 301, 302):
-                _DL_CACHE.update(url=url, t=time.time())
-                return redirect(url, code=302)
+            for ext in want:
+                url = f"https://github.com/windskyshao/tw-land-tools/releases/download/{tag}/tw-land-tools-setup_{tag}{ext}"
+                if requests.head(url, allow_redirects=False, timeout=10, headers={"User-Agent": "fyy-bot"}).status_code in (200, 301, 302):
+                    _DL_CACHE[ck] = (url, time.time())
+                    return redirect(url, code=302)
     except Exception as e:
         print(f"[download] 備援查最新版失敗：{e}")
     return redirect(releases_page, code=302)
