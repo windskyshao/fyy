@@ -314,7 +314,7 @@ CHART_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'charts')
 os.makedirs(CHART_DIR, exist_ok=True)
 RENDER_URL = 'https://fyy-l8a3.onrender.com'
 
-@app.route('/charts/<filename>')
+@app.route('/charts/<path:filename>')   # path：地籍圖失敗回報放在子資料夾 cadfail_xxx/
 def serve_chart(filename):
     return send_from_directory(CHART_DIR, filename)
 
@@ -385,6 +385,57 @@ def download_installer():
 ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', 'U60ff9aa248221639d7717bf54d1db609')
 # 🔧 意見回饋端點的簡單權杖；未設定環境變數時不檢查（方便先測，要鎖再設）
 FEEDBACK_TOKEN = os.environ.get('FEEDBACK_TOKEN', '')
+
+
+# 🗺 地籍圖處理工具：處理失敗自動回報(一次批次一則 LINE)
+#    存原始 PDF＋處理紀錄到 charts/cadfail_xxx/，LINE 附第一張截圖與下載連結(伺服器重新部署會清掉，請盡快處理)
+@app.route('/cadastral_fail', methods=['POST'])
+def cadastral_fail():
+    d = request.get_json(silent=True) or {}
+    token = request.headers.get('X-Feedback-Token', '') or d.get('token', '')
+    if FEEDBACK_TOKEN and token != FEEDBACK_TOKEN:
+        return ('forbidden', 403)
+    items = (d.get('items') or [])[:20]
+    if not items:
+        return ('no items', 400)
+    folder = f'cadfail_{uuid.uuid4().hex[:10]}'
+    path = os.path.join(CHART_DIR, folder)
+    os.makedirs(path, exist_ok=True)
+    base = f'{RENDER_URL}/charts/{folder}'
+    lines = [f'🗺 地籍圖處理失敗 {len(items)} 張',
+             f'版本：{(d.get("version") or "").strip()}',
+             f'電腦：{(d.get("hostname") or "").strip()}　使用者：{(d.get("username") or "").strip()}']
+    first_png = None
+    for i, it in enumerate(items, 1):
+        stem = f'{i:02d}'
+        name = str(it.get('filename') or f'file{i}.pdf')[:80]
+        try:
+            if it.get('pdf_b64'):
+                with open(os.path.join(path, stem + '.pdf'), 'wb') as f:
+                    f.write(base64.b64decode(it['pdf_b64']))
+            with open(os.path.join(path, stem + '.txt'), 'w', encoding='utf-8') as f:
+                f.write(f"檔名：{name}\n原因：{it.get('reason', '')}\n比例尺：{it.get('scale', '')}\n"
+                        f"地號：{it.get('lot', '')}\n\n===== 處理紀錄 =====\n{it.get('log', '')}")
+            if it.get('png_b64'):
+                with open(os.path.join(path, stem + '.png'), 'wb') as f:
+                    f.write(base64.b64decode(it['png_b64']))
+                if not first_png:
+                    first_png = f'{base}/{stem}.png'
+        except Exception as e:
+            print(f'[cadastral_fail] 存檔失敗: {e}')
+        lines.append(f'\n{i}. {name}\n原因：{it.get("reason", "")}'
+                     + (f'\nPDF：{base}/{stem}.pdf' if it.get('pdf_b64') else '')
+                     + f'\n紀錄：{base}/{stem}.txt')
+    text = '\n'.join(lines)
+    messages = [TextSendMessage(text=text[:4900])]
+    if first_png:
+        messages.append(ImageSendMessage(original_content_url=first_png, preview_image_url=first_png))
+    try:
+        line_bot_api.push_message(ADMIN_USER_ID, messages)
+        return ('ok', 200)
+    except Exception as e:
+        print(f'[cadastral_fail] push 失敗: {e}')
+        return ('push failed', 500)
 
 
 # 🔧 意見回饋接收端點：主程式(main.py)把「截圖+版本+訊息」POST 到這裡，
