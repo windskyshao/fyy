@@ -539,8 +539,10 @@ def report_push():
     import datetime as _dt
     payload = json.dumps({'text': text, 'at': d.get('at', ''), 'ok': d.get('ok'),
                           'failed': d.get('failed'), 'changes': d.get('changes')}, ensure_ascii=False)
+    # kind=watch：守門員的一般警示摘要(2026-10-23 改成不推播、存起來等你問)；預設＝每日檢查報告
+    _key = 'landmap_watch_report' if d.get('kind') == 'watch' else 'landmap_daily_report'
     try:
-        mongodb.save_app_file('landmap_daily_report', base64.b64encode(payload.encode('utf-8')).decode(),
+        mongodb.save_app_file(_key, base64.b64encode(payload.encode('utf-8')).decode(),
                               _dt.datetime.now().isoformat(timespec='seconds'))
     except Exception as e:
         return (f'save failed: {e}', 500)
@@ -1849,21 +1851,29 @@ def handle_message(event):
         return 0
 
     # 管理員查阿生地圖每日檢查報告（回覆訊息不計推播額度 → 想看就問，不必每天推給你）
-    if original_msg in ('檢查', '每日檢查', '報告'):
+    if original_msg in ('檢查', '每日檢查', '報告', '守門員', '系統'):
         ADMIN_UIDS = ('U60ff9aa248221639d7717bf54d1db609',)
         if uid not in ADMIN_UIDS:
             return 0  # 非管理員：靜默不回（報告含監控地號，不可外洩，也不讓人知道有這功能）
         # 直接讀雲端推過來存在 MongoDB 的那份（不主動連雲端：機房 IP 會被 Cloudflare 擋）
-        try:
-            data_b64, _updated = mongodb.get_app_file('landmap_daily_report')   # ★回傳 tuple,不是 dict
+        def _read(key, lim):
+            data_b64, _updated = mongodb.get_app_file(key)   # ★回傳 tuple,不是 dict
             if not data_b64:
-                body = '還沒有收到任何檢查報告（今晚 22:30 跑完後，雲端就會把報告送過來存著）。'
-            else:
-                d = json.loads(base64.b64decode(data_b64).decode('utf-8'))
-                txt = (d.get('text') or '').strip() or '（報告是空的）'
-                if len(txt) > 4800:
-                    txt = txt[:4780] + '\n…（太長截斷）'
-                body = f"{txt}\n\n—— 這是最近一次的檢查（{d.get('at', '')}）"
+                return None
+            d = json.loads(base64.b64decode(data_b64).decode('utf-8'))
+            txt = (d.get('text') or '').strip() or '（報告是空的）'
+            if len(txt) > lim:
+                txt = txt[:lim - 20] + '\n…（太長截斷）'
+            return f"{txt}\n—— 更新於 {d.get('at', '') or _updated}"
+        parts = []
+        try:
+            w = _read('landmap_watch_report', 2400)   # 守門員：一般警示不推播，存在這裡(2026-10-23)
+            parts.append(w or '🛡️ 守門員：最近沒有需要注意的狀況。')
+            if original_msg not in ('守門員', '系統'):
+                dr = _read('landmap_daily_report', 2400)
+                if dr:
+                    parts.append(dr)
+            body = '\n\n━━━━━━\n\n'.join(parts)
         except Exception as e:
             body = f"讀取失敗：{str(e)[:100]}"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=body))
