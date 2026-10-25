@@ -525,24 +525,11 @@ def feedback():
 
 
 # 📇 通訊錄雲端同步：檔案存 MongoDB(私密)，主程式用戶端下載/上傳；避免個資進公開 GitHub。
-# ─ 下載 token 的過渡設計(2026-10-25) ─
-#   原本程式碼預設弱 token 寫死(ksp-contacts-dl-2026)，公開 repo 任何人都看得到。
-#   已改成 Render env 設強 token，但同事們的 exe 已 bundled 舊 token，不能馬上拿掉舊的。
-#   過渡期：fyy 同時接受「新強 token(env)」與「舊弱 token(legacy)」。
-#   ★等所有同事都更新到新 exe 後，把 _CONTACTS_DL_LEGACY 這行拿掉，就只剩強 token。
-CONTACTS_DL_TOKEN = os.environ.get('CONTACTS_DL_TOKEN', '')                          # 新強 token (Render env)
-_CONTACTS_DL_LEGACY = 'ksp-contacts-dl-2026'                                         # 舊弱 token (同事 exe 內的,過渡期保留)
+# 2026-10-25 CONTACTS_DL_TOKEN 改強值 → Render env 已設；主程式 app_tokens.py 也已換成同值。
+# 同事會透過主程式內建的自動更新機制下載新版 exe，更新後就會自動用新 token。
+# 過渡期內（同事還沒更新前）下載通訊錄會 403，等更新完就恢復。
+CONTACTS_DL_TOKEN = os.environ.get('CONTACTS_DL_TOKEN', '')                          # 強 token，env 未設就一律拒絕(fail-closed)
 CONTACTS_ADMIN_TOKEN = os.environ.get('CONTACTS_ADMIN_TOKEN', '')                    # 上傳(僅管理者，務必在Render設強密碼)
-
-def _check_contacts_dl_token(token):
-    """驗證下載 token：接受新強 token 或舊 legacy token；用 legacy 時 log 一行以便追蹤還有誰在用。"""
-    if CONTACTS_DL_TOKEN and token == CONTACTS_DL_TOKEN:
-        return True
-    if _CONTACTS_DL_LEGACY and token == _CONTACTS_DL_LEGACY:
-        # log 讓管理者從 Render Logs 看「還有多少舊 exe 在打」；一陣子沒出現就能安全拿掉 legacy
-        print(f'[contacts] LEGACY token used — 同事還在用舊 exe，考慮請他們更新')
-        return True
-    return False
 
 
 @app.route('/report_push', methods=['POST'])
@@ -575,7 +562,7 @@ def report_push():
 def contacts_download():
     """用戶端下載最新通訊錄(xlsx bytes)。接受新強 token(Render env)或舊 legacy token(同事 exe 內)。"""
     token = request.headers.get('X-Contacts-Token', '') or request.args.get('token', '')
-    if not _check_contacts_dl_token(token):
+    if not CONTACTS_DL_TOKEN or token != CONTACTS_DL_TOKEN:
         return ('forbidden', 403)
     try:
         data_b64, updated = mongodb.get_app_file('contacts_xlsx')
@@ -621,7 +608,7 @@ def contacts_upload():
 def contacts_meta():
     """輕量查詢：只回雲端通訊錄的更新時間，用來讓用戶端判斷有無新版（不回檔案本體）。"""
     token = request.headers.get('X-Contacts-Token', '') or request.args.get('token', '')
-    if not _check_contacts_dl_token(token):
+    if not CONTACTS_DL_TOKEN or token != CONTACTS_DL_TOKEN:
         return ('forbidden', 403)
     try:
         _b64, updated = mongodb.get_app_file('contacts_xlsx')
