@@ -396,7 +396,8 @@ FEEDBACK_TOKEN = os.environ.get('FEEDBACK_TOKEN', '')
 def cadastral_fail():
     d = request.get_json(silent=True) or {}
     token = request.headers.get('X-Feedback-Token', '') or d.get('token', '')
-    if FEEDBACK_TOKEN and token != FEEDBACK_TOKEN:
+    # Fail-closed：env 未設或 token 不符都拒絕；避免 Render env 意外被清時三支端點全開放
+    if not FEEDBACK_TOKEN or token != FEEDBACK_TOKEN:
         return ('forbidden', 403)
     items = (d.get('items') or [])[:20]
     if not items:
@@ -469,7 +470,8 @@ def feedback():
         lan_ip = (request.form.get('lan_ip') or '').strip()
 
     # 1) 權杖驗證（擋亂打）；未設定 FEEDBACK_TOKEN 時不檢查
-    if FEEDBACK_TOKEN and token != FEEDBACK_TOKEN:
+    # Fail-closed：env 未設或 token 不符都拒絕；避免 Render env 意外被清時三支端點全開放
+    if not FEEDBACK_TOKEN or token != FEEDBACK_TOKEN:
         return ('forbidden', 403)
     if not ADMIN_USER_ID:
         return ('admin not set', 500)
@@ -533,7 +535,8 @@ def report_push():
     ★方向很重要：機器人主動打雲端會被 Cloudflare 擋(機房 IP)，但雲端打機器人是通的。
     權杖沿用 FEEDBACK_TOKEN。存 MongoDB(Render 免費方案會休眠重啟，記憶體會清空)。"""
     token = request.headers.get('X-Feedback-Token', '') or (request.get_json(silent=True) or {}).get('token', '')
-    if FEEDBACK_TOKEN and token != FEEDBACK_TOKEN:
+    # Fail-closed：env 未設或 token 不符都拒絕；避免 Render env 意外被清時三支端點全開放
+    if not FEEDBACK_TOKEN or token != FEEDBACK_TOKEN:
         return ('forbidden', 403)
     d = request.get_json(silent=True) or {}
     text = (d.get('text') or '').strip()
