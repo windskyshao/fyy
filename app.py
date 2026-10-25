@@ -383,6 +383,9 @@ def download_installer():
 
 # 🔧 意見回饋：推播對象預設＝管理員本人（已知 userId），可用環境變數覆蓋
 ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', 'U60ff9aa248221639d7717bf54d1db609')
+# 管理員白名單（集中管理，原本散佈在 5 處硬編碼 UID → 改成一處）
+# 要加新管理員就直接 append tuple，所有管理員指令（用量/檢查/守門員/群發/診斷）會一起生效
+ADMIN_UIDS = (ADMIN_USER_ID,)
 # 🔧 意見回饋端點的簡單權杖；未設定環境變數時不檢查（方便先測，要鎖再設）
 FEEDBACK_TOKEN = os.environ.get('FEEDBACK_TOKEN', '')
 
@@ -1060,7 +1063,7 @@ def cron_oil_price():
         # 若拿到 transmit 結構（含 cpc/fpc），用 flex；否則 fallback 純文字
         use_flex = bool(data.get('cpc'))
         if test_mode:
-            followers = ['U60ff9aa248221639d7717bf54d1db609']
+            followers = list(ADMIN_UIDS)
         else:
             followers = mongodb.get_all_followers()
         sent = 0
@@ -1152,6 +1155,15 @@ def cron_bot_health():
         out['followers_sample'] = followers[:3]
     except Exception as e:
         out['followers_error'] = str(e)
+    # 診斷 env 設定狀態（只回 bool，不洩漏 token 值）；供快速確認 Render 環境變數有無被意外清掉
+    out['env_set'] = {
+        'FEEDBACK_TOKEN': bool(FEEDBACK_TOKEN),
+        'CONTACTS_DL_TOKEN': bool(os.environ.get('CONTACTS_DL_TOKEN', '')),      # True=env 有設；False=會退回程式碼預設值(弱)
+        'CONTACTS_ADMIN_TOKEN': bool(CONTACTS_ADMIN_TOKEN),
+        'CHANNEL_ACCESS_TOKEN': bool(access_token),
+        'IMGUR_CLIENT_ID': bool(os.environ.get('IMGUR_CLIENT_ID', '')),
+        'ADMIN_USER_ID': bool(os.environ.get('ADMIN_USER_ID', '')),              # False=用程式碼預設 UID；True=env 自訂
+    }
     return _json.dumps(out, ensure_ascii=False, indent=2), 200, {"Content-Type": "application/json; charset=utf-8"}
 
 @app.route('/cron/oil_debug')
@@ -1186,7 +1198,11 @@ def cron_oil_debug():
 
 @app.route('/register_me/<user_id>')
 def register_me(user_id):
-    """手動註冊現有用戶（用於已追蹤但未記錄的用戶）"""
+    """手動註冊現有用戶（用於已追蹤但未記錄的用戶）。需 FEEDBACK_TOKEN 驗證以免被人塞假 user_id。"""
+    # 加 token 驗證：原本無任何檢查，任何人可塞假 user_id 讓 cron 推播失敗吃 LINE 額度
+    token = request.headers.get('X-Feedback-Token', '') or request.args.get('token', '')
+    if not FEEDBACK_TOKEN or token != FEEDBACK_TOKEN:
+        return ('forbidden', 403)
     try:
         mongodb.save_follower(user_id)
         count = len(mongodb.get_all_followers())
@@ -1742,7 +1758,7 @@ def handle_message(event):
     #   用途：房地/社區查詢失敗時，分辨是「請求被中間層(Cloudflare)擋掉」還是「伺服器真的查無」。
     #   起因 2026-09-26：landmap access.log 顯示 15 天來沒有任何一筆來自 Render 的請求。
     if original_msg in ('診斷地圖', '地圖診斷'):
-        if uid not in ('U60ff9aa248221639d7717bf54d1db609',):
+        if uid not in ADMIN_UIDS:
             return 0
         import time as _t
         _diag_hdrs = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -1786,7 +1802,6 @@ def handle_message(event):
     #     所以分三步：①「中秋預覽」只發給自己看 ②「群發中秋」先報影響與額度 ③「群發中秋 確認」才真的發。
     #   ★用 Flex 一則(圖＋字＋按鈕)而不是「圖片＋文字兩則」→ 每位好友只算 1 則，額度省一半。
     if original_msg in ('中秋預覽', '群發中秋', '群發中秋 確認', '群發中秋確認'):
-        ADMIN_UIDS = ('U60ff9aa248221639d7717bf54d1db609',)
         if uid not in ADMIN_UIDS:
             return 0                                   # 非管理者：靜默不回
         FEST_IMG = "https://map.windsky-sky.com/img/midautumn2026_line.jpg"
@@ -1860,7 +1875,6 @@ def handle_message(event):
 
     # 管理員查阿生地圖每日檢查報告（回覆訊息不計推播額度 → 想看就問，不必每天推給你）
     if original_msg in ('檢查', '每日檢查', '報告', '守門員', '系統'):
-        ADMIN_UIDS = ('U60ff9aa248221639d7717bf54d1db609',)
         if uid not in ADMIN_UIDS:
             return 0  # 非管理員：靜默不回（報告含監控地號，不可外洩，也不讓人知道有這功能）
         # 直接讀雲端推過來存在 MongoDB 的那份（不主動連雲端：機房 IP 會被 Cloudflare 擋）
@@ -1889,8 +1903,6 @@ def handle_message(event):
 
     # 管理員查推播用量
     if original_msg in ('用量', '額度', '配額'):
-        # 管理員白名單；若想多加管理員直接附在 tuple 內即可
-        ADMIN_UIDS = ('U60ff9aa248221639d7717bf54d1db609',)
         if uid not in ADMIN_UIDS:
             return 0  # 非管理員：靜默不回，避免洩漏 bot 額度資訊
         try:
