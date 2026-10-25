@@ -94,7 +94,7 @@ stockDB='mydb'
 currencyDB = 'users'
 dbname = 'test-good1'
 
-# 每位使用者關注上限（控制 LINE 推播免費額度 500/月 與外部 API 用量）
+# 每位使用者關注上限（控制 LINE 推播免費額度 200/月 與外部 API 用量）
 MAX_STOCKS_PER_USER = 5
 MAX_CURRENCIES_PER_USER = 5
 
