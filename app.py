@@ -1049,6 +1049,14 @@ def cron_oil_price():
                 # 資料源尚未更新到最新一週 → 這次不推，讓後續 cron fire 有機會重試
                 print(f"[cron_oil] skip stale: effective_date={eff}, days_ahead={days_ahead}")
                 return f"OK, skipped: data not fresh (eff={eff}, days_ahead={days_ahead})", 200
+            # 省推播：若 CPC 公告「下週各項全部不調整」就不發（LINE 免費額度 200則/月，省給真正有變動的事用）
+            # 條件：deltas 存在且所有項目都是 0（接近 0 視為 0），代表資料源有正式給 delta 且都無變動
+            deltas = data.get('deltas') or {}
+            if deltas and all(abs(float(d or 0)) < 0.001 for d in deltas.values()):
+                print(f"[cron_oil] skip no-change: deltas={deltas}")
+                # 寫入冪等，避免同日 cron 多次 fire 又重複判斷
+                mongodb.set_cron_last_run('oil_price', today_str)
+                return "OK, skipped: no price change this week (saving quota)", 200
         # 若拿到 transmit 結構（含 cpc/fpc），用 flex；否則 fallback 純文字
         use_flex = bool(data.get('cpc'))
         if test_mode:
