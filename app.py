@@ -2602,6 +2602,14 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token,
             TextSendMessage(text="此功能暫待推出，敬請見諒～～"))
         return 0
+    if msg.strip() in ('安裝', '安裝連結', '安裝程式', '下載安裝', '分享安裝'):
+        # 給新同事的安裝連結：回一則訊息，長按就能轉傳(電腦版 LINE 也能用)
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=(
+            "📦 地籍資料查詢系統｜新電腦安裝\n"
+            "請用「電腦」打開下面連結，按「下載最新版安裝程式」，解壓縮後執行安裝：\n"
+            "https://fyy-l8a3.onrender.com/install\n\n"
+            "（長按這則訊息 →「轉傳」就能分享給同事或群組）")))
+        return 0
     if re.match('房地資訊|房地產|地籍',msg):
         def house_bubble(title, links):
             btns = []
@@ -2646,6 +2654,9 @@ def handle_message(event):
         ])
         b6 = house_bubble("📋 地籍資料查詢系統（軟體）", [
             ("📦 新電腦安裝程式(請用電腦開)", "https://fyy-l8a3.onrender.com/install"),
+            # 手機點了直接跳出 LINE「選擇要傳給誰」，訊息已寫好(含安裝連結)
+            ("📤 分享安裝連結給同事", "https://line.me/R/share?text=" + quote_plus(
+                "地籍資料查詢系統｜新電腦安裝（請用電腦打開）\nhttps://fyy-l8a3.onrender.com/install")),
             ("🔄 程式更新檔(GitHub)", "https://github.com/windskyshao/tw-land-tools/releases/latest"),
             ("📖 使用說明 / 教學", "https://fyy-l8a3.onrender.com/help"),
         ])
