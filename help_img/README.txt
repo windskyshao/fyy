@@ -37,3 +37,5 @@
   quick_result.png              → 快速建立案件：單筆查詢結果（位置/建號/社區）
   quick_batch.png               → 快速建立案件：批次查詢結果（勾選清單）
   status_chips.png              → 目前案件卡的三種謄本狀態（綠/橘/紅）
+
+【v1.1.9 更新】quick_panel_lot.png / quick_panel_addr.png 已換成新版（下方含「目前案件 data.json」與謄本結構化色帶）

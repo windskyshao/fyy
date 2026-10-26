@@ -205,7 +205,7 @@
 <li><a href="#系統簡介">系統簡介</a></li>
 <li><a href="#安裝說明">安裝與更新說明</a></li>
 <li><a href="#主介面介紹">主介面介紹</a></li>
-<li><a href="#萬用查詢">萬用查詢（打地址／地號，或用選單快速建立案件）</a></li>
+<li><a href="#萬用查詢">萬用查詢（打地址／地號，或用選單快速建立案件；下方看目前案件與謄本比對）</a></li>
 <li><a href="#標題列與檔案位置">標題列與檔案位置說明</a></li>
 <li><a href="#子程式運作方式">子程式的運作方式</a></li>
 <li><a href="#買賣案件完整操作流程">買賣案件完整操作流程</a></li>
@@ -388,7 +388,19 @@
 <li><strong>地籍選單</strong>：按輸入欄右邊「<strong>☰ 選單</strong>」（或輸入欄空白時按 Enter），在「地籍選單」依序選 <strong>縣市 → 行政區 → 段小段 → 地號</strong>。段小段可打字過濾（例如打「竹北段一」）。</li>
 <li><strong>地址選單</strong>：在「地址選單」依序選 <strong>縣市 → 行政區 → 街路</strong>，再填 段／巷／弄／門牌號／樓層。欄位依<strong>國土測繪中心的門牌格式</strong>（例如 <code>236之2號</code>、段寫國字「一段」）；路名來自內政部戶政司「全國路名資料」。</li>
 </ol>
-<p><img src="https://fyy-l8a3.onrender.com/help_img/quick_panel_lot.png" alt="萬用查詢-地籍選單" style="max-width:520px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p><p><img src="https://fyy-l8a3.onrender.com/help_img/quick_panel_addr.png" alt="萬用查詢-地址選單" style="max-width:520px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
+<p><img src="https://fyy-l8a3.onrender.com/help_img/quick_panel_lot.png?v=119" alt="萬用查詢-地籍選單" style="max-width:520px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p><p><img src="https://fyy-l8a3.onrender.com/help_img/quick_panel_addr.png?v=119" alt="萬用查詢-地址選單" style="max-width:520px; width:100%; border:1px solid #ccc; border-radius:6px;" /></p>
+<h3 id="萬用查詢-目前案件">面板下方：目前案件與謄本比對</h3>
+<p>萬用查詢面板的下半部會一直顯示<strong>目前案件</strong>的內容，不用另外開檔案檢查：</p>
+<ul>
+<li><strong>📋 目前案件（data.json）</strong>：藍色標題列右邊顯示「地段地號 N 筆　建號 N 戶」，下面逐筆列出每個地號、底下對到的建號（含門牌）。筆數多時可以捲動。</li>
+<li>要<strong>加地號／建號</strong>：在上面查詢後按「<strong>加入目前案件</strong>」；要<strong>換案件</strong>：按「<strong>建立新案件</strong>」。</li>
+<li><strong>謄本結構化色帶</strong>：自動比對目前載入的謄本結構化資料和案件是不是同一筆：
+<ul>
+<li><span style="color:#1B7F3B;"><strong>綠色「✓ 與目前案件相符」</strong></span>：下面一行會寫用的是哪一份謄本（地號、第幾類、調閱時間），可以直接做土增稅、物件編輯。</li>
+<li><span style="color:#B35400;"><strong>橘色「○ 目前案件還沒做」</strong></span>：調好謄本後，到【謄本與土增稅】做謄本結構化。</li>
+<li><span style="color:#D93025;"><strong>紅色「⚠ 部分對不上／是別的案件」</strong></span>：載入的謄本和案件的地號、建號對不上，請到【謄本與土增稅】重新做結構化。</li>
+</ul></li>
+</ul>
 <h3 id="萬用查詢-多筆">一次查多筆</h3>
 <ul>
 <li>用「<strong>、</strong>」或半形「<strong>,</strong>」分開，後面可只寫號碼：<code>前鎮區竹北段一小段2096、2097、2100-1</code>。</li>
@@ -1335,7 +1347,7 @@
 </ul>
 <hr />
 <p><strong>對應程式版本</strong>：v1.1.8r（2026年10月）</p>
-<p><strong>手冊更新日期</strong>：2026年10月11日</p>
+<p><strong>手冊更新日期</strong>：2026年10月26日</p>
 <p><strong>適用系統</strong>：
 - Windows 10
 - Windows 11</p>
