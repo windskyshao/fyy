@@ -265,7 +265,8 @@ def _resolve(text):
         r = d["results"][0]
         if r.get("lat"):
             city = _city_from_name(r.get("name", "")) or "E"
-            return (_short_addr(r.get("name", "")) or t, r["lat"], r["lng"], city)
+            # lot_src：easymap=地政登記查到的地號(準)；point=地籍便民查不到、用門牌座標推的(可能是隔壁地號)
+            return (_short_addr(r.get("name", "")) or t, r["lat"], r["lng"], city, r.get("lot_src") == "point")
     return None
 
 
@@ -406,9 +407,10 @@ def query(text):
         return None
     if isinstance(got, dict) and got.get("type") == "section_picker":
         return got
-    title, lat, lng, city = got
+    title, lat, lng, city = got[:4]
+    lot_guess = len(got) > 4 and got[4]
     is_land = bool(_RE_SECT.search(text)) and ("號" not in text.replace("地號", ""))
-    return _card(title, lat, lng, city, text, is_land)
+    return _card(title, lat, lng, city, text, is_land, lot_guess=lot_guess)
 
 
 def name_query(text):
@@ -430,7 +432,7 @@ def name_query(text):
                  addr=(best.get("addr") or "").strip())
 
 
-def _card(title, lat, lng, city, text, is_land, addr=""):
+def _card(title, lat, lng, city, text, is_land, addr="", lot_guess=False):
     """由（名稱/門牌 ＋ 座標）組實價卡。text 供抽樓層/地號；is_land 決定土地或建物配對。
 
     addr：標題不是門牌時（社區名查詢）用來比對實價的真實門牌；標題照樣顯示社區名。"""
@@ -563,7 +565,7 @@ def _card(title, lat, lng, city, text, is_land, addr=""):
         if subj_com:
             info.append(_line("社區", subj_com, "#8c4de6"))
     if landno_txt:
-        info.append(_line("地號", landno_txt, "#1558b0"))
+        info.append(_line("可能地號" if lot_guess else "地號", landno_txt, "#1558b0"))
     if zone_txt:
         info.append(_line("使用分區", zone_txt, "#0f7d55"))
     if not is_land:
