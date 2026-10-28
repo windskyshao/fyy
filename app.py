@@ -1718,6 +1718,82 @@ def callback():
 
 
 # 處理訊息
+# ── 📣 最新行情情報(2026-10-28)：LINE 轉傳成交消息/截圖給阿生生 → 存進阿生地圖「最新行情情報」(每人私有) ──
+#   要先在地圖 頭像選單「📣 最新行情情報」按「綁定 LINE 阿生生」拿 6 位數碼，在這裡傳「綁定 123456」。
+#   權杖沿用 FEEDBACK_TOKEN(= 地圖那邊的 line_feedback_token)。全部用「回覆」，不吃推播額度。
+_INTEL_DEAL_RE = re.compile(r"成交|售出|賣出|買下|購入|出售|承租|出租|租金|易主|買進|標售|得標")
+_INTEL_MONEY_RE = re.compile(r"\d[\d,，\.]*\s*(億|萬)")
+
+
+def _intel_call(body, timeout=60):
+    body = dict(body, token=FEEDBACK_TOKEN)
+    h = dict(realestate._HDRS, **{"Content-Type": "application/json"})
+    r = requests.post("https://map.windsky-sky.com/api/intel/line", data=json.dumps(body), headers=h, timeout=timeout)
+    try:
+        return r.json()
+    except Exception:
+        return {"status": "ERROR", "msg": "地圖回應異常(HTTP %d)" % r.status_code}
+
+
+def _intel_wan(v):
+    v = float(v or 0)
+    if v >= 1e8:
+        y, w = int(v // 1e8), round((v % 1e8) / 1e4)
+        return "%d億%s" % (y, ("%s萬" % format(w, ",")) if w else "")
+    return "%s萬" % format(round(v / 1e4), ",")
+
+
+def _intel_reply_text(r):
+    st = r.get("status")
+    if st == "NOT_BOUND":
+        return ("還沒綁定阿生地圖帳號喔！\n"
+                "① 打開阿生地圖 https://map.windsky-sky.com\n"
+                "② 右上角頭像 →「📣 最新行情情報」→「🔗 綁定 LINE 阿生生」\n"
+                "③ 把畫面上的「綁定 6 位數字」傳給我")
+    if st == "EMPTY":
+        return "📣 這則看不出成交價或位置，沒有存。\n（要有地址或地號，加上成交價或租金）"
+    if st != "OK" or not r.get("item"):
+        return "📣 存情報失敗：%s" % (r.get("msg") or "請稍後再試")
+    it = r["item"]
+    lines = ["📣 已存成最新行情情報（傳聞）"]
+    lines.append((it.get("addr") or ((it.get("sect") or "") + (it.get("landno") or "") + "地號")))
+    if it.get("kind") == "rent" and it.get("rent"):
+        lines.append("月租 " + _intel_wan(it["rent"]))
+    elif it.get("price"):
+        lines.append("成交 " + _intel_wan(it["price"]) + ("　" + it["dealdt"] if it.get("dealdt") else ""))
+    if it.get("land_ping") or it.get("bld_ping"):
+        lines.append("土地 %s 坪　建物 %s 坪" % (it.get("land_ping") or "—", it.get("bld_ping") or "—"))
+    if it.get("buyer") or it.get("seller"):
+        lines.append("%s → %s" % (it.get("seller") or "?", it.get("buyer") or "?"))
+    if it.get("lat"):
+        lines.append("👉 地圖上看：https://map.windsky-sky.com/?lat=%.6f&lng=%.6f" % (it["lat"], it["lng"]))
+    else:
+        lines.append("⚠ 沒定位到，請到地圖「📣 最新行情情報」補地址或地號")
+    lines.append("（整理錯了可到地圖修改或刪除）")
+    return "\n".join(lines)
+
+
+@handler.add(MessageEvent, message=ImageMessage)
+def handle_image(event):
+    """📣 轉傳成交截圖：只有綁定過的人才處理；沒綁定的人傳圖片照舊不回(以前就不處理圖片)。"""
+    if getattr(event.source, "type", "") != "user":
+        return
+    uid = event.source.user_id
+    try:
+        chk = _intel_call({"uid": uid, "action": "check"}, timeout=15)
+    except Exception:
+        return
+    if chk.get("status") != "OK":
+        return
+    show_loading(uid, 40)
+    try:
+        img = line_bot_api.get_message_content(event.message.id).content
+        r = _intel_call({"uid": uid, "action": "add", "image": base64.b64encode(img).decode(), "mime": "image/jpeg"}, timeout=80)
+    except Exception as e:
+        r = {"status": "ERROR", "msg": str(e)[:60]}
+    line_bot_api.reply_message(event.reply_token, TextSendMessage(text=_intel_reply_text(r)))
+
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     # message = TextSendMessage(text=event.message.text)
@@ -1728,6 +1804,36 @@ def handle_message(event):
 
     uid = profile.user_id #使用者ID
     user_name = profile.display_name #使用者名稱
+
+    # ── 📣 最新行情情報：綁定碼、轉傳的成交消息(只在一對一聊天) ──
+    if getattr(event.source, "type", "") == "user":
+        _bm = re.match(r"^綁定\s*(\d{6})$", original_msg)
+        if _bm:
+            try:
+                r = _intel_call({"uid": uid, "action": "bind", "code": _bm.group(1)}, timeout=20)
+            except Exception as e:
+                r = {"status": "ERROR", "msg": str(e)[:60]}
+            txt = ("✅ 綁定好了！\n以後在 LINE 群組看到成交消息，長按「轉傳」給我（文字或截圖都可以），"
+                   "就會自動存進阿生地圖「📣 最新行情情報」，只有你看得到。") if r.get("status") == "OK" else ("綁定失敗：" + (r.get("msg") or "請稍後再試"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=txt))
+            return 0
+        _explicit = original_msg.startswith(("情報", "📣"))
+        if _explicit or (len(original_msg) >= 12 and _INTEL_DEAL_RE.search(original_msg) and _INTEL_MONEY_RE.search(original_msg)):
+            try:
+                r = _intel_call({"uid": uid, "action": "check"}, timeout=15)
+            except Exception:
+                r = {"status": "ERROR"}
+            if r.get("status") == "OK":
+                show_loading(uid, 30)
+                try:
+                    r = _intel_call({"uid": uid, "action": "add", "text": re.sub(r"^(情報|📣)[:：\s]*", "", original_msg)}, timeout=60)
+                except Exception as e:
+                    r = {"status": "ERROR", "msg": str(e)[:60]}
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=_intel_reply_text(r)))
+                return 0
+            if _explicit:   # 明講「情報」但沒綁定→教他綁；只是看起來像成交消息→照舊走其他功能
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=_intel_reply_text({"status": "NOT_BOUND"})))
+                return 0
 
     # ── 🐱 阿生地圖導引卡（多處共用：「地圖」指令、使用說明選單）────────────────
     #   目的：讓 LINE 好友能一鍵進地圖。只提已開放的功能(地籍/實價/都計分區)，
