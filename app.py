@@ -596,6 +596,8 @@ def _landmap_company(sess):
             res = (True, j.get('how') or 'staff') if j.get('ok') else (False, 'NOT_STAFF')
     except Exception as e:
         print(f'[contacts] 阿生地圖驗證失敗: {e}')
+        if hit and hit[0] and time.time() - hit[2] < 7 * 86400:   # 阿生地圖暫時掛掉：7 天內確認過是同事的照樣放行
+            return True, hit[1]
         return False, 'ERROR'
     if len(_CO_CACHE) > 2000:
         _CO_CACHE.clear()
@@ -610,13 +612,17 @@ def _contacts_auth():
         ok, how = _landmap_company(sess)
         if ok:
             return None
-        if how in ('NOT_STAFF', 'ERROR'):
-            return ({'status': how}, 403 if how == 'NOT_STAFF' else 503)
+        if how == 'NOT_STAFF':
+            return ({'status': how}, 403)
+    else:
+        how = ''
     token = request.headers.get('X-Contacts-Token', '') or request.args.get('token', '')
     import datetime as _dt
     today = (_dt.datetime.utcnow() + _dt.timedelta(hours=8)).strftime('%Y-%m-%d')
     if CONTACTS_DL_TOKEN and token == CONTACTS_DL_TOKEN and today <= CONTACTS_LEGACY_UNTIL:
-        return None
+        return None      # 過渡期：阿生地圖連不上時也還能靠舊權杖
+    if how == 'ERROR':
+        return ({'status': 'ERROR'}, 503)
     return ({'status': 'LOGIN_REQUIRED'}, 401)
 
 
