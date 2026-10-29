@@ -444,6 +444,9 @@ def cadastral_fail():
 
 # 🔧 意見回饋接收端點：主程式(main.py)把「截圖+版本+訊息」POST 到這裡，
 #    伺服器存截圖取得網址後，推播到管理員的 LINE（阿生生聊天室）。
+_FB_HITS = []   # 意見回饋速率限制 [(ip, 時間)]
+
+
 @app.route('/feedback', methods=['POST'])
 def feedback():
     # 同時支援 JSON(截圖用 base64，主程式走這條) 與 multipart(用 curl 測試)
@@ -475,6 +478,16 @@ def feedback():
         return ('forbidden', 403)
     if not ADMIN_USER_ID:
         return ('admin not set', 500)
+    # 🔒 防灌爆 LINE 推播額度(權杖包在主程式 exe 裡，拆得出來)：同一個 IP 每小時最多 6 則、全站每小時 40 則；內容/截圖限大小
+    _ip = (request.headers.get('X-Forwarded-For', '').split(',')[0].strip() or request.remote_addr or '?')
+    _now = time.time()
+    _FB_HITS[:] = [x for x in _FB_HITS if _now - x[1] < 3600]
+    if sum(1 for x in _FB_HITS if x[0] == _ip) >= 6 or len(_FB_HITS) >= 40:
+        return ('too many feedback, try later', 429)
+    _FB_HITS.append((_ip, _now))
+    message = message[:3000]
+    if len(b64) > 8 * 1024 * 1024:
+        b64 = ''
 
     # 2) 組文字訊息
     lines = ['📩 新意見回饋', f'版本：{version}']
