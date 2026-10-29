@@ -571,12 +571,61 @@ def report_push():
     return ('ok', 200)
 
 
+# 🔒 通訊錄只給公司同事：用阿生地圖 Google 登入確認身分(會員管理設為富住通成員，或姓名對得上員工清冊)。
+#    共用權杖包在公開 exe 裡拆得出來→只在過渡期接受，到 CONTACTS_LEGACY_UNTIL(台北日期)為止。
+CONTACTS_LEGACY_UNTIL = os.environ.get('CONTACTS_LEGACY_UNTIL', '2026-11-15')
+LANDMAP_BASE = 'https://map.windsky-sky.com'
+_CO_CACHE = {}          # sha256(session) → (ok, how, 時間)
+
+
+def _landmap_company(sess):
+    """回 (ok, how)。how：LOGIN_REQUIRED / NOT_STAFF / member / staff / admin / ERROR"""
+    import hashlib
+    k = hashlib.sha256(sess.encode()).hexdigest()
+    hit = _CO_CACHE.get(k)
+    if hit and time.time() - hit[2] < 600:
+        return hit[0], hit[1]
+    try:
+        r = requests.get(LANDMAP_BASE + '/api/auth/company', timeout=15, cookies={'session': sess},
+                         headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                                                '(KHTML, like Gecko) Chrome/141.0 Safari/537.36 fyy-contacts'})
+        if r.status_code == 401:
+            res = (False, 'LOGIN_REQUIRED')
+        else:
+            j = r.json()
+            res = (True, j.get('how') or 'staff') if j.get('ok') else (False, 'NOT_STAFF')
+    except Exception as e:
+        print(f'[contacts] 阿生地圖驗證失敗: {e}')
+        return False, 'ERROR'
+    if len(_CO_CACHE) > 2000:
+        _CO_CACHE.clear()
+    _CO_CACHE[k] = (res[0], res[1], time.time())
+    return res
+
+
+def _contacts_auth():
+    """回 None＝放行；否則回 (body, status) 給 Flask"""
+    sess = request.headers.get('X-Landmap-Session', '')
+    if sess:
+        ok, how = _landmap_company(sess)
+        if ok:
+            return None
+        if how in ('NOT_STAFF', 'ERROR'):
+            return ({'status': how}, 403 if how == 'NOT_STAFF' else 503)
+    token = request.headers.get('X-Contacts-Token', '') or request.args.get('token', '')
+    import datetime as _dt
+    today = (_dt.datetime.utcnow() + _dt.timedelta(hours=8)).strftime('%Y-%m-%d')
+    if CONTACTS_DL_TOKEN and token == CONTACTS_DL_TOKEN and today <= CONTACTS_LEGACY_UNTIL:
+        return None
+    return ({'status': 'LOGIN_REQUIRED'}, 401)
+
+
 @app.route('/contacts/download', methods=['GET'])
 def contacts_download():
-    """用戶端下載最新通訊錄(xlsx bytes)。接受新強 token(Render env)或舊 legacy token(同事 exe 內)。"""
-    token = request.headers.get('X-Contacts-Token', '') or request.args.get('token', '')
-    if not CONTACTS_DL_TOKEN or token != CONTACTS_DL_TOKEN:
-        return ('forbidden', 403)
+    """用戶端下載最新通訊錄(xlsx bytes)。要阿生地圖登入且是公司同事；過渡期也接受舊共用權杖。"""
+    _deny = _contacts_auth()
+    if _deny:
+        return _deny
     try:
         data_b64, updated = mongodb.get_app_file('contacts_xlsx')
     except Exception as e:
@@ -620,9 +669,9 @@ def contacts_upload():
 @app.route('/contacts/meta', methods=['GET'])
 def contacts_meta():
     """輕量查詢：只回雲端通訊錄的更新時間，用來讓用戶端判斷有無新版（不回檔案本體）。"""
-    token = request.headers.get('X-Contacts-Token', '') or request.args.get('token', '')
-    if not CONTACTS_DL_TOKEN or token != CONTACTS_DL_TOKEN:
-        return ('forbidden', 403)
+    _deny = _contacts_auth()
+    if _deny:
+        return _deny
     try:
         _b64, updated = mongodb.get_app_file('contacts_xlsx')
     except Exception as e:
