@@ -44,9 +44,10 @@ fyy 自己會去呼叫阿生地圖（`map.windsky-sky.com`）：
   （本機有阿生地圖就用 `python tools/collab_note.py "fyy" "改了什麼" "影響" "誰要跟著做"`，會順便寄信給使用者；
   雲端就用 GitHub 網頁或 `gh api` 直接改），並在回覆裡明白告訴使用者要通知哪個對話。
 - 推完程式用 `https://fyy-l8a3.onrender.com/version` 確認 Render 換上新版（回 commit 前 7 碼，約 2 分鐘）。
-- 這個 repo 是**私有**的（2026-11-15 起）。Render 用使用者的 GitHub 帳號（Render GitHub App，已開放 fyy）抓程式部署。
-  若推上去後 `/version` 一直沒換新版，先看 Render 服務的 Events 頁有沒有抓程式失敗；不行就暫時改回公開並告訴使用者。
-  權杖、帳密、個人資料仍一律放 Render 環境變數，不寫進 repo。
+- 這個 repo **目前必須公開**。2026-11-15 試過兩次改私有，Render 都部署失敗（手動部署時明白顯示「unable to access your GitHub repository」），已改回公開。
+  Render 設定裡 Source 是 windskyshao/fyy、Git Credentials 是使用者本人，GitHub 的 Render App 也開放 All repositories，但 Render 帳號和 GitHub 之間的授權仍讀不到私有 repo。
+  要再試，得先請使用者在 Render 的 Account Settings 重新連結 GitHub，改完一定要推一次、用 `/version` 確認有部署，失敗就立刻改回公開。
+  因為是公開的：**權杖、帳密、個人資料絕對不能進這個 repo**（一律放 Render 環境變數），跨專案的紀錄也放私有的阿生地圖。
 
 ## 測試檔對照
 
