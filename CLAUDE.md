@@ -35,6 +35,17 @@ fyy 自己會去呼叫阿生地圖（`map.windsky-sky.com`）：
 權杖 `FEEDBACK_TOKEN`、`CONTACTS_DL_TOKEN`、`CONTACTS_ADMIN_TOKEN` 是 Render 環境變數，
 要跟對方程式設定的值一致。真的權杖不可以寫進 repo 或測試。
 
+## 跨專案協作紀錄（fyy・阿生地圖・地籍資料查詢系統）
+
+- 三個專案各自有對話在改，使用者喜歡**直接改、不開 PR**（直接推 main），但改了要讓別人知道。紀錄放在阿生地圖 repo（私有）的 `協作紀錄.md`。
+- **開工前**先看最上面幾則（新的在上面），有寫到要 fyy 跟著做的，先跟使用者提：
+  `gh api repos/windskyshao/landmap/contents/協作紀錄.md -H "Accept: application/vnd.github.raw"`
+- **改完**會影響別的專案的東西（上面「跟其他程式的介面」那些端點、權杖、回應格式）：在 `協作紀錄.md` 最上面加一則
+  （本機有阿生地圖就用 `python tools/collab_note.py "fyy" "改了什麼" "影響" "誰要跟著做"`，會順便寄信給使用者；
+  雲端就用 GitHub 網頁或 `gh api` 直接改），並在回覆裡明白告訴使用者要通知哪個對話。
+- 推完程式用 `https://fyy-l8a3.onrender.com/version` 確認 Render 換上新版（回 commit 前 7 碼，約 2 分鐘）。
+- 這個 repo 是**私有**的（2026-11-15 起）。主程式更新、安裝檔下載讀的是 `tw-land-tools` 等其他公開 repo，不受影響。
+
 ## 測試檔對照
 
 - `tests/conftest.py`：假的 LINE / MongoDB / 對外連線，`say('檢查', uid=...)` 模擬使用者傳訊息
