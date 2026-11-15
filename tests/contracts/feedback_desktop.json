@@ -1,0 +1,22 @@
+{
+  "caller": "landreg-desktop/main.py",
+  "method": "POST",
+  "path": "/feedback",
+  "headers": {"Content-Type": "application/json", "X-Feedback-Token": "__FEEDBACK_TOKEN__"},
+  "json": {
+    "token": "__FEEDBACK_TOKEN__",
+    "version": "v1.1.9a",
+    "name": "王小明",
+    "category": "問題回報",
+    "message": "謄本下載後打不開",
+    "hostname": "OFFICE-PC-03",
+    "username": "ming",
+    "lan_ip": "192.168.1.23",
+    "screenshot_b64": ""
+  },
+  "expect": {
+    "status": 200,
+    "push_text_contains": ["📩 新意見回饋", "版本：v1.1.9a", "類型：問題回報", "來自：王小明",
+                           "內容：謄本下載後打不開", "使用者：ming", "電腦：OFFICE-PC-03", "區網IP：192.168.1.23"]
+  }
+}

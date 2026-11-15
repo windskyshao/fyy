@@ -1,0 +1,18 @@
+{
+  "caller": "landmap/server/landreg.py push_line()",
+  "method": "POST",
+  "path": "/feedback",
+  "headers": {"Content-Type": "application/json", "X-Feedback-Token": "__FEEDBACK_TOKEN__"},
+  "json": {
+    "token": "__FEEDBACK_TOKEN__",
+    "version": "landmap",
+    "name": "阿生地圖",
+    "category": "守門員",
+    "message": "🔴 服務連不進來",
+    "screenshot_b64": ""
+  },
+  "expect": {
+    "status": 200,
+    "push_text_contains": ["版本：landmap", "類型：守門員", "來自：阿生地圖", "內容：🔴 服務連不進來"]
+  }
+}

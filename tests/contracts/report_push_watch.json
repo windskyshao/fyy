@@ -1,0 +1,13 @@
+{
+  "caller": "landmap/tools/watch_site.py _push_watch_report()",
+  "method": "POST",
+  "path": "/report_push",
+  "headers": {"Content-Type": "application/json", "X-Feedback-Token": "__FEEDBACK_TOKEN__"},
+  "json": {
+    "token": "__FEEDBACK_TOKEN__",
+    "kind": "watch",
+    "at": "2026-11-14 09:00",
+    "text": "🛡️ 阿生地圖守門員（最近 24 小時）\n\n✅ 沒有需要注意的狀況。"
+  },
+  "expect": {"status": 200, "saved_key": "landmap_watch_report"}
+}
