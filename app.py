@@ -1189,6 +1189,13 @@ def keep_alive():
     """保持服務清醒用，供 cron-job.org 等監控服務定期 ping"""
     return "alive", 200
 
+@app.route('/version')
+def version():
+    """目前線上跑的是哪一版(Render 自動提供 RENDER_GIT_COMMIT)。推完程式用它確認新版真的上線了。
+    只回版本編號，不含任何設定或權杖。"""
+    c = os.environ.get('RENDER_GIT_COMMIT', '')
+    return {'commit': c[:7], 'branch': os.environ.get('RENDER_GIT_BRANCH', '')}, 200
+
 @app.route('/cron/status')
 def cron_status():
     """診斷端點：顯示伺服器時間、盤中判斷、各 cron 上次成功執行日"""

@@ -69,3 +69,18 @@ def test_download_goes_to_release_page_when_everything_fails(client, net):
     net.add('https://github.com/', requests.exceptions.ConnectionError('x'))
     r = client.get('/download')
     assert r.status_code == 302 and r.headers['Location'] == LATEST
+
+
+def test_version_shows_deployed_commit(client, monkeypatch):
+    """推完程式後用 /version 確認 Render 真的換上新版(只回版本編號，不洩漏設定)"""
+    monkeypatch.setenv('RENDER_GIT_COMMIT', 'abcdef1234567890')
+    monkeypatch.setenv('RENDER_GIT_BRANCH', 'main')
+    r = client.get('/version')
+    assert r.status_code == 200
+    assert r.get_json() == {'commit': 'abcdef1', 'branch': 'main'}
+
+
+def test_version_without_render_env(client, monkeypatch):
+    monkeypatch.delenv('RENDER_GIT_COMMIT', raising=False)
+    monkeypatch.delenv('RENDER_GIT_BRANCH', raising=False)
+    assert client.get('/version').get_json() == {'commit': '', 'branch': ''}
