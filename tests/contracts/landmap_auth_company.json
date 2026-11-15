@@ -1,0 +1,11 @@
+{
+  "caller": "fyy/app.py _landmap_company() → landmap/server/app.py /api/auth/company",
+  "request": {"method": "GET", "url": "https://map.windsky-sky.com/api/auth/company", "cookie": "session"},
+  "responses": {
+    "not_logged_in": {"status": 401, "json": {"status": "LOGIN_REQUIRED", "ok": false}},
+    "blocked":       {"status": 200, "json": {"status": "OK", "ok": false, "how": "blocked"}},
+    "admin":         {"status": 200, "json": {"status": "OK", "ok": true, "how": "admin", "name": "管理者", "email": "admin@example.com"}},
+    "member":        {"status": 200, "json": {"status": "OK", "ok": true, "how": "member", "stores": ["測試店"], "name": "王小明", "email": "ming@example.com"}},
+    "not_staff":     {"status": 200, "json": {"status": "OK", "ok": false, "how": "", "stores": [], "name": "路人", "email": "guest@example.com"}}
+  }
+}

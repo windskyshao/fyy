@@ -1,0 +1,15 @@
+{
+  "caller": "fyy/app.py _intel_call() → landmap/server/app.py /api/intel/line",
+  "request": {"method": "POST", "url": "https://map.windsky-sky.com/api/intel/line"},
+  "bind":  {"json": {"uid": "Utestuser", "action": "bind", "code": "123456", "token": "__FEEDBACK_TOKEN__"}},
+  "check": {"json": {"uid": "Utestuser", "action": "check", "token": "__FEEDBACK_TOKEN__"}},
+  "add":   {"json": {"uid": "Utestuser", "action": "add", "text": "光華一路100號 成交 3,200萬", "token": "__FEEDBACK_TOKEN__"}},
+  "responses": {
+    "ok_bind":   {"status": "OK"},
+    "not_bound": {"status": "NOT_BOUND"},
+    "empty":     {"status": "EMPTY"},
+    "ok_item":   {"status": "OK", "item": {"addr": "高雄市苓雅區光華一路100號", "kind": "sale", "price": 32000000,
+                                            "dealdt": "2026-11", "land_ping": 20, "bld_ping": 45,
+                                            "lat": 22.6098, "lng": 120.3177}}
+  }
+}

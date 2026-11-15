@@ -1,0 +1,29 @@
+{
+  "caller": "landreg-desktop/cadastral_v03/fail_report.py send()",
+  "method": "POST",
+  "path": "/cadastral_fail",
+  "headers": {"Content-Type": "application/json", "X-Feedback-Token": "__FEEDBACK_TOKEN__"},
+  "json": {
+    "token": "__FEEDBACK_TOKEN__",
+    "version": "v0.3.5",
+    "hostname": "OFFICE-PC-03",
+    "username": "ming",
+    "items": [
+      {
+        "filename": "光華段123地籍圖.pdf",
+        "reason": "略過：無法偵測地號",
+        "log": "比例尺 1/500\n使用地號 '123'\n找不到框線",
+        "scale": "1/500",
+        "lot": "123",
+        "png_b64": "iVBORw0KGgo=",
+        "pdf_b64": "JVBERi0xLjQ="
+      }
+    ]
+  },
+  "expect": {
+    "status": 200,
+    "push_text_contains": ["🗺 地籍圖處理失敗 1 張", "版本：v0.3.5", "電腦：OFFICE-PC-03", "使用者：ming",
+                           "1. 光華段123地籍圖.pdf", "原因：略過：無法偵測地號"],
+    "saved_files": ["01.pdf", "01.txt", "01.png"]
+  }
+}

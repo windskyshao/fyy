@@ -1,0 +1,15 @@
+{
+  "caller": "landmap/server/owner_daily_check.py",
+  "method": "POST",
+  "path": "/report_push",
+  "headers": {"Content-Type": "application/json", "X-Feedback-Token": "__FEEDBACK_TOKEN__"},
+  "json": {
+    "token": "__FEEDBACK_TOKEN__",
+    "at": "2026-11-14 06:30",
+    "text": "✅ 阿生地圖每日檢查：查 12 筆，都正常。",
+    "ok": 12,
+    "failed": 0,
+    "changes": 0
+  },
+  "expect": {"status": 200, "saved_key": "landmap_daily_report"}
+}
