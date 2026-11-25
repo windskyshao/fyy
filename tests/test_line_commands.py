@@ -124,6 +124,27 @@ def test_bind_ignored_in_group_chat(say, line, net):
     assert net.calls_to(INTEL_URL) == []
 
 
+def test_bind_falls_back_to_push_when_reply_token_expired(say, line, net):
+    """Render 剛睡醒時 reply_token 常已過期(TTL 30 秒),reply 會失敗;
+    這時改用 push 讓使用者仍能收到綁定結果,避免「什麼都看不到」。"""
+    net.add(INTEL_URL, FakeResponse(200, INTEL['responses']['ok_bind']))
+    line.reply_error = Exception('Invalid reply token')      # 模擬 reply_token 過期
+    assert say('綁定 123456', uid='Utestuser').status_code == 200
+    assert line.reply_texts == []                             # reply 失敗,沒存進 replies
+    assert len(line.pushes) == 1                              # 改用 push
+    to, msgs = line.pushes[0]
+    assert to == 'Utestuser'
+    assert msgs[0].text.startswith('✅ 綁定好了')
+
+
+def test_bind_failure_shows_reason_and_still_uses_push_on_reply_fail(say, line, net):
+    """綁定失敗(地圖那邊回 ERROR) + reply 又過期 → 失敗訊息也要靠 push 送到。"""
+    net.add(INTEL_URL, FakeResponse(200, {'status': 'ERROR', 'msg': '綁定碼過期'}))
+    line.reply_error = Exception('Invalid reply token')
+    say('綁定 123456', uid='Utestuser')
+    assert line.push_texts == ['綁定失敗：綁定碼過期']
+
+
 def test_forwarded_deal_is_saved_and_summarised(say, line, net):
     def landmap(call):
         if call['json']['action'] == 'check':

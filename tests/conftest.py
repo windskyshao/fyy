@@ -57,11 +57,14 @@ class FakeLine:
         self.pushes = []       # [(收件人, [訊息…])]
         self.display_name = '測試使用者'
         self.push_error = None
+        self.reply_error = None  # 模擬 reply_token 過期:Render 剛睡醒時會發生
 
     def get_profile(self, user_id):
         return types.SimpleNamespace(user_id=user_id, display_name=self.display_name)
 
     def reply_message(self, reply_token, messages, *a, **kw):
+        if self.reply_error:
+            raise self.reply_error
         self.replies.append((reply_token, messages if isinstance(messages, list) else [messages]))
 
     def push_message(self, to, messages, *a, **kw):

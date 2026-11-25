@@ -1803,11 +1803,39 @@ _INTEL_MONEY_RE = re.compile(r"\d[\d,，\.]*\s*(億|萬)")
 def _intel_call(body, timeout=60):
     body = dict(body, token=FEEDBACK_TOKEN)
     h = dict(realestate._HDRS, **{"Content-Type": "application/json"})
-    r = requests.post("https://map.windsky-sky.com/api/intel/line", data=json.dumps(body), headers=h, timeout=timeout)
+    _action = body.get("action", "?")
+    try:
+        r = requests.post("https://map.windsky-sky.com/api/intel/line", data=json.dumps(body), headers=h, timeout=timeout)
+    except Exception as e:
+        # 連線層級的錯(DNS/逾時/Cloudflare 擋機房IP等);寫進 Render Logs 方便事後查
+        print(f"[intel] call failed action={_action} error={type(e).__name__}: {str(e)[:120]}")
+        raise
+    if r.status_code >= 400:
+        # 阿生地圖回了錯誤碼,log 下來(常見:403=權杖不對、5xx=地圖本身掛了、Cloudflare 擋會回 502/503/522)
+        print(f"[intel] HTTP {r.status_code} action={_action} body={r.text[:200]}")
     try:
         return r.json()
     except Exception:
+        print(f"[intel] 地圖回應非 JSON action={_action} HTTP={r.status_code} body={r.text[:200]}")
         return {"status": "ERROR", "msg": "地圖回應異常(HTTP %d)" % r.status_code}
+
+
+def _safe_reply_push(uid, reply_token, text):
+    """回覆一則文字:先用 reply_message;若 reply_token 已過期(Render 剛睡醒時常見)就改用 push_message。
+
+    只在「必須讓使用者看到結果」的地方用(例如綁定結果),因為 push 會吃 LINE 推播額度。
+    綁定這類動作使用者一定要看到回饋,否則他不知道成功沒成功、會重複嘗試。
+    """
+    try:
+        line_bot_api.reply_message(reply_token, TextSendMessage(text=text))
+        return
+    except Exception as e:
+        print(f"[reply] 失敗(可能 reply_token 已過期),改用 push 送給 {uid}: {type(e).__name__}: {str(e)[:120]}")
+    try:
+        line_bot_api.push_message(uid, TextSendMessage(text=text))
+    except Exception as e2:
+        # 連 push 都壞就真的沒辦法了(例如 LINE 推播額度爆掉)
+        print(f"[push] 也失敗 {uid}: {type(e2).__name__}: {str(e2)[:120]}")
 
 
 def _intel_wan(v):
@@ -1890,7 +1918,9 @@ def handle_message(event):
                 r = {"status": "ERROR", "msg": str(e)[:60]}
             txt = ("✅ 綁定好了！\n以後在 LINE 群組看到成交消息，長按「轉傳」給我（文字或截圖都可以），"
                    "就會自動存進阿生地圖「📣 最新行情情報」，只有你看得到。") if r.get("status") == "OK" else ("綁定失敗：" + (r.get("msg") or "請稍後再試"))
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=txt))
+            # 用 _safe_reply_push:Render 剛睡醒時 reply_token 可能已過期,此時改用 push 送,
+            # 讓使用者一定看得到結果(推播量很少,只在成功/失敗各一則)。
+            _safe_reply_push(uid, event.reply_token, txt)
             return 0
         _explicit = original_msg.startswith(("情報", "📣"))
         if _explicit or (len(original_msg) >= 12 and _INTEL_DEAL_RE.search(original_msg) and _INTEL_MONEY_RE.search(original_msg)):
